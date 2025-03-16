@@ -1,0 +1,173 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 20% 9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 9%;
+    
+    --primary: 215 50% 23%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 210 20% 97%;
+    --muted-foreground: 215 20% 45%;
+    
+    --accent: 220 45% 96%;
+    --accent-foreground: 215 50% 23%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 215 32% 92%;
+    --input: 215 32% 92%;
+    --ring: 215 32% 92%;
+    
+    --radius: 0.75rem;
+    
+    --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+    --font-mono: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
+  }
+  
+  .dark {
+    --background: 220 20% 9%;
+    --foreground: 210 40% 98%;
+    
+    --card: 220 20% 9%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 220 20% 9%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 215 50% 55%;
+    --primary-foreground: 220 20% 9%;
+    
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 215 50% 15%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 215 28% 17%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+  
+  /* Typography enhancements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium tracking-tight;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1.5 h-1.5;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply backdrop-blur-md bg-white/90 dark:bg-black/80 border border-white/20 dark:border-white/10;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .subtle-shadow {
+    box-shadow: 0 2px 20px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .search-container {
+    @apply w-full max-w-2xl mx-auto relative;
+  }
+  
+  .hero-gradient {
+    background: radial-gradient(
+      circle at 50% 50%,
+      hsl(var(--background)) 0%,
+      hsl(var(--background)) 50%,
+      hsl(var(--muted)) 100%
+    );
+  }
+  
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+  
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+  
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+/* Special transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 400ms, transform 400ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}
