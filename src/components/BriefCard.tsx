@@ -6,6 +6,7 @@ import { BookmarkIcon, DocumentTextIcon, ArrowTopRightOnSquareIcon, BookOpenIcon
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { cn } from '@/lib/utils';
 import { BriefModal } from './BriefModal';
+import { Badge } from '@/components/ui/badge';
 
 export interface Brief {
   id: string;
@@ -20,6 +21,7 @@ export interface Brief {
   rule?: string;
   analysis?: string;
   conclusion?: string;
+  tags?: string[]; // Array of tag strings
 }
 
 interface BriefCardProps {
@@ -84,8 +86,23 @@ export const BriefCard = ({
         <CardHeader className="p-4 pb-0">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-2">
-                {brief.courseName}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  {brief.courseName}
+                </div>
+                
+                {/* Display tags if they exist */}
+                {brief.tags && brief.tags.length > 0 && 
+                  brief.tags.map((tag, index) => (
+                    <Badge 
+                      key={index}
+                      variant="outline" 
+                      className="text-xs px-2 py-0.5"
+                    >
+                      {tag}
+                    </Badge>
+                  ))
+                }
               </div>
               <CardTitle className="text-lg font-medium line-clamp-2 leading-tight">
                 {brief.title}

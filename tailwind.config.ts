@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -109,6 +108,18 @@ export default {
 				'blur-out': {
 					from: { filter: 'blur(0)', opacity: '1' },
 					to: { filter: 'blur(4px)', opacity: '0' }
+				},
+				'subtle-bounce': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-4px)' }
+				},
+				'pulse-glow': {
+					'0%, 100%': { opacity: '0' },
+					'50%': { opacity: '1' }
+				},
+				'shimmer': {
+					'0%': { transform: 'translateX(-100%)' },
+					'100%': { transform: 'translateX(100%)' }
 				}
 			},
 			animation: {
@@ -121,7 +132,10 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'scale-out': 'scale-out 0.2s ease-in',
 				'blur-in': 'blur-in 0.3s ease-out',
-				'blur-out': 'blur-out 0.2s ease-in'
+				'blur-out': 'blur-out 0.2s ease-in',
+				'subtle-bounce': 'subtle-bounce 3s ease-in-out infinite',
+				'pulse-slow': 'pulse-glow 3s ease-in-out infinite',
+				'shimmer': 'shimmer 2s linear infinite'
 			},
 			fontFamily: {
 				sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],

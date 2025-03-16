@@ -14,7 +14,8 @@ import {
   SparklesIcon,
   DocumentDuplicateIcon,
   EyeIcon,
-  XMarkIcon
+  XMarkIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { useToast } from '@/components/ui/use-toast';
@@ -37,6 +38,8 @@ import { Badge } from '@/components/ui/badge';
 import { CreateCollectionModal, Collection } from '@/components/CreateCollectionModal';
 import { BookmarkCollectionDialog } from '@/components/BookmarkCollectionDialog';
 import { CollectionDetail } from '@/components/CollectionDetail';
+import { CreateBriefModal } from '@/components/CreateBriefModal';
+import { AuroraButton } from '@/components/ui/aurora-button';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -64,6 +67,7 @@ const Library = () => {
   const [briefToBookmark, setBriefToBookmark] = useState<Brief | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
+  const [createBriefOpen, setCreateBriefOpen] = useState(false);
   
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
@@ -230,11 +234,34 @@ const Library = () => {
     }
   };
 
+  const handleCreateBrief = (brief: Brief, collectionId?: string) => {
+    // First, add the brief to saved briefs
+    setSavedBriefs(prev => [brief, ...prev]);
+    
+    // If a collection ID was provided, add the brief to that collection
+    if (collectionId) {
+      setCollections(collections.map(collection => {
+        if (collection.id === collectionId) {
+          return {
+            ...collection,
+            briefs: [...collection.briefs, brief.id]
+          };
+        }
+        return collection;
+      }));
+    }
+    
+    toast({
+      title: "Brief created",
+      description: `"${brief.title}" has been created${collectionId ? ' and added to collection' : ''}.`
+    });
+  };
+
   const handleCreateCollection = (collection: Collection) => {
     setCollections(prev => [...prev, collection]);
     toast({
       title: "Collection created",
-      description: `Successfully created "${collection.name}" collection`
+      description: `"${collection.name}" collection has been created.`
     });
     
     // If there was a brief in the process of being bookmarked, add it to the new collection
@@ -460,9 +487,21 @@ const Library = () => {
                 </div>
               )}
             </div>
-            <div className="flex flex-row md:flex-col gap-2 flex-wrap">
-              <Button variant="outline" className="text-sm">How to use AI search</Button>
-              <Button variant="outline" className="text-sm">Popular queries</Button>
+            <div className="flex flex-col gap-2 md:justify-between md:ml-8 md:min-w-32">
+              <div className="flex flex-col gap-2">
+                <Button variant="outline" className="text-sm w-full">How to use AI search</Button>
+                <Button variant="outline" className="text-sm w-full">Popular queries</Button>
+                
+                <div className="mt-6">
+                  <AuroraButton
+                    className="text-sm h-9 flex items-center justify-center gap-1.5 w-full"
+                    onClick={() => setCreateBriefOpen(true)}
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Create Brief
+                  </AuroraButton>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -663,11 +702,13 @@ const Library = () => {
           {/* Sidebar - Personal Library */}
           <div className="lg:col-span-1">
             <div className="border rounded-xl p-5 bg-card">
-              <div className="mb-5">
-                <h2 className="text-xl font-semibold mb-1">Your Library</h2>
-                <p className="text-muted-foreground text-sm">
-                  Your saved briefs and collections
-                </p>
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold mb-1">Your Library</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Your saved briefs and collections
+                  </p>
+                </div>
               </div>
 
               {/* Saved Briefs Section */}
@@ -684,23 +725,51 @@ const Library = () => {
                 
                 <div className="space-y-3">
                   {savedBriefs.length > 0 ? (
-                    savedBriefs.map((brief) => (
-                      <div 
-                        key={brief.id} 
-                        className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                        onClick={() => handleViewFullBrief(brief)}
+                    <>
+                      {savedBriefs.map((brief) => (
+                        <div 
+                          key={brief.id} 
+                          className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
+                          onClick={() => handleViewFullBrief(brief)}
+                        >
+                          <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
+                        </div>
+                      ))}
+                      
+                      {/* Add Brief button at the end of the list */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center justify-center gap-1.5 group hover:bg-accent/30 border-dashed border-2 transition-all duration-300 py-5"
+                        onClick={() => setCreateBriefOpen(true)}
                       >
-                        <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
-                      </div>
-                    ))
+                        <PlusIcon className="h-4 w-4 group-hover:scale-125 transition-transform duration-300" />
+                        <span>Add New Brief</span>
+                      </Button>
+                    </>
                   ) : (
-                    <div className="text-center py-6 border rounded-lg bg-muted/20">
-                      <BookmarkIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
+                      <div className="relative">
+                        <BookmarkIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
+                        <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
+                      </div>
                       <h4 className="text-sm font-medium mb-1">No saved briefs</h4>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Bookmark briefs to access them here
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Create your first brief or bookmark an existing one
                       </p>
+                      <Button 
+                        size="sm"
+                        className="relative overflow-hidden group animate-subtle-bounce bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
+                        onClick={() => setCreateBriefOpen(true)}
+                      >
+                        <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <span className="relative z-10 flex items-center gap-1.5">
+                          <PlusIcon className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+                          <span>Create First Brief</span>
+                        </span>
+                        <span className="absolute inset-0 -z-10 animate-shimmer opacity-0 group-hover:opacity-100 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0"></span>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -741,13 +810,26 @@ const Library = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6 border rounded-lg bg-muted/20">
-                    <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
+                    <div className="relative">
+                      <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
+                      <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
+                    </div>
                     <h4 className="text-sm font-medium mb-1">No collections yet</h4>
-                    <p className="text-xs text-muted-foreground mb-3">
+                    <p className="text-xs text-muted-foreground mb-4">
                       Create collections to organize your briefs
                     </p>
-                    <Button size="sm" onClick={() => setCreateCollectionOpen(true)}>Create Collection</Button>
+                    <Button 
+                      size="sm"
+                      className="relative overflow-hidden group bg-gradient-to-r from-primary/80 to-primary/70 hover:from-primary/90 hover:to-primary/80 shadow-sm"
+                      onClick={() => setCreateCollectionOpen(true)}
+                    >
+                      <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                      <span className="relative z-10 flex items-center gap-1.5">
+                        <FolderIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+                        <span>Create Collection</span>
+                      </span>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -916,6 +998,15 @@ const Library = () => {
         onSaveBrief={handleBookmarkClick}
         onOpenBrief={handleViewFullBrief}
         onRemoveFromCollection={handleRemoveFromCollection}
+      />
+      
+      {/* Create Brief Modal */}
+      <CreateBriefModal
+        open={createBriefOpen}
+        onOpenChange={setCreateBriefOpen}
+        collections={collections}
+        onCreateBrief={handleCreateBrief}
+        onCreateCollection={handleCreateCollection}
       />
     </div>
   );

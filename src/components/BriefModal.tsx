@@ -10,6 +10,7 @@ import { Brief } from "./BriefCard";
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { BookmarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface BriefModalProps {
   brief: Brief;
@@ -40,6 +41,19 @@ export const BriefModal = ({
             <div className="space-y-1">
               <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mb-2">
                 {brief.courseName}
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {brief.tags && brief.tags.length > 0 && 
+                  brief.tags.map((tag, index) => (
+                    <Badge 
+                      key={index}
+                      variant="secondary" 
+                      className="text-xs px-2 py-0.5"
+                    >
+                      {tag}
+                    </Badge>
+                  ))
+                }
               </div>
               <DialogTitle className="text-2xl font-medium">
                 {brief.title}
