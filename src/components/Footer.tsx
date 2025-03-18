@@ -1,30 +1,32 @@
-
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { FooterLanguageToggle } from '@/components/FooterLanguageToggle';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const footerLinks = [
+// Define footer link structure with translation keys
+const getFooterLinks = (t: (key: string) => string) => [
   {
-    title: "Company",
+    title: t('company'),
     links: [
-      { name: "About", href: "/about" },
-      { name: "Careers", href: "#" },
-      { name: "Contact", href: "#" },
+      { name: t('about'), href: "/about" },
+      { name: t('careers'), href: "#" },
+      { name: t('contact'), href: "#" },
     ],
   },
   {
-    title: "Legal",
+    title: t('legal'),
     links: [
-      { name: "Terms", href: "#" },
-      { name: "Privacy", href: "#" },
-      { name: "Cookies", href: "#" },
+      { name: t('terms'), href: "#" },
+      { name: t('privacy'), href: "#" },
+      { name: t('cookies'), href: "#" },
     ],
   },
   {
-    title: "Resources",
+    title: t('resources'),
     links: [
-      { name: "Blog", href: "#" },
-      { name: "Help Center", href: "#" },
-      { name: "Guides", href: "#" },
+      { name: t('blog'), href: "#" },
+      { name: t('help_center'), href: "#" },
+      { name: t('guides'), href: "#" },
     ],
   },
 ];
@@ -34,6 +36,9 @@ interface FooterProps {
 }
 
 export const Footer = ({ className }: FooterProps) => {
+  const { t } = useLanguage();
+  const footerLinks = getFooterLinks(t);
+  
   return (
     <footer className={cn("border-t border-border/60", className)}>
       <div className="container px-4 py-12 md:py-16 mx-auto">
@@ -43,7 +48,7 @@ export const Footer = ({ className }: FooterProps) => {
               <span className="text-lg font-medium">Lex Grove</span>
             </Link>
             <p className="text-muted-foreground mb-4 max-w-xs">
-              Lex Grove - AI-powered legal research platform for law students to discover, save, and share case briefs.
+              {t('app.description')}
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors duration-200" aria-label="Twitter">
@@ -85,18 +90,19 @@ export const Footer = ({ className }: FooterProps) => {
         
         <div className="mt-12 pt-8 border-t border-border/40 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-            &copy; {new Date().getFullYear()} Lex Grove. All rights reserved.
+            &copy; {new Date().getFullYear()} Lex Grove. {t('footer.rights')}
           </p>
           <div className="flex items-center space-x-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200">
-              Terms
+              {t('terms')}
             </a>
             <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200">
-              Privacy
+              {t('privacy')}
             </a>
             <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors duration-200">
-              Cookies
+              {t('cookies')}
             </a>
+            <FooterLanguageToggle />
           </div>
         </div>
       </div>

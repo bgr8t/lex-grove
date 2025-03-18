@@ -83,7 +83,7 @@ export const BriefModal = ({
           {/* Case Summary */}
           <section>
             <h3 className="text-lg font-medium mb-2">Summary</h3>
-            <p className="text-muted-foreground">{brief.snippet}</p>
+            <p className="text-muted-foreground">{brief.summary || brief.snippet || "Case summary will be displayed here."}</p>
           </section>
 
           {/* Facts */}

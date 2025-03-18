@@ -51,7 +51,7 @@ const SUGGESTED_SEARCH_TERMS = [
 const Library = () => {
   const navigate = useNavigate();
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>(sampleBriefs.slice(0, 3));
-  const [communityBriefs] = useState<Brief[]>(sampleBriefs.slice(0, 6));
+  const [communityBriefs, setCommunityBriefs] = useState<Brief[]>(sampleBriefs.slice(0, 6));
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -68,6 +68,7 @@ const Library = () => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
   const [createBriefOpen, setCreateBriefOpen] = useState(false);
+  const [searchHelpOpen, setSearchHelpOpen] = useState(false);
   
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
@@ -238,6 +239,9 @@ const Library = () => {
     // First, add the brief to saved briefs
     setSavedBriefs(prev => [brief, ...prev]);
     
+    // Also add the brief to community briefs
+    setCommunityBriefs(prev => [brief, ...prev]);
+    
     // If a collection ID was provided, add the brief to that collection
     if (collectionId) {
       setCollections(collections.map(collection => {
@@ -253,7 +257,7 @@ const Library = () => {
     
     toast({
       title: "Brief created",
-      description: `"${brief.title}" has been created${collectionId ? ' and added to collection' : ''}.`
+      description: `"${brief.title}" has been created${collectionId ? ' and added to collection' : ''} and shared with the community.`
     });
   };
 
@@ -370,16 +374,16 @@ const Library = () => {
           </p>
         </div>
 
-        {/* AI-Powered Research Section */}
+        {/* Intelligent Search-Powered Research Section */}
         <div className="max-w-7xl mx-auto mb-10 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900">
           <div className="flex items-start gap-6 flex-col md:flex-row">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
                 <SparklesIcon className="h-5 w-5 text-blue-500" />
-                <h2 className="text-xl font-semibold">AI-Powered Legal Research</h2>
+                <h2 className="text-xl font-semibold">Intelligent Search-Powered Legal Research</h2>
               </div>
               <p className="text-muted-foreground mb-4">
-                Use our advanced AI to find relevant case briefs, analyze legal concepts, or get insights on specific cases.
+                Use our advanced intelligent search to find relevant case briefs, analyze legal concepts, or get insights on specific cases.
               </p>
               
               <div className="mb-4">
@@ -489,18 +493,21 @@ const Library = () => {
             </div>
             <div className="flex flex-col gap-2 md:justify-between md:ml-8 md:min-w-32">
               <div className="flex flex-col gap-2">
-                <Button variant="outline" className="text-sm w-full">How to use AI search</Button>
-                <Button variant="outline" className="text-sm w-full">Popular queries</Button>
+                <Button 
+                  variant="outline" 
+                  className="text-sm w-full"
+                  onClick={() => setSearchHelpOpen(true)}
+                >
+                  How to use intelligent search
+                </Button>
                 
-                <div className="mt-6">
-                  <AuroraButton
-                    className="text-sm h-9 flex items-center justify-center gap-1.5 w-full"
-                    onClick={() => setCreateBriefOpen(true)}
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    Create Brief
-                  </AuroraButton>
-                </div>
+                <AuroraButton
+                  className="text-sm h-9 flex items-center justify-center gap-1.5 w-full"
+                  onClick={() => setCreateBriefOpen(true)}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Create Brief
+                </AuroraButton>
               </div>
             </div>
           </div>
@@ -1008,6 +1015,62 @@ const Library = () => {
         onCreateBrief={handleCreateBrief}
         onCreateCollection={handleCreateCollection}
       />
+      
+      {/* Intelligent Search Help Dialog */}
+      <Dialog open={searchHelpOpen} onOpenChange={setSearchHelpOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>How to use intelligent search</DialogTitle>
+            <DialogDescription>
+              Get the most out of our intelligent search feature with these tips.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Natural language queries</h3>
+              <p className="text-sm text-muted-foreground">
+                Ask questions in plain language. For example: "What is the doctrine of stare decisis?" or "Find cases about proximate cause in medical malpractice."
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Filter by category</h3>
+              <p className="text-sm text-muted-foreground">
+                Use the filter buttons to narrow your search to case titles, content, or specific courses.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Use legal terminology</h3>
+              <p className="text-sm text-muted-foreground">
+                Our search engine understands legal concepts. Try searching for specific legal doctrines, principles, or case elements.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Combine concepts</h3>
+              <p className="text-sm text-muted-foreground">
+                Search for relationships between concepts, like "tort law negligence duty of care" to find briefs connecting these ideas.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Example searches</h3>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+                <li>"Criminal procedure exclusionary rule exceptions"</li>
+                <li>"Constitutional law equal protection scrutiny levels"</li>
+                <li>"Contract law consideration requirement cases"</li>
+                <li>"Quebec civil code property servitudes"</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setSearchHelpOpen(false)}>Got it</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

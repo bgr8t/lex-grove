@@ -37,6 +37,7 @@ const createBriefSchema = z.object({
   rule: z.string().min(1, 'Rule is required'),
   analysis: z.string().min(1, 'Analysis is required'),
   conclusion: z.string().min(1, 'Conclusion is required'),
+  summary: z.string().min(1, 'Summary is required'),
   tags: z.array(z.string()).optional(),
 });
 
@@ -75,6 +76,7 @@ export function CreateBriefModal({
       rule: '',
       analysis: '',
       conclusion: '',
+      summary: '',
       tags: [],
     },
   });
@@ -117,6 +119,7 @@ export function CreateBriefModal({
         rule: values.rule,
         analysis: values.analysis,
         conclusion: values.conclusion,
+        summary: values.summary,
         author: 'You', // Default to current user
         date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
         savedCount: 0,
@@ -362,6 +365,24 @@ export function CreateBriefModal({
                     <FormControl>
                       <Textarea 
                         placeholder="Enter the court's conclusion..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="summary"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Summary</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter a brief summary of the case..."
                         className="min-h-[80px]"
                         {...field}
                       />

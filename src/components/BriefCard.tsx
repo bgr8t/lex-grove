@@ -21,6 +21,7 @@ export interface Brief {
   rule?: string;
   analysis?: string;
   conclusion?: string;
+  summary?: string;
   tags?: string[]; // Array of tag strings
 }
 

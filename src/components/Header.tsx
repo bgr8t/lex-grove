@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { MoonIcon, SunIcon } from '@heroicons/react/24/solid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Sheet,
   SheetContent,
@@ -42,6 +43,7 @@ const CustomSheetContent = React.forwardRef<
 CustomSheetContent.displayName = "CustomSheetContent";
 
 export const Header = () => {
+  const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -111,7 +113,7 @@ export const Header = () => {
     >
       <div className="w-full md:container md:mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2 text-primary transition-opacity hover:opacity-90">
-          <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Lex Grove</span>
+          <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{t('app.title')}</span>
         </Link>
         
         {/* Desktop Navigation */}
@@ -123,7 +125,7 @@ export const Header = () => {
               location.pathname === "/" ? "text-primary" : "text-foreground/70"
             )}
           >
-            Home
+            {t('nav.home')}
           </Link>
           <Link 
             to="/library" 
@@ -132,7 +134,7 @@ export const Header = () => {
               location.pathname === "/library" ? "text-primary" : "text-foreground/70"
             )}
           >
-            Library
+            {t('nav.library')}
           </Link>
           <Link 
             to="/about" 
@@ -141,7 +143,7 @@ export const Header = () => {
               location.pathname === "/about" ? "text-primary" : "text-foreground/70"
             )}
           >
-            About
+            {t('nav.about')}
           </Link>
         </nav>
         
@@ -163,14 +165,14 @@ export const Header = () => {
             variant="ghost" 
             className="hidden md:inline-flex text-sm px-4 transition-all duration-200 hover:bg-accent mr-3"
           >
-            Sign In
+            {t('nav.sign_in')}
           </Button>
           <Link 
             to="/get-started"
             className="hidden md:inline-flex"
           >
             <Button className="bg-primary hover:bg-primary/90 text-sm px-4 transition-all duration-200">
-              Get Started
+              {t('nav.get_started')}
             </Button>
           </Link>
 
@@ -190,7 +192,7 @@ export const Header = () => {
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-between p-4">
                     <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Lex Grove</span>
+                      <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{t('app.title')}</span>
                     </Link>
                     <div className="flex items-center space-x-2">
                       <Button 
@@ -226,7 +228,7 @@ export const Header = () => {
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Home
+                      {t('nav.home')}
                     </Link>
                     <Link 
                       to="/library" 
@@ -236,7 +238,7 @@ export const Header = () => {
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Library
+                      {t('nav.library')}
                     </Link>
                     <Link 
                       to="/about" 
@@ -246,7 +248,7 @@ export const Header = () => {
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      About
+                      {t('nav.about')}
                     </Link>
                     <Link 
                       to="/get-started" 
@@ -256,7 +258,7 @@ export const Header = () => {
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Get Started
+                      {t('nav.get_started')}
                     </Link>
                   </nav>
                 </div>

@@ -1,9 +1,10 @@
-
 import { SearchBar } from './SearchBar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { SparklesIcon, BookOpenIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 
 interface HeroProps {
   className?: string;
@@ -12,14 +13,16 @@ interface HeroProps {
 
 export const Hero = ({ className, onSearch }: HeroProps) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   
   const handleSearch = (query: string) => {
     if (onSearch) {
       onSearch(query);
     } else {
       toast({
-        title: "Search initiated",
-        description: `Searching for: "${query}"`,
+        title: t('search.initiated'),
+        description: `${t('search.searching_for')}: "${query}"`,
       });
     }
   };
@@ -35,24 +38,25 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
         <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
           <div className="inline-flex items-center mb-4 backdrop-blur-sm bg-accent/40 border border-border/50 rounded-full px-3 py-1 animate-fade-in">
             <SparklesIcon className="h-4 w-4 mr-2 text-primary" />
-            <span className="text-sm font-medium">AI-Powered Legal Research</span>
+            <span className="text-sm font-medium">{t('hero.tagline')}</span>
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4 md:mb-6 text-balance animate-slide-down">
-            <span className="text-primary">Lex Grove:</span> Legal Briefs With <span className="text-primary">Intelligent Search</span>
+            <span className="text-primary">{t('app.title')}:</span> {t('hero.title.1')} <span className="text-primary">{t('hero.title.2')}</span>
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto text-balance animate-slide-down animate-delay-100">
-            Access a database of case briefs created by law students, organized by an AI that understands your needs.
+            {t('hero.description')}
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10 animate-fade-in animate-delay-200">
             <Button 
               size="lg" 
               className="h-11 px-6 bg-[#384358] hover:bg-[#2b344a] transition-all duration-300"
+              onClick={() => navigate('/library')}
             >
               <BookOpenIcon className="h-5 w-5 mr-2" />
-              Browse Library
+              {t('hero.browse_library')}
             </Button>
             <Button 
               size="lg" 
@@ -61,14 +65,14 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
               onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
             >
               <ChatBubbleBottomCenterTextIcon className="h-5 w-5 mr-2" />
-              How It Works
+              {t('hero.how_it_works')}
             </Button>
           </div>
           
           <div className="search-container animate-scale-in animate-delay-300">
             <SearchBar 
               onSearch={handleSearch} 
-              placeholder="Search cases, legal concepts, or doctrines..." 
+              placeholder={t('search.placeholder')} 
               showExamples={true}
             />
           </div>

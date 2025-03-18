@@ -3,18 +3,20 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import HowItWorks from '@/components/HowItWorks';
-import LibrarySection from '@/components/LibrarySection';
+import PricingSection from '@/components/PricingSection';
 import SearchResults from '@/components/SearchResults';
 import Footer from '@/components/Footer';
 import { Brief } from '@/components/BriefCard';
 import { useToast } from '@/components/ui/use-toast';
 import { sampleBriefs } from '@/data/sampleBriefs';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const handleSearch = (query: string) => {
     if (!query.trim()) return;
@@ -36,13 +38,13 @@ const Index = () => {
       
       if (filteredResults.length === 0) {
         toast({
-          title: "No results found",
-          description: `No briefs match "${query}". Try a different search term.`,
+          title: t('search.no_results'),
+          description: `${t('search.no_results_desc')} "${query}". ${t('search.try_different')}`,
         });
       } else {
         toast({
-          title: "Search complete",
-          description: `Found ${filteredResults.length} results for "${query}"`,
+          title: t('search.complete'),
+          description: `${t('search.found')} ${filteredResults.length} ${t('search.results_for')} "${query}"`,
         });
       }
     }, 1500);
@@ -67,7 +69,7 @@ const Index = () => {
           <Hero onSearch={handleSearch} />
           <Features />
           <HowItWorks />
-          <LibrarySection briefs={sampleBriefs} />
+          <PricingSection />
         </>
       )}
       
