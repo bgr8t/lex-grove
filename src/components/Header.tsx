@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { MoonIcon, SunIcon } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AuthButtons } from '@/components/auth/AuthButtons';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Sheet,
   SheetContent,
@@ -43,6 +44,53 @@ const CustomSheetContent = React.forwardRef<
 ));
 CustomSheetContent.displayName = "CustomSheetContent";
 
+// Custom Library Link component that checks membership status before navigating
+const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => {
+  const { t } = useLanguage();
+  const { currentUser, checkMembershipStatus } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLibraryClick = async (e) => {
+    e.preventDefault();
+    
+    if (currentUser) {
+      // Force a membership status check before navigating
+      console.log('Header: Checking membership status before navigation');
+      const status = await checkMembershipStatus();
+      console.log('Header: Membership status updated to', status);
+      
+      // Add a small delay to ensure the status update has propagated
+      setTimeout(() => {
+        navigate('/library');
+        if (isMobile) {
+          closeMobileMenu();
+        }
+      }, 300);
+    } else {
+      navigate('/library');
+      if (isMobile) {
+        closeMobileMenu();
+      }
+    }
+  };
+
+  return (
+    <a 
+      href="/library"
+      onClick={handleLibraryClick}
+      className={cn(
+        isMobile ? 
+          "py-4 text-[22px] font-normal transition-colors hover:text-primary" :
+          "text-sm font-medium transition-colors hover:text-primary",
+        location.pathname === "/library" ? "text-primary" : "text-foreground/70"
+      )}
+    >
+      {t('nav.library')}
+    </a>
+  );
+};
+
 export const Header = () => {
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
@@ -60,6 +108,7 @@ export const Header = () => {
     return 'light';
   });
   const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -128,15 +177,7 @@ export const Header = () => {
           >
             {t('nav.home')}
           </Link>
-          <Link 
-            to="/library" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/library" ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            {t('nav.library')}
-          </Link>
+          <HeaderLibraryLink />
           <Link 
             to="/about" 
             className={cn(
@@ -222,16 +263,7 @@ export const Header = () => {
                     >
                       {t('nav.home')}
                     </Link>
-                    <Link 
-                      to="/library" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
-                        location.pathname === "/library" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.library')}
-                    </Link>
+                    <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
                     <Link 
                       to="/about" 
                       className={cn(

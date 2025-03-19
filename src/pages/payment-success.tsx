@@ -10,7 +10,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, checkMembershipStatus } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,34 +24,37 @@ const PaymentSuccess = () => {
       try {
         setLoading(true);
         
-        // Update user's membership status
+        // Check if user profile exists
         const userProfile = await userProfileService.getCurrentUserProfile();
         
-        if (userProfile) {
-          // Update the user's membership status to premium
-          await userProfileService.updateMembershipStatus(currentUser.uid, 'premium');
-          
-          // Set the user as premium in localStorage
-          setUserAsPremium(currentUser.uid);
-        } else {
-          // If no user profile, create one with premium status
+        if (!userProfile) {
+          // Create a new user profile with complete information
           await userProfileService.createUserProfile({
             uid: currentUser.uid,
             email: currentUser.email || '',
             displayName: currentUser.displayName || '',
             photoURL: currentUser.photoURL || '',
+            // Initialize contributions
             contributions: {
               count: 0,
               target: 3,
-              completed: false,
+              completed: true, // Premium users get automatic completion
               briefIds: []
             },
-            membershipStatus: 'premium',
+            membershipStatus: 'premium'
           });
-          
-          // Set the user as premium in localStorage
-          setUserAsPremium(currentUser.uid);
+          console.log('Created new user profile for premium subscriber');
+        } else {
+          // Update existing profile to premium status
+          await userProfileService.updateMembershipStatus(currentUser.uid, 'premium');
+          console.log('Updated existing user profile to premium status');
         }
+          
+        // Set the user as premium in localStorage
+        setUserAsPremium(currentUser.uid);
+        
+        // Log success for debugging
+        console.log('Successfully updated membership status to premium');
       } catch (error) {
         console.error('Error verifying payment:', error);
         setError('There was an error updating your membership. Please contact support.');
@@ -63,14 +66,26 @@ const PaymentSuccess = () => {
     verifyPayment();
   }, [currentUser, navigate]);
 
-  const handleGoToLibrary = () => {
-    navigate('/library');
+  const handleGoToLibrary = async () => {
+    if (currentUser) {
+      // Force a membership status check before navigating
+      console.log('Payment Success: Checking membership status before navigation');
+      const status = await checkMembershipStatus();
+      console.log('Payment Success: Membership status updated to', status);
+      
+      // Add a small delay to ensure the status update has propagated
+      setTimeout(() => {
+        navigate('/library');
+      }, 300);
+    } else {
+      navigate('/library');
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4 pt-24">
         <div className="max-w-md w-full text-center">
           <div className="mb-6 flex justify-center">
             <CheckCircleIcon className="h-24 w-24 text-green-500" />

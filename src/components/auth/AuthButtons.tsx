@@ -14,10 +14,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
 import { userProfileService } from '@/lib/services/userProfileService';
 import { ContributionProgress } from '@/components/ContributionProgress';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 
 export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, membershipStatus, checkMembershipStatus } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -28,22 +28,26 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
   } | null>(null);
 
   useEffect(() => {
-    // Load user contribution status
-    const loadContributionStatus = async () => {
+    // Load user contribution status and membership status
+    const loadUserStatus = async () => {
       if (currentUser) {
         try {
+          // Check membership status
+          await checkMembershipStatus();
+          
+          // Get user profile for contribution status
           const profile = await userProfileService.getCurrentUserProfile();
           if (profile) {
             setContributionStatus(profile.contributions);
           }
         } catch (error) {
-          console.error('Error loading contribution status:', error);
+          console.error('Error loading user status:', error);
         }
       }
     };
 
-    loadContributionStatus();
-  }, [currentUser]);
+    loadUserStatus();
+  }, [currentUser, checkMembershipStatus]);
 
   const handleLogout = async () => {
     try {
@@ -89,9 +93,19 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
         <div className="py-4 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarFallback>{getUserInitials()}</AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar>
+                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                </Avatar>
+                {membershipStatus === 'premium' && (
+                  <span className="absolute -top-1 -right-1 text-yellow-500">
+                    <Star className="h-4 w-4 fill-yellow-500" />
+                  </span>
+                )}
+                {membershipStatus === 'contributor' && (
+                  <span className="absolute -top-1 -right-1 bg-green-500 rounded-full w-3 h-3 border-2 border-background" />
+                )}
+              </div>
               <div className="flex flex-col">
                 <span className="text-sm font-medium">
                   {currentUser.displayName || currentUser.email}
@@ -113,7 +127,13 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
             <div className="mt-3 p-3 bg-background rounded-lg border border-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Contribution Status</span>
-                {contributionStatus.completed && (
+                {membershipStatus === 'premium' && (
+                  <div className="flex items-center text-yellow-500">
+                    <Star className="h-4 w-4 mr-1 fill-yellow-500" />
+                    <span className="text-xs font-medium">Premium</span>
+                  </div>
+                )}
+                {membershipStatus === 'contributor' && (
                   <div className="flex items-center text-green-500">
                     <Sparkles className="h-4 w-4 mr-1" />
                     <span className="text-xs font-medium">Contributor</span>
@@ -135,7 +155,12 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
             <Avatar>
               <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
-            {contributionStatus?.completed && (
+            {membershipStatus === 'premium' && (
+              <span className="absolute -top-1 -right-1 text-yellow-500">
+                <Star className="h-4 w-4 fill-yellow-500" />
+              </span>
+            )}
+            {membershipStatus === 'contributor' && (
               <span className="absolute -top-1 -right-1 bg-green-500 rounded-full w-3 h-3 border-2 border-background" />
             )}
           </Button>
@@ -152,13 +177,19 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
             </div>
           </DropdownMenuLabel>
           
-          {/* Contribution status in dropdown */}
+          {/* Membership status in dropdown */}
           {contributionStatus && (
             <>
               <div className="px-2 py-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Contribution Status</span>
-                  {contributionStatus.completed && (
+                  <span className="text-sm font-medium">Membership Status</span>
+                  {membershipStatus === 'premium' && (
+                    <div className="flex items-center text-yellow-500">
+                      <Star className="h-4 w-4 mr-1 fill-yellow-500" />
+                      <span className="text-xs font-medium">Premium</span>
+                    </div>
+                  )}
+                  {membershipStatus === 'contributor' && (
                     <div className="flex items-center text-green-500">
                       <Sparkles className="h-4 w-4 mr-1" />
                       <span className="text-xs font-medium">Contributor</span>

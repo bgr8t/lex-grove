@@ -199,50 +199,28 @@ const CaseBrief = () => {
                 {brief.courseName}
               </div>
             </div>
-            <h1 className="text-3xl font-bold mb-4">{brief.title}</h1>
-            <div className="flex items-center justify-between">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4">{brief.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">
                   {t('brief.by')} {brief.author} • {brief.date}
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-8 ${userVote === 'up' ? 'text-primary' : ''}`}
-                  onClick={() => handleVote('up')}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                </Button>
-                <span className="text-sm font-medium min-w-[2rem] text-center">
-                  {votes}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-8 ${userVote === 'down' ? 'text-destructive' : ''}`}
-                  onClick={() => handleVote('down')}
-                >
-                  <ChevronDownIcon className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
           </div>
 
-          {/* REPLACE WITH NEW LAYOUT FOR ACTIONS */}
           {/* Action Bar - Fixed to top on scroll */}
           <div className="sticky top-4 z-10 bg-background/80 backdrop-blur-sm border rounded-lg shadow-sm mb-8 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Button
                   variant={userVote === 'up' ? 'default' : 'outline'}
                   size="sm"
-                  className={`h-9 px-4 transition-all duration-300 ${userVote === 'up' ? 'bg-primary text-primary-foreground' : ''}`}
+                  className={`h-9 px-3 sm:px-4 transition-all duration-300 ${userVote === 'up' ? 'bg-primary text-primary-foreground' : ''}`}
                   onClick={() => handleVote('up')}
                 >
                   <ChevronUpIcon className="h-5 w-5 mr-1" />
-                  {t('brief.upvote')}
+                  <span className="hidden sm:inline">{t('brief.upvote')}</span>
                   <span className="ml-1.5 text-xs bg-background/20 px-1.5 py-0.5 rounded-full">
                     {votes}
                   </span>
@@ -250,44 +228,49 @@ const CaseBrief = () => {
                 <Button
                   variant={userVote === 'down' ? 'default' : 'outline'}
                   size="sm"
-                  className={`h-9 px-4 transition-all duration-300 ${userVote === 'down' ? 'bg-destructive text-destructive-foreground' : ''}`}
+                  className={`h-9 px-3 sm:px-4 transition-all duration-300 ${userVote === 'down' ? 'bg-destructive text-destructive-foreground' : ''}`}
                   onClick={() => handleVote('down')}
                 >
                   <ChevronDownIcon className="h-5 w-5 mr-1" />
-                  {t('brief.downvote')}
+                  <span className="hidden sm:inline">{t('brief.downvote')}</span>
                 </Button>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:gap-2">
                 <Button
                   variant={isSaved ? 'default' : 'outline'}
                   size="sm"
-                  className="h-9 px-4 transition-all duration-300"
+                  className="h-9 px-3 sm:px-4 transition-all duration-300 flex justify-center"
                   onClick={handleSave}
                 >
                   {isSaved ? (
-                    <BookmarkSolidIcon className="h-4 w-4 mr-2" />
+                    <>
+                      <BookmarkSolidIcon className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{isSaved ? t('brief.saved') : t('brief.save')}</span>
+                    </>
                   ) : (
-                    <BookmarkIcon className="h-4 w-4 mr-2" />
+                    <>
+                      <BookmarkIcon className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">{isSaved ? t('brief.saved') : t('brief.save')}</span>
+                    </>
                   )}
-                  {isSaved ? t('brief.saved') : t('brief.save')}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 px-4 transition-all duration-300"
+                  className="h-9 px-3 sm:px-4 transition-all duration-300 flex justify-center"
                   onClick={handleCite}
                 >
-                  <DocumentDuplicateIcon className="h-4 w-4 mr-2" />
-                  {t('brief.cite')}
+                  <DocumentDuplicateIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('brief.cite')}</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 px-4 transition-all duration-300"
+                  className="h-9 px-3 sm:px-4 transition-all duration-300 flex justify-center"
                   onClick={handleShare}
                 >
-                  <ShareIcon className="h-4 w-4 mr-2" />
-                  {t('brief.share')}
+                  <ShareIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('brief.share')}</span>
                 </Button>
               </div>
             </div>

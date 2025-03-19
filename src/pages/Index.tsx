@@ -10,6 +10,7 @@ import { Brief } from '@/components/BriefCard';
 import { useToast } from '@/components/ui/use-toast';
 import { sampleBriefs } from '@/data/sampleBriefs';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,6 +18,7 @@ const Index = () => {
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   
   const handleSearch = (query: string) => {
     if (!query.trim()) return;
@@ -69,7 +71,7 @@ const Index = () => {
           <Hero onSearch={handleSearch} />
           <Features />
           <HowItWorks />
-          <PricingSection />
+          {!currentUser && <PricingSection />}
         </>
       )}
       
