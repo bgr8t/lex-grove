@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ export const SearchBar = ({
   onSearch,
   initialQuery = '',
   className,
-  placeholder = "Search for legal briefs, cases, or concepts...",
+  placeholder = "Search with AI-powered legal understanding...",
   showExamples = false
 }: SearchBarProps) => {
   const [query, setQuery] = useState(initialQuery);

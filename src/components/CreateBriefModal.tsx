@@ -28,6 +28,10 @@ import { Brief } from './BriefCard';
 import { CreateCollectionModal } from './CreateCollectionModal';
 import { Badge } from '@/components/ui/badge';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
+import { userProfileService } from '@/lib/services/userProfileService';
+import { caseBriefService } from '@/lib/services/caseBriefService';
+import { ContributionProgress } from './ContributionProgress';
 
 const createBriefSchema = z.object({
   title: z.string().min(1, 'Brief title is required').max(100, 'Title must be 100 characters or less'),
@@ -59,12 +63,14 @@ export function CreateBriefModal({
   onCreateCollection,
 }: CreateBriefModalProps) {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newBrief, setNewBrief] = useState<Brief | null>(null);
   const [bookmarkDialogOpen, setBookmarkDialogOpen] = useState(false);
   const [createCollectionOpen, setCreateCollectionOpen] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const [showProgress, setShowProgress] = useState(false);
   
   const form = useForm<CreateBriefFormValues>({
     resolver: zodResolver(createBriefSchema),
@@ -106,12 +112,40 @@ export function CreateBriefModal({
   };
 
   async function onSubmit(values: CreateBriefFormValues) {
+    if (!currentUser) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create case briefs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      // Create a new brief object
+      // First, save to Firestore
+      const caseBrief = {
+        title: values.title,
+        citation: values.courseName, // Use courseName as citation for now
+        court: values.courseName,
+        date: new Date().toISOString(),
+        facts: values.facts,
+        issue: values.issue,
+        holding: values.conclusion, // Map conclusion to holding
+        reasoning: values.analysis, // Map analysis to reasoning
+        userId: currentUser.uid,
+      };
+      
+      // Save to Firestore
+      const savedBrief = await caseBriefService.createCaseBrief(caseBrief);
+      
+      // Update user profile to record contribution
+      await userProfileService.addContribution(savedBrief.id || '');
+      
+      // Create a UI brief object
       const brief: Brief = {
-        id: crypto.randomUUID(),
+        id: savedBrief.id || crypto.randomUUID(),
         title: values.title,
         courseName: values.courseName,
         facts: values.facts,
@@ -120,18 +154,27 @@ export function CreateBriefModal({
         analysis: values.analysis,
         conclusion: values.conclusion,
         summary: values.summary,
-        author: 'You', // Default to current user
+        author: currentUser.displayName || 'Anonymous',
         date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
         savedCount: 0,
         snippet: values.facts.substring(0, 150) + (values.facts.length > 150 ? '...' : ''),
         tags: values.tags || [],
       };
       
-      setNewBrief(brief);
+      // Directly create the brief without showing the bookmark dialog
+      onCreateBrief(brief);
       
-      // Open the bookmark dialog to choose a collection
-      setBookmarkDialogOpen(true);
+      // Close the dialog and reset the form
+      onOpenChange(false);
+      form.reset();
+      setTags([]);
+      
+      toast({
+        title: "Brief created",
+        description: `"${brief.title}" has been created and added to your library.`,
+      });
     } catch (error) {
+      console.error('Error creating brief:', error);
       // Show error toast
       toast({
         title: "Failed to create brief",
@@ -190,6 +233,7 @@ export function CreateBriefModal({
         if (!isOpen && !bookmarkDialogOpen) {
           form.reset();
           setTags([]);
+          setShowProgress(false);
         }
         onOpenChange(isOpen);
       }}>
@@ -200,6 +244,17 @@ export function CreateBriefModal({
               Fill in the details below to create a new case brief.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Show the contribution progress if user is submitting */}
+          {showProgress && currentUser && (
+            <div className="mb-4 p-4 bg-background rounded-lg border border-border">
+              <h3 className="font-medium text-base mb-2">Your contribution progress</h3>
+              <ContributionProgress />
+              <p className="text-sm text-muted-foreground mt-3">
+                Contribute 3 case briefs to gain full library access
+              </p>
+            </div>
+          )}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

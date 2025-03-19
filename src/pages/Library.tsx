@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -40,6 +40,10 @@ import { BookmarkCollectionDialog } from '@/components/BookmarkCollectionDialog'
 import { CollectionDetail } from '@/components/CollectionDetail';
 import { CreateBriefModal } from '@/components/CreateBriefModal';
 import { AuroraButton } from '@/components/ui/aurora-button';
+import { useAuth } from '@/contexts/AuthContext';
+import { caseBriefService } from '@/lib/services/caseBriefService';
+import { caseBriefsToBriefs } from '@/lib/utils';
+import { semanticSearchExamples } from '@/examples/semanticSearchExamples';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -50,8 +54,10 @@ const SUGGESTED_SEARCH_TERMS = [
 
 const Library = () => {
   const navigate = useNavigate();
-  const [savedBriefs, setSavedBriefs] = useState<Brief[]>(sampleBriefs.slice(0, 3));
-  const [communityBriefs, setCommunityBriefs] = useState<Brief[]>(sampleBriefs.slice(0, 6));
+  const { currentUser } = useAuth();
+  const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
+  const [communityBriefs, setCommunityBriefs] = useState<Brief[]>([]);
+  const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
@@ -69,6 +75,9 @@ const Library = () => {
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
   const [createBriefOpen, setCreateBriefOpen] = useState(false);
   const [searchHelpOpen, setSearchHelpOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [allBriefsLoaded, setAllBriefsLoaded] = useState(false);
   
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
@@ -80,14 +89,89 @@ const Library = () => {
     ).slice(0, 5);
   }, [searchQuery]);
 
-  const handleRefresh = () => {
-    toast({
-      title: "Library refreshed",
-      description: "Your library has been updated with the latest content."
-    });
+  // Load community briefs on component mount
+  useEffect(() => {
+    async function loadBriefs() {
+      try {
+        setIsLoading(true);
+        // Fetch community briefs from Firebase
+        const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
+        const briefs = caseBriefsToBriefs(firebaseBriefs);
+        
+        // If we have briefs from Firebase, use those
+        if (briefs.length > 0) {
+          setCommunityBriefs(briefs);
+        } else {
+          // Fallback to sample briefs if no community briefs exist yet
+          setCommunityBriefs(sampleBriefs.slice(0, 6));
+        }
+        
+        // Load saved briefs for current user if logged in
+        if (currentUser) {
+          const userBriefs = await caseBriefService.getCaseBriefsByUser(currentUser.uid);
+          const userBriefsFormatted = caseBriefsToBriefs(userBriefs);
+          
+          if (userBriefsFormatted.length > 0) {
+            // Set user's submitted briefs
+            setSubmittedBriefs(userBriefsFormatted);
+            setSavedBriefs(userBriefsFormatted);
+          } else {
+            // Fallback to sample briefs if user has no saved briefs
+            setSubmittedBriefs([]);
+            setSavedBriefs(sampleBriefs.slice(0, 3));
+          }
+        } else {
+          setSubmittedBriefs([]);
+          setSavedBriefs(sampleBriefs.slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Error loading briefs:", error);
+        // Fallback to sample data if loading fails
+        setCommunityBriefs(sampleBriefs.slice(0, 6));
+        setSubmittedBriefs([]);
+        setSavedBriefs(sampleBriefs.slice(0, 3));
+        
+        toast({
+          title: "Error loading briefs",
+          description: "Could not load community briefs. Showing sample data instead.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadBriefs();
+  }, [currentUser]);
+
+  const handleRefresh = async () => {
+    try {
+      setIsLoading(true);
+      // Refresh briefs from Firebase
+      const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
+      const briefs = caseBriefsToBriefs(firebaseBriefs);
+      
+      if (briefs.length > 0) {
+        setCommunityBriefs(briefs);
+      }
+      
+      toast({
+        title: "Library refreshed",
+        description: "Your library has been updated with the latest content."
+      });
+    } catch (error) {
+      console.error("Error refreshing briefs:", error);
+      toast({
+        title: "Error refreshing library",
+        description: "Could not refresh community briefs. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) {
       setShowSearchResults(false);
@@ -100,52 +184,79 @@ const Library = () => {
       return newSearches;
     });
     
-    // Search logic to filter briefs based on the query
-    const query = searchQuery.toLowerCase().trim();
-    const results = sampleBriefs.filter(brief => {
-      // Apply filter based on selected search scope
-      if (searchFilter === 'title') {
-        return brief.title.toLowerCase().includes(query);
-      }
+    setIsLoading(true);
+    
+    try {
+      // Search for briefs using the new search functionality
+      const searchResults = await caseBriefService.searchCaseBriefs(
+        searchQuery,
+        searchFilter,
+        'relevant',
+        20
+      );
       
-      if (searchFilter === 'content') {
+      // Convert to UI Brief model
+      const results = caseBriefsToBriefs(searchResults);
+      
+      setSearchResults(results);
+      setShowSearchResults(true);
+      
+      toast({
+        title: results.length > 0 ? "Search results found" : "No results found",
+        description: results.length > 0 
+          ? `Found ${results.length} briefs matching "${searchQuery}"`
+          : `No briefs found matching "${searchQuery}". Try different keywords.`
+      });
+    } catch (error) {
+      console.error("Error searching briefs:", error);
+      toast({
+        title: "Search error",
+        description: "An error occurred while searching. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Fallback to sample briefs if search fails
+      const query = searchQuery.toLowerCase().trim();
+      const results = sampleBriefs.filter(brief => {
+        // Apply filter based on selected search scope
+        if (searchFilter === 'title') {
+          return brief.title.toLowerCase().includes(query);
+        }
+        
+        if (searchFilter === 'content') {
+          return (
+            (brief.facts?.toLowerCase().includes(query) || false) ||
+            (brief.issue?.toLowerCase().includes(query) || false) ||
+            (brief.rule?.toLowerCase().includes(query) || false) ||
+            (brief.analysis?.toLowerCase().includes(query) || false) ||
+            (brief.conclusion?.toLowerCase().includes(query) || false) ||
+            brief.snippet.toLowerCase().includes(query)
+          );
+        }
+        
+        if (searchFilter === 'course') {
+          return brief.courseName.toLowerCase().includes(query);
+        }
+        
+        // If filter is 'all', search in all fields
         return (
+          brief.title.toLowerCase().includes(query) ||
+          brief.snippet.toLowerCase().includes(query) ||
           (brief.facts?.toLowerCase().includes(query) || false) ||
           (brief.issue?.toLowerCase().includes(query) || false) ||
           (brief.rule?.toLowerCase().includes(query) || false) ||
           (brief.analysis?.toLowerCase().includes(query) || false) ||
           (brief.conclusion?.toLowerCase().includes(query) || false) ||
-          brief.snippet.toLowerCase().includes(query)
+          brief.courseName.toLowerCase().includes(query) ||
+          brief.author.toLowerCase().includes(query)
         );
-      }
+      });
       
-      if (searchFilter === 'course') {
-        return brief.courseName.toLowerCase().includes(query);
-      }
-      
-      // If filter is 'all', search in all fields
-      return (
-        brief.title.toLowerCase().includes(query) ||
-        brief.snippet.toLowerCase().includes(query) ||
-        (brief.facts?.toLowerCase().includes(query) || false) ||
-        (brief.issue?.toLowerCase().includes(query) || false) ||
-        (brief.rule?.toLowerCase().includes(query) || false) ||
-        (brief.analysis?.toLowerCase().includes(query) || false) ||
-        (brief.conclusion?.toLowerCase().includes(query) || false) ||
-        brief.courseName.toLowerCase().includes(query) ||
-        brief.author.toLowerCase().includes(query)
-      );
-    });
-    
-    setSearchResults(results);
-    setShowSearchResults(true);
-    
-    toast({
-      title: results.length > 0 ? "Search results found" : "No results found",
-      description: results.length > 0 
-        ? `Found ${results.length} briefs matching "${searchQuery}"`
-        : `No briefs found matching "${searchQuery}". Try different keywords.`
-    });
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearSearch = () => {
@@ -153,30 +264,8 @@ const Library = () => {
     setShowSearchResults(false);
   };
 
-  const handleSuggestedSearch = (term: string) => {
+  const handleSuggestedSearch = async (term: string) => {
     setSearchQuery(term);
-    // Auto-submit the search
-    const query = term.toLowerCase().trim();
-    // ... similar search logic as in handleSearch
-    const results = sampleBriefs.filter(brief => {
-      if (searchFilter === 'title') {
-        return brief.title.toLowerCase().includes(query);
-      }
-      
-      // ... similar filter logic as in handleSearch
-      
-      return (
-        brief.title.toLowerCase().includes(query) ||
-        brief.snippet.toLowerCase().includes(query) ||
-        (brief.facts?.toLowerCase().includes(query) || false) ||
-        (brief.issue?.toLowerCase().includes(query) || false) ||
-        (brief.rule?.toLowerCase().includes(query) || false) ||
-        (brief.analysis?.toLowerCase().includes(query) || false) ||
-        (brief.conclusion?.toLowerCase().includes(query) || false) ||
-        brief.courseName.toLowerCase().includes(query) ||
-        brief.author.toLowerCase().includes(query)
-      );
-    });
     
     // Add to recent searches
     setRecentSearches(prev => {
@@ -184,15 +273,77 @@ const Library = () => {
       return newSearches;
     });
     
-    setSearchResults(results);
-    setShowSearchResults(true);
+    setIsLoading(true);
     
-    toast({
-      title: results.length > 0 ? "Search results found" : "No results found",
-      description: results.length > 0 
-        ? `Found ${results.length} briefs matching "${term}"`
-        : `No briefs found matching "${term}". Try different keywords.`
-    });
+    try {
+      // Search for briefs using the new search functionality
+      const searchResults = await caseBriefService.searchCaseBriefs(
+        term,
+        searchFilter,
+        'relevant',
+        20
+      );
+      
+      // Convert to UI Brief model
+      const results = caseBriefsToBriefs(searchResults);
+      
+      setSearchResults(results);
+      setShowSearchResults(true);
+      
+      toast({
+        title: results.length > 0 ? "Search results found" : "No results found",
+        description: results.length > 0 
+          ? `Found ${results.length} briefs matching "${term}"`
+          : `No briefs found matching "${term}". Try different keywords.`
+      });
+    } catch (error) {
+      console.error("Error searching briefs:", error);
+      toast({
+        title: "Search error",
+        description: "An error occurred while searching. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Fallback to sample briefs if search fails
+      const query = term.toLowerCase().trim();
+      const results = sampleBriefs.filter(brief => {
+        if (searchFilter === 'title') {
+          return brief.title.toLowerCase().includes(query);
+        }
+        
+        if (searchFilter === 'content') {
+          return (
+            (brief.facts?.toLowerCase().includes(query) || false) ||
+            (brief.issue?.toLowerCase().includes(query) || false) ||
+            (brief.rule?.toLowerCase().includes(query) || false) ||
+            (brief.analysis?.toLowerCase().includes(query) || false) ||
+            (brief.conclusion?.toLowerCase().includes(query) || false) ||
+            brief.snippet.toLowerCase().includes(query)
+          );
+        }
+        
+        if (searchFilter === 'course') {
+          return brief.courseName.toLowerCase().includes(query);
+        }
+        
+        return (
+          brief.title.toLowerCase().includes(query) ||
+          brief.snippet.toLowerCase().includes(query) ||
+          (brief.facts?.toLowerCase().includes(query) || false) ||
+          (brief.issue?.toLowerCase().includes(query) || false) ||
+          (brief.rule?.toLowerCase().includes(query) || false) ||
+          (brief.analysis?.toLowerCase().includes(query) || false) ||
+          (brief.conclusion?.toLowerCase().includes(query) || false) ||
+          brief.courseName.toLowerCase().includes(query) ||
+          brief.author.toLowerCase().includes(query)
+        );
+      });
+      
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCite = (brief: Brief) => {
@@ -362,6 +513,53 @@ const Library = () => {
     });
   };
 
+  // Function to handle search filter change
+  const handleSearchFilterChange = (filter: 'all' | 'title' | 'content' | 'course') => {
+    setSearchFilter(filter);
+    // If there's an active search, re-run it with the new filter
+    if (searchQuery.trim() && showSearchResults) {
+      handleSearch(new Event('submit') as any);
+    }
+  };
+
+  // Handle loading more briefs
+  const handleLoadMore = async () => {
+    try {
+      setLoadingMore(true);
+      
+      // Get all briefs from Firebase (with a higher limit)
+      const firebaseBriefs = await caseBriefService.getAllCommunityBriefs(100);
+      const briefs = caseBriefsToBriefs(firebaseBriefs);
+      
+      if (briefs.length > 0) {
+        // Update the community briefs with all briefs
+        setCommunityBriefs(briefs);
+        
+        // Mark that we've loaded all briefs
+        setAllBriefsLoaded(true);
+        
+        toast({
+          title: "All briefs loaded",
+          description: `Showing all ${briefs.length} case briefs available in the library.`
+        });
+      } else {
+        toast({
+          title: "No additional briefs",
+          description: "There are no more case briefs to load."
+        });
+      }
+    } catch (error) {
+      console.error("Error loading more briefs:", error);
+      toast({
+        title: "Error loading briefs",
+        description: "Could not load additional briefs. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -383,7 +581,8 @@ const Library = () => {
                 <h2 className="text-xl font-semibold">Intelligent Search-Powered Legal Research</h2>
               </div>
               <p className="text-muted-foreground mb-4">
-                Use our advanced intelligent search to find relevant case briefs, analyze legal concepts, or get insights on specific cases.
+                Use our advanced intelligent search to find relevant case briefs, analyze legal concepts, or get insights on specific cases. 
+                Powered by Voyage AI's "voyage-law-2" legal embeddings model for semantic understanding of legal concepts.
               </p>
               
               <div className="mb-4">
@@ -393,7 +592,7 @@ const Library = () => {
                     <Button 
                       variant={searchFilter === 'all' ? 'secondary' : 'outline'} 
                       size="sm" 
-                      onClick={() => setSearchFilter('all')}
+                      onClick={() => handleSearchFilterChange('all')}
                       className="h-8 px-3"
                     >
                       All
@@ -401,7 +600,7 @@ const Library = () => {
                     <Button 
                       variant={searchFilter === 'title' ? 'secondary' : 'outline'} 
                       size="sm" 
-                      onClick={() => setSearchFilter('title')}
+                      onClick={() => handleSearchFilterChange('title')}
                       className="h-8 px-3"
                     >
                       Case Titles
@@ -409,7 +608,7 @@ const Library = () => {
                     <Button 
                       variant={searchFilter === 'content' ? 'secondary' : 'outline'} 
                       size="sm" 
-                      onClick={() => setSearchFilter('content')}
+                      onClick={() => handleSearchFilterChange('content')}
                       className="h-8 px-3"
                     >
                       Content
@@ -417,7 +616,7 @@ const Library = () => {
                     <Button 
                       variant={searchFilter === 'course' ? 'secondary' : 'outline'} 
                       size="sm" 
-                      onClick={() => setSearchFilter('course')}
+                      onClick={() => handleSearchFilterChange('course')}
                       className="h-8 px-3"
                     >
                       Course
@@ -542,9 +741,9 @@ const Library = () => {
               <div className="text-center py-12 bg-muted/30 rounded-lg">
                 <MagnifyingGlassIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                 <h3 className="text-lg font-medium mb-1">No results found</h3>
-                <p className="text-muted-foreground mb-4">Try adjusting your search terms or explore our suggested topics.</p>
+                <p className="text-muted-foreground mb-4">Try one of these semantic search examples to see our AI in action:</p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
-                  {SUGGESTED_SEARCH_TERMS.slice(0, 8).map((term, index) => (
+                  {semanticSearchExamples.slice(0, 6).map((term, index) => (
                     <Button 
                       key={index}
                       variant="outline" 
@@ -577,131 +776,165 @@ const Library = () => {
                 size="sm" 
                 className="h-9"
                 onClick={handleRefresh}
+                disabled={isLoading}
               >
-                <ArrowPathIcon className="h-4 w-4 mr-2" />
-                Refresh
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>
+                    Loading...
+                  </span>
+                ) : (
+                  <>
+                    <ArrowPathIcon className="h-4 w-4 mr-2" />
+                    Refresh
+                  </>
+                )}
               </Button>
             </div>
             
-            <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
-              {communityBriefs.map((brief) => (
-                <div 
-                  key={brief.id} 
-                  className="border rounded-xl overflow-hidden bg-card hover:shadow-md transition-shadow duration-300 cursor-pointer"
-                  onClick={() => handleViewFullBrief(brief)}
-                >
-                  <div className="p-5">
-                    <div className="flex flex-col h-full">
-                      <div className="mb-2">
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted">{brief.courseName}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold mb-2 line-clamp-2">{brief.title}</h3>
-                      <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{brief.snippet}</p>
-                      <div className="text-xs text-muted-foreground mb-4">
-                        <span>{brief.author || 'Anonymous'}</span>
-                        <span className="mx-2">•</span>
-                        <span>{brief.date || 'Unknown date'}</span>
-                      </div>
-                      <div className="flex items-center justify-between mt-auto pt-3 border-t">
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={(e) => handleViewFullBrief(brief, e)} 
-                          >
-                            View
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => handleQuickView(brief, e)} 
-                            className="flex items-center gap-1"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                            Quick view
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCite(brief);
-                                }}
-                              >
-                                <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
-                                Cite
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setCitationFormat('mcgill');
-                                handleCopyToClipboard(generateCitation(brief, 'mcgill'));
-                              }}>
-                                McGill Guide
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setCitationFormat('apa');
-                                handleCopyToClipboard(generateCitation(brief, 'apa'));
-                              }}>
-                                APA
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setCitationFormat('mla');
-                                handleCopyToClipboard(generateCitation(brief, 'mla'));
-                              }}>
-                                MLA
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                setCitationFormat('chicago');
-                                handleCopyToClipboard(generateCitation(brief, 'chicago'));
-                              }}>
-                                Chicago
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={`h-8 ${savedBriefs.some(saved => saved.id === brief.id) ? 'text-primary' : ''}`}
-                            onClick={(e) => handleBookmarkClick(brief, e)}
-                          >
-                            {savedBriefs.some(saved => saved.id === brief.id) ? (
-                              <BookmarkSolidIcon className="h-4 w-4" />
-                            ) : (
-                              <BookmarkIcon className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-12 border rounded-lg">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                  <p className="text-sm text-muted-foreground">Loading community briefs...</p>
                 </div>
-              ))}
-            </div>
-            
-            {communityBriefs.length === 0 && (
-              <div className="text-center py-12 border rounded-lg bg-muted/20">
-                <h3 className="text-lg font-medium mb-2">No community briefs found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Briefs shared by other users will appear here.
-                </p>
-                <Button>Explore More</Button>
               </div>
+            ) : (
+              <>
+                {communityBriefs.length > 0 ? (
+                  <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
+                    {communityBriefs.map((brief) => (
+                      <div 
+                        key={brief.id} 
+                        className="border rounded-xl overflow-hidden bg-card hover:shadow-md transition-shadow duration-300 cursor-pointer"
+                        onClick={() => handleViewFullBrief(brief)}
+                      >
+                        <div className="p-5">
+                          <div className="flex flex-col h-full">
+                            <div className="mb-2">
+                              <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted">{brief.courseName}</span>
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2 line-clamp-2">{brief.title}</h3>
+                            <p className="text-muted-foreground text-sm mb-4 line-clamp-3">{brief.snippet}</p>
+                            <div className="text-xs text-muted-foreground mb-4">
+                              <span>{brief.author || 'Anonymous'}</span>
+                              <span className="mx-2">•</span>
+                              <span>{brief.date || 'Unknown date'}</span>
+                            </div>
+                            <div className="flex items-center justify-between mt-auto pt-3 border-t">
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={(e) => handleViewFullBrief(brief, e)} 
+                                >
+                                  View
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={(e) => handleQuickView(brief, e)} 
+                                  className="flex items-center gap-1"
+                                >
+                                  <EyeIcon className="h-4 w-4" />
+                                  Quick view
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCite(brief);
+                                      }}
+                                    >
+                                      <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                                      Cite
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCitationFormat('mcgill');
+                                      handleCopyToClipboard(generateCitation(brief, 'mcgill'));
+                                    }}>
+                                      McGill Guide
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCitationFormat('apa');
+                                      handleCopyToClipboard(generateCitation(brief, 'apa'));
+                                    }}>
+                                      APA
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCitationFormat('mla');
+                                      handleCopyToClipboard(generateCitation(brief, 'mla'));
+                                    }}>
+                                      MLA
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCitationFormat('chicago');
+                                      handleCopyToClipboard(generateCitation(brief, 'chicago'));
+                                    }}>
+                                      Chicago
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className={`h-8 ${savedBriefs.some(saved => saved.id === brief.id) ? 'text-primary' : ''}`}
+                                  onClick={(e) => handleBookmarkClick(brief, e)}
+                                >
+                                  {savedBriefs.some(saved => saved.id === brief.id) ? (
+                                    <BookmarkSolidIcon className="h-4 w-4" />
+                                  ) : (
+                                    <BookmarkIcon className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 border rounded-lg bg-muted/20">
+                    <h3 className="text-lg font-medium mb-2">No community briefs found</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Be the first to create a case brief and share it with the community!
+                    </p>
+                    <Button onClick={() => setCreateBriefOpen(true)}>Create Your First Brief</Button>
+                  </div>
+                )}
+              </>
             )}
             
-            {communityBriefs.length > 0 && (
+            {communityBriefs.length > 0 && !allBriefsLoaded && (
               <div className="flex justify-center mt-6">
-                <Button variant="outline">Load More</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleLoadMore} 
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <ArrowPathIcon className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More'
+                  )}
+                </Button>
               </div>
             )}
           </div>
@@ -717,6 +950,34 @@ const Library = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Submitted Briefs Section */}
+              {currentUser && submittedBriefs.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium flex items-center gap-1.5">
+                      <DocumentDuplicateIcon className="h-4 w-4" />
+                      Your Submitted Briefs
+                    </h3>
+                    <Button variant="link" size="sm" className="h-auto p-0">
+                      View All
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {submittedBriefs.slice(0, 3).map((brief) => (
+                      <div 
+                        key={brief.id} 
+                        className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
+                        onClick={() => handleViewFullBrief(brief)}
+                      >
+                        <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Saved Briefs Section */}
               <div className="mb-6">
@@ -1022,11 +1283,18 @@ const Library = () => {
           <DialogHeader>
             <DialogTitle>How to use intelligent search</DialogTitle>
             <DialogDescription>
-              Get the most out of our intelligent search feature with these tips.
+              Get the most out of our AI-powered semantic search for legal research.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Semantic understanding</h3>
+              <p className="text-sm text-muted-foreground">
+                Our search is powered by Voyage AI's "voyage-law-2" legal embeddings model, which understands legal concepts and relationships, not just keywords.
+              </p>
+            </div>
+            
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Natural language queries</h3>
               <p className="text-sm text-muted-foreground">
@@ -1051,7 +1319,7 @@ const Library = () => {
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Combine concepts</h3>
               <p className="text-sm text-muted-foreground">
-                Search for relationships between concepts, like "tort law negligence duty of care" to find briefs connecting these ideas.
+                Search for relationships between concepts, like "tort law negligence duty of care" to find briefs connecting these ideas, even if they don't use those exact words.
               </p>
             </div>
             

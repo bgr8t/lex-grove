@@ -15,7 +15,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // App titles
     'app.title': 'Lex Grove',
-    'app.description': 'AI-powered legal research platform',
+    'app.description': 'Intelligent legal research platform',
     
     // Navigation
     'nav.library': 'Library',
@@ -40,31 +40,31 @@ const translations: Record<Language, Record<string, string>> = {
     'search.try_different': 'Try a different search term',
     
     // Hero section
-    'hero.tagline': 'AI-Powered Legal Research',
+    'hero.tagline': 'Advanced Semantic Search',
     'hero.title.1': 'Legal Briefs With',
     'hero.title.2': 'Intelligent Search',
-    'hero.description': 'Access a database of case briefs created by law students, organized by an AI that understands your needs.',
+    'hero.description': 'Access a database of case briefs created by law students, with search that understands natural language queries without keywords or boolean logic. Join a community that grows with its users and thrives on collaboration.',
     'hero.browse_library': 'Browse Library',
     'hero.how_it_works': 'How It Works',
     
     // About page
     'about.title': 'About Lex Grove',
-    'about.subtitle': 'Revolutionizing legal education through AI-powered case brief management and analysis.',
+    'about.subtitle': 'Revolutionizing legal education through intelligent search and case brief management.',
     'about.mission.title': 'Our Mission',
-    'about.mission.paragraph1': 'Lex Grove was founded with a clear mission: to make legal education more accessible, efficient, and collaborative. We believe that law students and professionals should have powerful tools that help them analyze, understand, and share legal knowledge.',
-    'about.mission.paragraph2': 'Our platform combines the power of artificial intelligence with a community-focused approach to create a comprehensive ecosystem for case brief management, research, and learning.',
+    'about.mission.paragraph1': 'Lex Grove was founded with a clear mission: to make legal education more accessible, efficient, and collaborative. We believe that law students and professionals should have powerful tools that help them analyze, understand, and share legal knowledge. Our community grows with each user contribution, creating a richer resource for everyone.',
+    'about.mission.paragraph2': 'Our platform combines the power of semantic search technology with a community-focused approach to create a comprehensive ecosystem for case brief management, research, and learning.',
     'about.mission.quote': '"We envision a future where legal education transcends traditional boundaries, empowering the next generation of legal minds with tools that enhance understanding and collaboration."',
     'about.features.title': 'Key Features',
-    'about.features.ai.title': 'AI-Powered Research',
-    'about.features.ai.description': 'Our advanced AI analyzes legal concepts, extracts key insights from cases, and provides intelligent recommendations tailored to your research needs.',
+    'about.features.ai.title': 'Intelligent Semantic Search',
+    'about.features.ai.description': 'Our advanced search understands legal concepts and natural language questions, extracting key insights from cases without relying on exact keyword matches or complex boolean logic.',
     'about.features.library.title': 'Case Brief Library',
     'about.features.library.description': 'Access a comprehensive collection of case briefs covering major legal topics and precedents, organized for easy discovery and reference.',
-    'about.features.community.title': 'Community Collaboration',
-    'about.features.community.description': 'Share your insights with fellow law students and professionals, building a collaborative ecosystem of legal knowledge and expertise.',
+    'about.features.community.title': 'Community-Driven Growth',
+    'about.features.community.description': 'Share your insights with fellow law students and professionals, building a collaborative ecosystem of legal knowledge and expertise. As you contribute, the platform evolves and improves for everyone.',
     'about.features.collections.title': 'Personal Collections',
     'about.features.collections.description': 'Organize your case briefs into custom collections for efficient studying, research, and exam preparation tailored to your specific courses and interests.',
-    'about.cta.title': 'Join the Lex Grove Community',
-    'about.cta.description': 'Experience the future of legal education and research. Sign up today to access our platform and join thousands of law students and professionals already benefiting from our tools.',
+    'about.cta.title': 'Join the Growing Lex Grove Community',
+    'about.cta.description': 'Experience the future of collaborative legal education and research. Sign up today to access our platform and join thousands of law students and professionals already benefiting from our tools and contributing to our shared knowledge base.',
     
     // Briefs
     'brief.create': 'Create Brief',
@@ -121,7 +121,7 @@ const translations: Record<Language, Record<string, string>> = {
   fr: {
     // App titles
     'app.title': 'Lex Grove',
-    'app.description': 'Plateforme de recherche juridique alimentée par l\'IA',
+    'app.description': 'Plateforme de recherche juridique intelligente',
     
     // Navigation
     'nav.library': 'Bibliothèque',
@@ -146,31 +146,31 @@ const translations: Record<Language, Record<string, string>> = {
     'search.try_different': 'Essayez un terme de recherche différent',
     
     // Hero section
-    'hero.tagline': 'Recherche Juridique par IA',
+    'hero.tagline': 'Recherche Sémantique Avancée',
     'hero.title.1': 'Mémoires Juridiques Avec',
     'hero.title.2': 'Recherche Intelligente',
-    'hero.description': 'Accédez à une base de données de mémoires juridiques créés par des étudiants en droit, organisée par une IA qui comprend vos besoins.',
+    'hero.description': 'Accédez à une base de données de mémoires juridiques créés par des étudiants en droit, avec une recherche qui comprend les requêtes en langage naturel sans mots-clés ni logique booléenne. Rejoignez une communauté qui grandit avec ses utilisateurs et prospère grâce à la collaboration.',
     'hero.browse_library': 'Explorer la Bibliothèque',
     'hero.how_it_works': 'Comment Ça Marche',
     
     // About page
     'about.title': 'À Propos de Lex Grove',
-    'about.subtitle': 'Révolutionner l\'éducation juridique grâce à la gestion et l\'analyse des mémoires juridiques assistées par l\'IA.',
+    'about.subtitle': 'Révolutionner l\'éducation juridique grâce à la recherche intelligente et la gestion des mémoires juridiques.',
     'about.mission.title': 'Notre Mission',
-    'about.mission.paragraph1': 'Lex Grove a été fondé avec une mission claire : rendre l\'éducation juridique plus accessible, efficace et collaborative. Nous croyons que les étudiants en droit et les professionnels devraient disposer d\'outils puissants qui les aident à analyser, comprendre et partager les connaissances juridiques.',
-    'about.mission.paragraph2': 'Notre plateforme combine la puissance de l\'intelligence artificielle avec une approche centrée sur la communauté pour créer un écosystème complet pour la gestion, la recherche et l\'apprentissage des mémoires juridiques.',
+    'about.mission.paragraph1': 'Lex Grove a été fondé avec une mission claire : rendre l\'éducation juridique plus accessible, efficace et collaborative. Nous croyons que les étudiants en droit et les professionnels devraient disposer d\'outils puissants qui les aident à analyser, comprendre et partager les connaissances juridiques. Notre communauté s\'enrichit avec chaque contribution des utilisateurs, créant ainsi une ressource plus riche pour tous.',
+    'about.mission.paragraph2': 'Notre plateforme combine la puissance de la technologie de recherche sémantique avec une approche centrée sur la communauté pour créer un écosystème complet pour la gestion, la recherche et l\'apprentissage des mémoires juridiques.',
     'about.mission.quote': '"Nous envisageons un avenir où l\'éducation juridique transcende les frontières traditionnelles, donnant à la prochaine génération de juristes des outils qui améliorent la compréhension et la collaboration."',
     'about.features.title': 'Fonctionnalités Clés',
-    'about.features.ai.title': 'Recherche Alimentée par l\'IA',
-    'about.features.ai.description': 'Notre IA avancée analyse les concepts juridiques, extrait les informations clés des cas et fournit des recommandations intelligentes adaptées à vos besoins de recherche.',
+    'about.features.ai.title': 'Recherche Sémantique Intelligente',
+    'about.features.ai.description': 'Notre recherche avancée comprend les concepts juridiques et les questions en langage naturel, extrayant les informations clés des cas sans s\'appuyer sur des correspondances exactes de mots-clés ou une logique booléenne complexe.',
     'about.features.library.title': 'Bibliothèque de Mémoires',
     'about.features.library.description': 'Accédez à une collection complète de mémoires juridiques couvrant les principaux sujets et précédents juridiques, organisée pour une découverte et référence faciles.',
-    'about.features.community.title': 'Collaboration Communautaire',
-    'about.features.community.description': 'Partagez vos insights avec d\'autres étudiants en droit et professionnels, construisant un écosystème collaboratif de connaissances et d\'expertise juridiques.',
+    'about.features.community.title': 'Croissance Communautaire',
+    'about.features.community.description': 'Partagez vos insights avec d\'autres étudiants en droit et professionnels, construisant un écosystème collaboratif de connaissances et d\'expertise juridiques. À mesure que vous contribuez, la plateforme évolue et s\'améliore pour tous.',
     'about.features.collections.title': 'Collections Personnelles',
     'about.features.collections.description': 'Organisez vos mémoires juridiques en collections personnalisées pour une étude efficace, la recherche et la préparation aux examens adaptées à vos cours et intérêts spécifiques.',
-    'about.cta.title': 'Rejoignez la Communauté Lex Grove',
-    'about.cta.description': 'Découvrez l\'avenir de l\'éducation et de la recherche juridique. Inscrivez-vous aujourd\'hui pour accéder à notre plateforme et rejoindre des milliers d\'étudiants en droit et de professionnels qui bénéficient déjà de nos outils.',
+    'about.cta.title': 'Rejoignez la Communauté Grandissante de Lex Grove',
+    'about.cta.description': 'Découvrez l\'avenir de l\'éducation et de la recherche juridique collaborative. Inscrivez-vous aujourd\'hui pour accéder à notre plateforme et rejoindre des milliers d\'étudiants en droit et de professionnels qui bénéficient déjà de nos outils et contribuent à notre base de connaissances partagée.',
     
     // Briefs
     'brief.create': 'Créer un Mémoire',

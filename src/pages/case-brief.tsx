@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Brief } from '@/components/BriefCard';
@@ -16,46 +16,80 @@ import {
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { sampleBriefs } from '@/data/sampleBriefs';
+import { caseBriefService } from '@/lib/services/caseBriefService';
+import { caseBriefToBrief } from '@/lib/utils';
 
 const CaseBrief = () => {
   const params = useParams();
   const { id } = params;
   const { toast } = useToast();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   
   const [brief, setBrief] = useState<Brief | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [votes, setVotes] = useState(0);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Params:", params);
-    console.log("ID from params:", id);
-    console.log("Available briefs:", sampleBriefs.map(b => b.id));
-    
-    if (id) {
-      // In a real app, this would be an API call
-      const foundBrief = sampleBriefs.find(b => b.id === id);
-      console.log("Found brief:", foundBrief);
-      
-      if (foundBrief) {
-        setBrief(foundBrief);
-        setVotes(foundBrief.savedCount); // Using savedCount as initial votes for demo
-      } else {
-        // Handle case when brief is not found
-        console.error(`Brief with id ${id} not found`);
-        // You could add a toast notification here
+    const fetchBrief = async () => {
+      if (!id) {
+        console.error("No brief ID provided in URL");
         toast({
-          title: t('brief.not_found'),
-          description: `We couldn't find a brief with the ID ${id}`,
+          title: t('brief.error'),
+          description: "No brief ID provided",
           variant: "destructive"
         });
+        navigate('/library');
+        return;
       }
-    } else {
-      // Handle case when id is undefined
-      console.error("No brief ID provided in URL");
-    }
-  }, [id, toast, params, t]);
+
+      setIsLoading(true);
+      try {
+        // Try to fetch from Firebase first
+        const caseBrief = await caseBriefService.getCaseBriefById(id);
+        
+        if (caseBrief) {
+          // Convert Firebase model to UI model
+          const uiBrief = caseBriefToBrief(caseBrief);
+          setBrief(uiBrief);
+          setVotes(caseBrief.upvotes || 0);
+          
+          // Increment view count
+          await caseBriefService.incrementViewCount(id);
+        } else {
+          // Try to find in sample briefs as fallback (for demo/development)
+          const sampleBrief = sampleBriefs.find(b => b.id === id);
+          
+          if (sampleBrief) {
+            setBrief(sampleBrief);
+            setVotes(sampleBrief.savedCount || 0);
+          } else {
+            // Brief not found anywhere
+            toast({
+              title: t('brief.not_found'),
+              description: `We couldn't find a brief with the ID ${id}`,
+              variant: "destructive"
+            });
+            // Navigate back to library after showing the error
+            setTimeout(() => navigate('/library'), 2000);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching brief:", error);
+        toast({
+          title: t('brief.error'),
+          description: "Failed to load the brief",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBrief();
+  }, [id, toast, t, navigate]);
 
   const handleSave = () => {
     setIsSaved(!isSaved);
@@ -67,17 +101,44 @@ const CaseBrief = () => {
     });
   };
 
-  const handleVote = (direction: 'up' | 'down') => {
+  const handleVote = async (direction: 'up' | 'down') => {
+    if (!id) return;
+    
+    let voteChange = 0;
+    
     if (userVote === direction) {
+      // User is removing their vote
       setUserVote(null);
-      setVotes(votes + (direction === 'up' ? -1 : 1));
+      voteChange = direction === 'up' ? -1 : 1;
     } else {
+      // User is adding or changing their vote
       setUserVote(direction);
-      setVotes(votes + (
-        direction === 'up' 
-          ? (userVote === 'down' ? 2 : 1)
-          : (userVote === 'up' ? -2 : -1)
-      ));
+      if (userVote === null) {
+        // New vote
+        voteChange = direction === 'up' ? 1 : -1;
+      } else {
+        // Changing vote (e.g., from down to up)
+        voteChange = direction === 'up' ? 2 : -2;
+      }
+    }
+    
+    // Update local state
+    setVotes(prevVotes => prevVotes + voteChange);
+    
+    // Update in Firestore
+    try {
+      await caseBriefService.updateUpvotes(id, voteChange);
+    } catch (error) {
+      console.error("Error updating votes:", error);
+      // Revert local state on error
+      setVotes(prevVotes => prevVotes - voteChange);
+      setUserVote(prevUserVote => prevUserVote);
+      
+      toast({
+        title: t('brief.error'),
+        description: "Failed to update vote",
+        variant: "destructive"
+      });
     }
   };
 
@@ -103,9 +164,22 @@ const CaseBrief = () => {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">{t('brief.loading')}</p>
+        <main className="flex-1 container mx-auto px-4 py-8 mt-16">
+          <div className="max-w-4xl mx-auto">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4"></div>
+                <p className="text-muted-foreground">{t('brief.loading')}</p>
+              </div>
+            ) : (
+              <div className="text-center py-12 border rounded-lg bg-destructive/10 text-destructive">
+                <h2 className="text-xl font-semibold mb-2">{t('brief.not_found')}</h2>
+                <p className="mb-4">{t('We couldn\'t find the requested brief.')}</p>
+                <Button onClick={() => navigate('/library')}>
+                  Return to Library
+                </Button>
+              </div>
+            )}
           </div>
         </main>
         <Footer className="mt-auto" />
@@ -123,39 +197,6 @@ const CaseBrief = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                 {brief.courseName}
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 transition-all duration-300 hover:bg-accent"
-                  onClick={handleShare}
-                >
-                  <ShareIcon className="h-4 w-4 mr-2" />
-                  {t('brief.share')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 transition-all duration-300 hover:bg-accent"
-                  onClick={handleCite}
-                >
-                  <DocumentDuplicateIcon className="h-4 w-4 mr-2" />
-                  {t('brief.cite')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 transition-all duration-300 hover:bg-accent"
-                  onClick={handleSave}
-                >
-                  {isSaved ? (
-                    <BookmarkSolidIcon className="h-4 w-4 mr-2" />
-                  ) : (
-                    <BookmarkIcon className="h-4 w-4 mr-2" />
-                  )}
-                  {isSaved ? t('brief.saved') : t('brief.save')}
-                </Button>
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-4">{brief.title}</h1>

@@ -1,0 +1,10 @@
+// Copy and use these rules in your Firebase console
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to all users for all documents during development
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+} 

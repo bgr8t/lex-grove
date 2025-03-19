@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { MoonIcon, SunIcon } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { AuthButtons } from '@/components/auth/AuthButtons';
 import {
   Sheet,
   SheetContent,
@@ -161,20 +162,11 @@ export const Header = () => {
               <SunIcon className="h-5 w-5" />
             )}
           </Button>
-          <Button 
-            variant="ghost" 
-            className="hidden md:inline-flex text-sm px-4 transition-all duration-200 hover:bg-accent mr-3"
-          >
-            {t('nav.sign_in')}
-          </Button>
-          <Link 
-            to="/get-started"
-            className="hidden md:inline-flex"
-          >
-            <Button className="bg-primary hover:bg-primary/90 text-sm px-4 transition-all duration-200">
-              {t('nav.get_started')}
-            </Button>
-          </Link>
+          
+          {/* Auth Buttons (Desktop) */}
+          <div className="hidden md:flex">
+            <AuthButtons />
+          </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-3">
@@ -250,16 +242,9 @@ export const Header = () => {
                     >
                       {t('nav.about')}
                     </Link>
-                    <Link 
-                      to="/get-started" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
-                        location.pathname === "/get-started" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.get_started')}
-                    </Link>
+                    
+                    {/* Auth Buttons (Mobile) */}
+                    <AuthButtons isMobile />
                   </nav>
                 </div>
               </CustomSheetContent>
