@@ -1,69 +1,60 @@
-# Welcome to your Lovable project
+# Lex Briefs AI
 
-## Project info
+A modern platform for law students to access, search, and contribute to a library of legal case briefs with AI-powered features.
 
-**URL**: https://lovable.dev/projects/0c5e08d8-d399-41b2-b007-4ec27a5abe09
+## Project Overview
 
-## How can I edit this code?
+Lex Briefs AI is a comprehensive web application designed to help law students access and contribute to a growing library of case briefs. The platform features intelligent semantic search capabilities powered by Voyage AI's legal embeddings model, allowing users to find relevant legal documents with natural language queries.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+- **AI-Powered Semantic Search**: Find case briefs using natural language queries
+- **Community Contribution Model**: Users can contribute cases to gain access to the library
+- **Premium Subscription Option**: Immediate access available through monthly subscription
+- **Mobile-Responsive Design**: Optimized experience across all devices
+- **User Authentication**: Secure account management
+- **Membership Status Indicators**: Visual indicators for premium and contributor users
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0c5e08d8-d399-41b2-b007-4ec27a5abe09) and start prompting.
+## Recent Updates
 
-Changes made via Lovable will be committed automatically to this repo.
+- Added premium star badge for premium account users
+- Improved mobile layouts for case brief pages and search interfaces
+- Removed pricing section for logged-in users
+- Enhanced membership status indicators in the user interface
+- Fixed redirect issues in the payment success flow
+- Improved responsive layouts across the application
 
-**Use your preferred IDE**
+## Technology Stack
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+This project is built with:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Firebase (Firestore, Authentication, Cloud Functions)
+- **AI/ML**: Voyage AI legal embeddings model for semantic search
+- **Payment Processing**: Stripe integration
 
-Follow these steps:
+## Getting Started
+
+To run this project locally:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/bgr8t/lex-briefs-ai.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd lex-briefs-ai-main
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Contributing
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Contributions to improve Lex Briefs AI are welcome. Please feel free to submit pull requests or open issues to discuss potential improvements.
 
-**Use GitHub Codespaces**
+## License
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/0c5e08d8-d399-41b2-b007-4ec27a5abe09) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+This project is proprietary software.
