@@ -14,7 +14,7 @@ const stripe = new Stripe('***REDACTED_STRIPE_TEST_KEY***', {
 export async function createCheckoutSession(userId: string, priceId: string, successUrl: string, cancelUrl: string) {
   try {
     // Get user from Firestore
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, 'userProfiles', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
@@ -99,7 +99,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
             const subscription = subscriptions.data[0];
             
             // Update user's subscription status in Firestore
-            const userRef = doc(db, 'users', userId);
+            const userRef = doc(db, 'userProfiles', userId);
             await updateDoc(userRef, {
               subscriptionStatus: subscription.status,
               subscriptionId: subscription.id,

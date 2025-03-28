@@ -44,6 +44,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { caseBriefsToBriefs } from '@/lib/utils';
 import { semanticSearchExamples } from '@/examples/semanticSearchExamples';
+import { userProfileService } from '@/lib/services/userProfileService';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -54,7 +55,7 @@ const SUGGESTED_SEARCH_TERMS = [
 
 const Library = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
   const [communityBriefs, setCommunityBriefs] = useState<Brief[]>([]);
   const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
@@ -78,7 +79,54 @@ const Library = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [allBriefsLoaded, setAllBriefsLoaded] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   
+  // Check authentication and membership status immediately
+  useEffect(() => {
+    async function checkUserAccess() {
+      try {
+        if (currentUser) {
+          // Check membership status first
+          const status = await checkMembershipStatus();
+          console.log('Library: Membership status check result:', status);
+          
+          // If status is still null, check if we need to update it
+          if (status === null) {
+            console.log('Library: User status is null, checking contributions');
+            const profile = await userProfileService.getCurrentUserProfile();
+            
+            if (profile && profile.contributions && profile.contributions.completed) {
+              console.log('Library: User has completed contributions, updating status to contributor');
+              await userProfileService.update(profile.id!, {
+                membershipStatus: 'contributor',
+                updatedAt: Date.now()
+              });
+              
+              // Check again
+              await checkMembershipStatus();
+            } else {
+              console.log('Library: User has not completed contributions, redirecting to home');
+              // User is authenticated but doesn't have access - redirect
+              toast({
+                title: "Access Required",
+                description: "Complete your contributions or upgrade to access the library.",
+                variant: "destructive",
+              });
+              navigate('/');
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking library access:", error);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+    
+    checkUserAccess();
+  }, [currentUser, navigate, checkMembershipStatus]);
+
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -91,12 +139,20 @@ const Library = () => {
 
   // Load community briefs on component mount
   useEffect(() => {
+    // Only load briefs if auth check is complete and user has access
+    if (!authChecked) return;
+    
+    let mounted = true;
+    
     async function loadBriefs() {
       try {
         setIsLoading(true);
         // Fetch community briefs from Firebase
         const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
         const briefs = caseBriefsToBriefs(firebaseBriefs);
+        
+        // Only update state if component is still mounted
+        if (!mounted) return;
         
         // If we have briefs from Firebase, use those
         if (briefs.length > 0) {
@@ -110,6 +166,8 @@ const Library = () => {
         if (currentUser) {
           const userBriefs = await caseBriefService.getCaseBriefsByUser(currentUser.uid);
           const userBriefsFormatted = caseBriefsToBriefs(userBriefs);
+          
+          if (!mounted) return;
           
           if (userBriefsFormatted.length > 0) {
             // Set user's submitted briefs
@@ -126,6 +184,9 @@ const Library = () => {
         }
       } catch (error) {
         console.error("Error loading briefs:", error);
+        
+        if (!mounted) return;
+        
         // Fallback to sample data if loading fails
         setCommunityBriefs(sampleBriefs.slice(0, 6));
         setSubmittedBriefs([]);
@@ -137,12 +198,18 @@ const Library = () => {
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     }
     
     loadBriefs();
-  }, [currentUser]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser, authChecked]);
 
   const handleRefresh = async () => {
     try {
@@ -573,27 +640,27 @@ const Library = () => {
         </div>
 
         {/* Intelligent Search-Powered Research Section */}
-        <div className="max-w-7xl mx-auto mb-10 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900">
-          <div className="flex items-start gap-6 flex-col md:flex-row">
-            <div className="flex-1">
+        <div className="max-w-7xl mx-auto mb-10 p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900">
+          <div className="flex items-start gap-4 sm:gap-6 flex-col md:flex-row">
+            <div className="flex-1 w-full">
               <div className="flex items-center gap-2 mb-3">
                 <SparklesIcon className="h-5 w-5 text-blue-500" />
-                <h2 className="text-xl font-semibold">Intelligent Search-Powered Legal Research</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">Intelligent Search-Powered Legal Research</h2>
               </div>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-muted-foreground mb-4">
                 Use our advanced intelligent search to find relevant case briefs, analyze legal concepts, or get insights on specific cases. 
                 Powered by Voyage AI's "voyage-law-2" legal embeddings model for semantic understanding of legal concepts.
               </p>
               
               <div className="mb-4">
-                <div className="flex items-center mb-2 gap-3 text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2 sm:gap-3 text-sm">
                   <span className="font-medium">Search in:</span>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button 
                       variant={searchFilter === 'all' ? 'secondary' : 'outline'} 
                       size="sm" 
                       onClick={() => handleSearchFilterChange('all')}
-                      className="h-8 px-3"
+                      className="h-8 px-3 text-xs sm:text-sm"
                     >
                       All
                     </Button>
@@ -601,7 +668,7 @@ const Library = () => {
                       variant={searchFilter === 'title' ? 'secondary' : 'outline'} 
                       size="sm" 
                       onClick={() => handleSearchFilterChange('title')}
-                      className="h-8 px-3"
+                      className="h-8 px-3 text-xs sm:text-sm"
                     >
                       Case Titles
                     </Button>
@@ -609,7 +676,7 @@ const Library = () => {
                       variant={searchFilter === 'content' ? 'secondary' : 'outline'} 
                       size="sm" 
                       onClick={() => handleSearchFilterChange('content')}
-                      className="h-8 px-3"
+                      className="h-8 px-3 text-xs sm:text-sm"
                     >
                       Content
                     </Button>
@@ -617,7 +684,7 @@ const Library = () => {
                       variant={searchFilter === 'course' ? 'secondary' : 'outline'} 
                       size="sm" 
                       onClick={() => handleSearchFilterChange('course')}
-                      className="h-8 px-3"
+                      className="h-8 px-3 text-xs sm:text-sm"
                     >
                       Course
                     </Button>
@@ -625,11 +692,11 @@ const Library = () => {
                 </div>
               </div>
               
-              <form onSubmit={handleSearch} className="flex gap-2 max-w-xl relative">
+              <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 max-w-xl relative">
                 <div className="flex-1 relative">
                   <Input 
                     type="text" 
-                    placeholder="Search cases, legal concepts, or ask a legal question..." 
+                    placeholder="Search cases, legal concepts..." 
                     className="pr-10 w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -664,49 +731,21 @@ const Library = () => {
                     </div>
                   )}
                 </div>
-                <Button type="submit">
+                <Button type="submit" className="w-full sm:w-auto">
                   <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
                   Search
                 </Button>
               </form>
               
-              {/* Recent searches */}
-              {recentSearches.length > 0 && !searchQuery && (
-                <div className="mt-3">
-                  <div className="flex items-center mb-1">
-                    <span className="text-sm text-muted-foreground">Recent searches:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {recentSearches.map((term, index) => (
-                      <button
-                        key={index}
-                        className="text-sm px-3 py-1 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground"
-                        onClick={() => handleSuggestedSearch(term)}
-                      >
-                        {term}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-2 md:justify-between md:ml-8 md:min-w-32">
-              <div className="flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
-                  className="text-sm w-full"
-                  onClick={() => setSearchHelpOpen(true)}
-                >
+              <div className="mt-3 flex justify-between items-center">
+                <Button variant="link" size="sm" className="text-xs sm:text-sm p-0 h-auto" onClick={() => setSearchHelpOpen(true)}>
                   How to use intelligent search
                 </Button>
                 
-                <AuroraButton
-                  className="text-sm h-9 flex items-center justify-center gap-1.5 w-full"
-                  onClick={() => setCreateBriefOpen(true)}
-                >
-                  <PlusIcon className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={() => setCreateBriefOpen(true)} className="text-xs sm:text-sm h-8 mt-2 sm:mt-0">
+                  <PlusIcon className="h-4 w-4 mr-1" />
                   Create Brief
-                </AuroraButton>
+                </Button>
               </div>
             </div>
           </div>

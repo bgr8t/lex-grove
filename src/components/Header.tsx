@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import * as React from "react";
+import { userProfileService } from '@/lib/services/userProfileService';
 
 // Create a custom SheetContent that doesn't include the automatic close button
 const CustomSheetContent = React.forwardRef<
@@ -55,18 +56,44 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
     e.preventDefault();
     
     if (currentUser) {
-      // Force a membership status check before navigating
-      console.log('Header: Checking membership status before navigation');
-      const status = await checkMembershipStatus();
-      console.log('Header: Membership status updated to', status);
-      
-      // Add a small delay to ensure the status update has propagated
-      setTimeout(() => {
-        navigate('/library');
+      try {
+        // Force a membership status check before navigating
+        console.log('Header: Checking membership status before navigation');
+        const status = await checkMembershipStatus();
+        console.log('Header: Membership status updated to', status);
+        
+        // If status is still null, try to force update based on contribution status
+        if (status === null) {
+          console.log('Header: Status is null, checking if user has completed contributions');
+          // This will fetch and fix the user's profile if they've completed contributions
+          const profile = await userProfileService.getCurrentUserProfile();
+          
+          if (profile && profile.contributions && profile.contributions.completed) {
+            console.log('Header: User has completed contributions, updating status to contributor');
+            await userProfileService.update(profile.id!, {
+              membershipStatus: 'contributor',
+              updatedAt: Date.now()
+            });
+            
+            // Check membership status again
+            await checkMembershipStatus();
+          }
+        }
+        
+        // Add a small delay to ensure the status update has propagated
+        setTimeout(() => {
+          navigate('/library');
+          if (isMobile) {
+            closeMobileMenu();
+          }
+        }, 500); // Increased delay to allow status to update
+      } catch (error) {
+        console.error('Header: Error checking membership status', error);
+        navigate('/library'); // Navigate anyway as fallback
         if (isMobile) {
           closeMobileMenu();
         }
-      }, 300);
+      }
     } else {
       navigate('/library');
       if (isMobile) {

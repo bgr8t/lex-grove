@@ -1,8 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { userProfileService } from "@/lib/services/userProfileService";
-import { checkSubscriptionStatus } from "@/lib/services/stripeService";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -15,36 +13,17 @@ export function ProtectedRoute({
   requireAuth = true,
   requireContribution = false
 }: ProtectedRouteProps) {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, membershipStatus, checkMembershipStatus } = useAuth();
   const location = useLocation();
-  const [accessGranted, setAccessGranted] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(requireContribution);
 
   useEffect(() => {
-    // Check user contribution status and subscription when required
+    // Check user membership status when required
     const checkAccess = async () => {
       if (requireContribution && currentUser) {
         try {
-          // First check if they have a premium subscription
-          const hasPremium = await checkSubscriptionStatus(currentUser.uid);
-          
-          if (hasPremium) {
-            // If they have premium subscription, grant access
-            setAccessGranted(true);
-          } else {
-            // If not premium, check if they've completed contributions
-            const profile = await userProfileService.getCurrentUserProfile();
-            
-            if (profile) {
-              if (profile.membershipStatus === 'premium') {
-                // Also grant access if their profile shows premium membership
-                setAccessGranted(true);
-              } else if (profile.contributions.completed) {
-                // Or if they've completed their contributions
-                setAccessGranted(true);
-              }
-            }
-          }
+          // Check membership status
+          await checkMembershipStatus();
         } catch (error) {
           console.error("Error checking access status:", error);
         } finally {
@@ -56,7 +35,7 @@ export function ProtectedRoute({
     };
 
     checkAccess();
-  }, [currentUser, requireContribution]);
+  }, [currentUser, requireContribution, checkMembershipStatus]);
 
   // Show loading if auth state is still loading or checking access
   if (loading || (requireContribution && checkingAccess)) {
@@ -78,7 +57,8 @@ export function ProtectedRoute({
   }
 
   // Check contribution requirement
-  if (requireContribution && currentUser && !accessGranted) {
+  if (requireContribution && currentUser && 
+      !(membershipStatus === 'contributor' || membershipStatus === 'premium')) {
     return <Navigate to="/contribute" state={{ from: location }} replace />;
   }
 

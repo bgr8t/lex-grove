@@ -17,12 +17,14 @@ import { userProfileService } from '@/lib/services/userProfileService';
 interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
+  membershipStatus: 'contributor' | 'premium' | null;
   signUp: (email: string, password: string) => Promise<UserCredential>;
   login: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserProfile: (displayName: string) => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
+  checkMembershipStatus: () => Promise<'contributor' | 'premium' | null>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -38,23 +40,41 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [membershipStatus, setMembershipStatus] = useState<'contributor' | 'premium' | null>(null);
 
   // Sign up function
   async function signUp(email: string, password: string) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Create a user profile after successful signup
+    setLoading(true);
     try {
-      await userProfileService.createUserProfile(
-        email,
-        userCredential.user.displayName || undefined
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Create a complete user profile after successful signup
+      try {
+        await userProfileService.createUserProfile({
+          uid: userCredential.user.uid,
+          email: email,
+          displayName: userCredential.user.displayName || '',
+          membershipStatus: null as any,
+          contributions: {
+            count: 0,
+            target: 3,
+            completed: false,
+            briefIds: []
+          }
+        });
+        console.log("User profile created successfully");
+      } catch (error) {
+        console.error("Error creating user profile:", error);
+        // Continue even if profile creation fails, we can try again later
+      }
+      
+      return userCredential;
     } catch (error) {
-      console.error("Error creating user profile:", error);
-      // Continue even if profile creation fails, we can try again later
+      console.error("Error during signup:", error);
+      throw error;
+    } finally {
+      setLoading(false);
     }
-    
-    return userCredential;
   }
 
   // Login function
@@ -91,10 +111,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Check membership status
+  async function checkMembershipStatus(): Promise<'contributor' | 'premium' | null> {
+    if (!currentUser) return null;
+    
+    try {
+      // Use the user profile service to check status
+      const status = await userProfileService.checkSubscriptionStatus(currentUser.uid);
+      setMembershipStatus(status);
+      return status;
+    } catch (error) {
+      console.error('Error checking membership status:', error);
+      return null;
+    }
+  }
+
   useEffect(() => {
     // Subscribe to auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
+      if (user) {
+        try {
+          // Check if user profile exists
+          const profile = await userProfileService.getUserProfileByUid(user.uid);
+          
+          // If no profile exists, create one
+          if (!profile) {
+            console.log("No profile found for user, creating one...");
+            await userProfileService.createUserProfile({
+              uid: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || '',
+              membershipStatus: null as any,
+              contributions: {
+                count: 0,
+                target: 3,
+                completed: false,
+                briefIds: []
+              }
+            });
+            console.log("Created profile for existing user");
+          }
+          
+          // Check membership status
+          await checkMembershipStatus();
+        } catch (error) {
+          console.error("Error verifying user profile:", error);
+        }
+      } else {
+        setMembershipStatus(null);
+      }
+      
       setLoading(false);
     });
 
@@ -105,12 +173,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     currentUser,
     loading,
+    membershipStatus,
     signUp,
     login,
     logout,
     resetPassword,
     updateUserProfile,
-    checkEmailExists
+    checkEmailExists,
+    checkMembershipStatus
   };
 
   return (

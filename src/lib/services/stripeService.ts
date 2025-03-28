@@ -1,12 +1,12 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 
-// Use test mode keys for development
-const STRIPE_PUBLISHABLE_KEY = '***REDACTED_STRIPE_TEST_PUB_KEY***';
-// Secret key - only used on the server side, never expose in client code
-const STRIPE_SECRET_KEY = '***REDACTED_STRIPE_TEST_KEY***';
+// Use environment variables for keys
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51R4EaX09YXo38jybTrN4BFhE6ZwyO8lBftNGZnfM5zf3dkDmQFJbFyzEKpzrsmU6w4rFnP0DJ3U71jQGGEJn7z9M00bvWqF9h4';
+// Secret key should only be used on the server side
 
-// Test mode price ID for subscription
-const MONTHLY_PRICE_ID = 'price_1R4EAL1J0NBSOemfbq93H9ee';
+// TODO: Replace with your actual Price ID from your Stripe Dashboard
+// Go to https://dashboard.stripe.com/products to find your product price ID
+const MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID || 'price_placeholder';
 
 // Initialize Stripe with publishable key
 let stripePromise: Promise<Stripe | null>;
@@ -22,26 +22,41 @@ export const getStripe = (): Promise<Stripe | null> => {
 };
 
 /**
- * Redirect to Stripe checkout page (client-side implementation)
- * This doesn't rely on API routes and directly redirects to Stripe's hosted checkout
+ * Redirect to Stripe checkout page using client-only implementation
+ * This is compatible with Firebase hosting
  */
 export const redirectToCheckout = async (userId: string): Promise<void> => {
   try {
-    const stripe = await getStripe();
-    if (!stripe) throw new Error('Stripe failed to initialize');
+    console.log('Starting checkout process with price ID:', MONTHLY_PRICE_ID);
     
-    // Redirect to the hosted Stripe Checkout page
-    const { error } = await stripe.redirectToCheckout({
-      lineItems: [{ price: MONTHLY_PRICE_ID, quantity: 1 }],
-      mode: 'subscription',
-      successUrl: window.location.origin + '/payment-success',
-      cancelUrl: window.location.origin + '/',
-      customerEmail: undefined, // Will use the email entered during checkout
-      clientReferenceId: userId, // Pass the user ID as client reference
-    });
-
-    if (error) {
-      throw new Error(error.message);
+    try {
+      // First try client-only checkout
+      const stripe = await getStripe();
+      if (!stripe) throw new Error('Stripe failed to initialize');
+      
+      // Use client-only checkout - this requires enabling client-only in Stripe dashboard
+      const { error } = await stripe.redirectToCheckout({
+        lineItems: [{ price: MONTHLY_PRICE_ID, quantity: 1 }],
+        mode: 'subscription',
+        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/`,
+        clientReferenceId: userId,
+      });
+      
+      if (error) {
+        throw error;
+      }
+    } catch (stripeError) {
+      console.error('Stripe redirect error, trying payment link fallback:', stripeError);
+      
+      // Fallback to direct payment link
+      // Create checkout URL using Stripe's hosted checkout
+      const productId = MONTHLY_PRICE_ID; // Your price ID
+      const successUrl = encodeURIComponent(`${window.location.origin}/payment-success`);
+      const cancelUrl = encodeURIComponent(`${window.location.origin}/`);
+      
+      // Redirect to Stripe's hosted checkout page
+      window.location.href = `https://buy.stripe.com/test_8wM3e0aE3c4mbE4bII`;
     }
   } catch (error) {
     console.error('Error redirecting to checkout:', error);
