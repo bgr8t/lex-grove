@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function hasPremiumAccess() {
+      return isAuthenticated() && 
+             (get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.membershipStatus in ['premium', 'contributor']);
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profiles - Users can read/write their own profiles, admins can read/write all
+    match /userProfiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Case briefs - Access control based on membership status
+    match /caseBriefs/{briefId} {
+      // Anyone can read basic brief metadata
+      allow read: if true;
+      
+      // Only premium users, contributors, owners, and admins can read full brief content
+      allow read: if hasPremiumAccess() || 
+                 isOwner(resource.data.userId) || 
+                 isAdmin();
+      
+      // Only authenticated users can create new briefs
+      allow create: if isAuthenticated();
+      
+      // Only the owner or admin can update or delete briefs
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Collections (user's saved briefs)
+    match /collections/{collectionId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Subscription data - Only accessible by the owner or admin
+    match /subscriptions/{subscriptionId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // System configurations - Only admins can write, but anyone can read
+    match /systemConfig/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+} 

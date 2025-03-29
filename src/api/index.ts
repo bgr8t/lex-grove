@@ -200,4 +200,19 @@ export async function checkSubscriptionStatus(userId: string) {
     console.error('Error checking subscription status:', error);
     return false;
   }
-} 
+}
+
+// Add CSRF token endpoint to the beginning of your routes
+app.get('/api/csrf-token', (req, res) => {
+  // Generate CSRF token
+  const csrfToken = tokens.secretSync();
+  
+  // Store in session
+  if (req.session) {
+    req.session.csrfSecret = csrfToken;
+  }
+  
+  // Return as header and in response
+  res.header('X-CSRF-Token', csrfToken);
+  res.json({ status: 'success' });
+}); 
