@@ -17,9 +17,14 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
   const navigate = useNavigate();
   
   const handleSearch = (query: string) => {
+    if (!query.trim()) return;
+    
     if (onSearch) {
       onSearch(query);
     } else {
+      // If no onSearch provided, redirect to library with search query
+      navigate(`/library?q=${encodeURIComponent(query)}`);
+      
       toast({
         title: t('search.initiated'),
         description: `${t('search.searching_for')}: "${query}"`,
@@ -30,11 +35,16 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
   return (
     <section 
       className={cn(
-        "relative w-full overflow-hidden hero-gradient pt-28 md:pt-36 pb-16",
+        "relative w-full overflow-hidden pt-28 md:pt-36 pb-16",
+        "bg-cover bg-center bg-no-repeat",
         className
       )}
+      style={{ backgroundImage: 'url(/images/background_student.png)' }}
     >
-      <div className="container px-4 mx-auto">
+      {/* Overlay to ensure text readability */}
+      <div className="absolute inset-0 bg-background/75 backdrop-blur-sm"></div>
+      
+      <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
           <div className="inline-flex items-center mb-4 backdrop-blur-sm bg-accent/40 border border-border/50 rounded-full px-3 py-1 animate-fade-in">
             <SparklesIcon className="h-4 w-4 mr-2 text-primary" />
@@ -79,7 +89,7 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
         </div>
       </div>
       
-      {/* Decorative elements */}
+      {/* Decorative elements - keeping them for additional styling */}
       <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
       <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
     </section>
