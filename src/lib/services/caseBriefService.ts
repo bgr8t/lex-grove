@@ -203,25 +203,8 @@ class CaseBriefService extends FirestoreService<CaseBrief> {
         console.error(`Failed to increment view count for brief ${id}:`, err);
       });
       
-      // Return the brief without filtering for the owner or premium/contributor users
-      if (
-        (userId && brief.userId === userId) || 
-        (membershipStatus && (membershipStatus === 'premium' || membershipStatus === 'contributor'))
-      ) {
-        return brief;
-      }
-      
-      // For other authenticated users or public access, return filtered data
-      // Return the brief with limited data to prevent sensitive data exposure
-      // This is a simplified implementation - you should use the dataFilterService in a real implementation
-      return {
-        ...brief,
-        // Limit the length of sensitive fields
-        facts: brief.facts ? brief.facts.substring(0, 150) + '...' : '',
-        issue: brief.issue ? brief.issue.substring(0, 150) + '...' : '',
-        holding: brief.holding ? brief.holding.substring(0, 150) + '...' : '',
-        reasoning: brief.reasoning ? brief.reasoning.substring(0, 150) + '...' : ''
-      };
+      // Return the full brief for all users without content truncation
+      return brief;
     } catch (error) {
       console.error(`Error fetching case brief with ID ${id}:`, error);
       return null;

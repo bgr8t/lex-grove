@@ -15,6 +15,7 @@ export interface Brief {
   courseName: string;
   date: string;
   savedCount: number;
+  viewCount?: number;
   author: string;
   facts?: string;
   issue?: string;
@@ -125,7 +126,7 @@ export const BriefCard = ({
           </div>
         </CardHeader>
         <CardContent className="p-4 pt-2">
-          <p className="text-sm text-muted-foreground line-clamp-3">
+          <p className="text-sm text-muted-foreground">
             {brief.snippet}
           </p>
         </CardContent>
