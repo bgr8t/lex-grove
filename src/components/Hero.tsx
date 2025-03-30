@@ -36,30 +36,45 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
     <section 
       className={cn(
         "relative w-full overflow-hidden pt-28 md:pt-36 pb-16",
-        "bg-cover bg-center bg-no-repeat",
+        "bg-cover bg-center bg-no-repeat animate-fade-in",
         className
       )}
-      style={{ backgroundImage: 'url(/images/background_student.png)' }}
+      style={{ 
+        backgroundImage: 'url(/images/background_student.png)',
+        animationDuration: '1s'
+      }}
     >
       {/* Overlay to ensure text readability */}
-      <div className="absolute inset-0 bg-background/75 backdrop-blur-sm"></div>
+      <div 
+        className="absolute inset-0 bg-background/75 backdrop-blur-sm animate-fade-in"
+        style={{ animationDuration: '0.7s' }}
+      ></div>
       
       <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-10 md:mb-16">
-          <div className="inline-flex items-center mb-4 backdrop-blur-sm bg-accent/40 border border-border/50 rounded-full px-3 py-1 animate-fade-in">
-            <SparklesIcon className="h-4 w-4 mr-2 text-primary" />
+          <div className="inline-flex items-center mb-4 backdrop-blur-sm bg-accent/40 border border-border/50 rounded-full px-3 py-1 animate-slide-down-fade">
+            <SparklesIcon className="h-4 w-4 mr-2 text-primary animate-pulse-subtle" />
             <span className="text-sm font-medium">{t('hero.tagline')}</span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4 md:mb-6 text-balance animate-slide-down">
+          <h1 
+            className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4 md:mb-6 text-balance opacity-0 animate-slide-up"
+            style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}
+          >
             <span className="text-primary">{t('app.title')}:</span> {t('hero.title.1')} <span className="text-primary">{t('hero.title.2')}</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto text-balance animate-slide-down animate-delay-100">
+          <p 
+            className="text-xl md:text-2xl text-muted-foreground mb-8 md:mb-10 max-w-2xl mx-auto text-balance opacity-0 animate-slide-up"
+            style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}
+          >
             {t('hero.description')}
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10 animate-fade-in animate-delay-200">
+          <div 
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10 opacity-0 animate-fade-in"
+            style={{ animationDelay: '700ms', animationFillMode: 'forwards' }}
+          >
             <Button 
               size="lg" 
               className="h-11 px-6 bg-[#384358] hover:bg-[#2b344a] transition-all duration-300"
@@ -79,7 +94,10 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
             </Button>
           </div>
           
-          <div className="search-container animate-scale-in animate-delay-300">
+          <div 
+            className="search-container opacity-0 animate-scale-up"
+            style={{ animationDelay: '900ms', animationFillMode: 'forwards' }}
+          >
             <SearchBar 
               onSearch={handleSearch} 
               placeholder={t('search.placeholder')} 
@@ -89,9 +107,9 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
         </div>
       </div>
       
-      {/* Decorative elements - keeping them for additional styling */}
-      <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
-      <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+      {/* Decorative elements with floating animations */}
+      <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-primary/5 rounded-full blur-3xl animate-float-slow" />
+      <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-float-slow-reverse" />
     </section>
   );
 };
