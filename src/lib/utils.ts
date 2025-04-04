@@ -17,7 +17,8 @@ export function caseBriefToBrief(caseBrief: CaseBrief): Brief {
   return {
     id: caseBrief?.id || '',
     title: caseBrief?.title || 'Untitled Brief',
-    courseName: court,
+    courseName: caseBrief?.citation || court, // Use citation as courseName if available
+    court: court, // Set the court field
     facts: facts,
     issue: caseBrief?.issue || '',
     rule: reasoning, // Map reasoning to rule
@@ -31,8 +32,8 @@ export function caseBriefToBrief(caseBrief: CaseBrief): Brief {
     }) : 'Unknown Date',
     savedCount: 0,
     viewCount: caseBrief?.viewCount || 0, // Include view count
-    snippet: facts, // Use the full facts text without truncation
-    tags: [court].filter(Boolean),
+    snippet: facts.substring(0, 150) + (facts.length > 150 ? '...' : ''), // Truncate snippet
+    tags: court ? [court] : [], // Include court as a tag if available
   }
 }
 

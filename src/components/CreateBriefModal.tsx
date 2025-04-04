@@ -32,20 +32,35 @@ import { useAuth } from '@/contexts/AuthContext';
 import { userProfileService } from '@/lib/services/userProfileService';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { ContributionProgress } from './ContributionProgress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const createBriefSchema = z.object({
   title: z.string().min(1, 'Brief title is required').max(100, 'Title must be 100 characters or less'),
   courseName: z.string().min(1, 'Course name is required'),
+  court: z.string().min(1, 'Court is required'),
   facts: z.string().min(1, 'Facts are required'),
   issue: z.string().min(1, 'Issue is required'),
   rule: z.string().min(1, 'Rule is required'),
   analysis: z.string().min(1, 'Analysis is required'),
   conclusion: z.string().min(1, 'Conclusion is required'),
-  summary: z.string().min(1, 'Summary is required'),
   tags: z.array(z.string()).optional(),
 });
 
 type CreateBriefFormValues = z.infer<typeof createBriefSchema>;
+
+// Court options
+const COURT_OPTIONS = [
+  { value: 'SCC', label: 'Supreme Court of Canada (SCC)' },
+  { value: 'QCCA', label: 'Court of Appeal (QCCA)' },
+  { value: 'QCCS', label: 'Superior Court (QCCS)' },
+  { value: 'QCCQ', label: 'Quebec Court (QCCQ)' },
+];
 
 interface CreateBriefModalProps {
   open: boolean;
@@ -77,12 +92,12 @@ export function CreateBriefModal({
     defaultValues: {
       title: '',
       courseName: '',
+      court: '',
       facts: '',
       issue: '',
       rule: '',
       analysis: '',
       conclusion: '',
-      summary: '',
       tags: [],
     },
   });
@@ -128,7 +143,7 @@ export function CreateBriefModal({
       const caseBrief = {
         title: values.title,
         citation: values.courseName, // Use courseName as citation for now
-        court: values.courseName,
+        court: values.court, // Use the selected court
         date: new Date().toISOString(),
         facts: values.facts,
         issue: values.issue,
@@ -148,12 +163,12 @@ export function CreateBriefModal({
         id: savedBrief.id || crypto.randomUUID(),
         title: values.title,
         courseName: values.courseName,
+        court: values.court, // Include court in the brief
         facts: values.facts,
         issue: values.issue,
         rule: values.rule,
         analysis: values.analysis,
         conclusion: values.conclusion,
-        summary: values.summary,
         author: currentUser.displayName || 'Anonymous',
         date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
         savedCount: 0,
@@ -288,56 +303,88 @@ export function CreateBriefModal({
                 />
               </div>
               
-              {/* Tags Input */}
-              <FormField
-                control={form.control}
-                name="tags"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Tags</FormLabel>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {tags.map((tag, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary"
-                            className="flex items-center gap-1 py-1 px-2"
-                          >
-                            {tag}
-                            <button
-                              type="button"
-                              onClick={() => removeTag(tag)}
-                              className="text-muted-foreground hover:text-foreground"
+              {/* Tags and Court - Side by side on desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Tags Input */}
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {tags.map((tag, index) => (
+                            <Badge 
+                              key={index} 
+                              variant="secondary"
+                              className="flex items-center gap-1 py-1 px-2"
                             >
-                              <XMarkIcon className="h-3 w-3" />
-                              <span className="sr-only">Remove tag</span>
-                            </button>
-                          </Badge>
-                        ))}
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => removeTag(tag)}
+                                className="text-muted-foreground hover:text-foreground"
+                              >
+                                <XMarkIcon className="h-3 w-3" />
+                                <span className="sr-only">Remove tag</span>
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={tagInput}
+                            onChange={e => setTagInput(e.target.value)}
+                            onKeyDown={handleTagKeyDown}
+                            onBlur={addTag}
+                            placeholder="Add tags (press Enter or comma to add)"
+                            className="flex-1"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={addTag}
+                          >
+                            Add
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={tagInput}
-                          onChange={e => setTagInput(e.target.value)}
-                          onKeyDown={handleTagKeyDown}
-                          onBlur={addTag}
-                          placeholder="Add tags (press Enter or comma to add)"
-                          className="flex-1"
-                        />
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={addTag}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Court Selection */}
+                <FormField
+                  control={form.control}
+                  name="court"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Court</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a court" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COURT_OPTIONS.map((court) => (
+                            <SelectItem key={court.value} value={court.value}>
+                              {court.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <FormField
                 control={form.control}
@@ -420,24 +467,6 @@ export function CreateBriefModal({
                     <FormControl>
                       <Textarea 
                         placeholder="Enter the court's conclusion..."
-                        className="min-h-[80px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="summary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Summary</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter a brief summary of the case..."
                         className="min-h-[80px]"
                         {...field}
                       />

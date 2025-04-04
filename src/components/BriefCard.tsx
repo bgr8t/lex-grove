@@ -13,6 +13,7 @@ export interface Brief {
   title: string;
   snippet: string;
   courseName: string;
+  court?: string;
   date: string;
   savedCount: number;
   viewCount?: number;

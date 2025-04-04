@@ -6,6 +6,7 @@ import { Brief } from '@/components/BriefCard';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Comments } from '@/components/Comments';
 import {
   BookmarkIcon,
   ArrowTopRightOnSquareIcon,
@@ -13,9 +14,9 @@ import {
   ChevronDownIcon,
   ShareIcon,
   DocumentDuplicateIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
-import { sampleBriefs } from '@/data/sampleBriefs';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { caseBriefToBrief } from '@/lib/utils';
 
@@ -47,7 +48,7 @@ const CaseBrief = () => {
 
       setIsLoading(true);
       try {
-        // Try to fetch from Firebase first
+        // Fetch from Firebase
         const caseBrief = await caseBriefService.getCaseBriefById(id);
         
         if (caseBrief) {
@@ -59,22 +60,14 @@ const CaseBrief = () => {
           // Increment view count
           await caseBriefService.incrementViewCount(id);
         } else {
-          // Try to find in sample briefs as fallback (for demo/development)
-          const sampleBrief = sampleBriefs.find(b => b.id === id);
-          
-          if (sampleBrief) {
-            setBrief(sampleBrief);
-            setVotes(sampleBrief.savedCount || 0);
-          } else {
-            // Brief not found anywhere
-            toast({
-              title: t('brief.not_found'),
-              description: `We couldn't find a brief with the ID ${id}`,
-              variant: "destructive"
-            });
-            // Navigate back to library after showing the error
-            setTimeout(() => navigate('/library'), 2000);
-          }
+          // Brief not found
+          toast({
+            title: t('brief.not_found'),
+            description: `We couldn't find a brief with the ID ${id}`,
+            variant: "destructive"
+          });
+          // Navigate back to library after showing the error
+          setTimeout(() => navigate('/library'), 2000);
         }
       } catch (error) {
         console.error("Error fetching brief:", error);
@@ -166,6 +159,19 @@ const CaseBrief = () => {
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8 mt-16">
           <div className="max-w-4xl mx-auto">
+            {/* Back Button */}
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center text-foreground hover:text-foreground/70"
+                onClick={() => navigate('/library')}
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Go back
+              </Button>
+            </div>
+
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4"></div>
@@ -192,11 +198,31 @@ const CaseBrief = () => {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 mt-16">
         <div className="max-w-4xl mx-auto">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center text-foreground hover:text-foreground/70"
+              onClick={() => navigate('/library')}
+            >
+              <ArrowLeftIcon className="h-5 w-5 mr-2" />
+              Go back
+            </Button>
+          </div>
+          
           {/* Header Section */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                {brief.courseName}
+              <div className="flex flex-wrap gap-2">
+                <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  {brief.courseName}
+                </div>
+                {brief.court && (
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/10 text-secondary">
+                    {brief.court}
+                  </div>
+                )}
               </div>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold mb-4">{brief.title}</h1>
@@ -280,13 +306,6 @@ const CaseBrief = () => {
           <div className="space-y-8 mb-12">
             {/* Context Sections (before I.R.A.C) */}
             <section>
-              <h2 className="text-2xl font-semibold mb-4">{t('brief.summary')}</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {brief.snippet}
-              </p>
-            </section>
-
-            <section>
               <h2 className="text-2xl font-semibold mb-4">{t('brief.facts')}</h2>
               <p className="text-muted-foreground leading-relaxed">
                 {brief.facts || t('brief.facts_placeholder')}
@@ -351,6 +370,11 @@ const CaseBrief = () => {
                   </p>
                 </div>
               </section>
+            </div>
+            
+            {/* Comments Section */}
+            <div className="border-t pt-8 mt-12">
+              <Comments briefId={id || ''} />
             </div>
           </div>
         </div>

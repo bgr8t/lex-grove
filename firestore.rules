@@ -63,5 +63,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    
+    // Comments - Access control based on authentication and ownership
+    match /comments/{commentId} {
+      allow read: if true; // Anyone can read comments
+      allow create: if request.auth != null && 
+                    request.resource.data.userId == request.auth.uid; // Users can only create comments as themselves
+      allow update, delete: if request.auth != null && 
+                             get(/databases/$(database)/documents/comments/$(commentId)).data.userId == request.auth.uid; // Users can only update/delete their own comments
+    }
   }
 } 
