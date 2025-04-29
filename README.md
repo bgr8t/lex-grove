@@ -1,28 +1,19 @@
-# Lex Briefs AI
+# Lex Grove
 
-A modern platform for law students to access, search, and contribute to a library of legal case briefs with AI-powered features.
+A modern platform for law students to access, search, and contribute to a collaborative library of legal case briefs.
 
 ## Project Overview
 
-Lex Briefs AI is a comprehensive web application designed to help law students access and contribute to a growing library of case briefs. The platform features intelligent semantic search capabilities powered by Voyage AI's legal embeddings model, allowing users to find relevant legal documents with natural language queries.
+Lex Grove is a comprehensive web application designed to help law students access and contribute to a growing library of case briefs. The platform emphasizes community collaboration and efficient organization of legal resources, making it easier for students to study and share their knowledge.
 
 ## Key Features
 
-- **AI-Powered Semantic Search**: Find case briefs using natural language queries
-- **Community Contribution Model**: Users can contribute cases to gain access to the library
-- **Premium Subscription Option**: Immediate access available through monthly subscription
+- **Smart Search**: Find relevant case briefs quickly and efficiently
+- **Community Contribution**: Share insights and build a collaborative knowledge base
+- **Personal Collections**: Organize briefs into custom collections for efficient studying
 - **Mobile-Responsive Design**: Optimized experience across all devices
+- **Bilingual Support**: Full English and French language support
 - **User Authentication**: Secure account management
-- **Membership Status Indicators**: Visual indicators for premium and contributor users
-
-## Recent Updates
-
-- Added premium star badge for premium account users
-- Improved mobile layouts for case brief pages and search interfaces
-- Removed pricing section for logged-in users
-- Enhanced membership status indicators in the user interface
-- Fixed redirect issues in the payment success flow
-- Improved responsive layouts across the application
 
 ## Technology Stack
 
@@ -30,7 +21,8 @@ This project is built with:
 
 - **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Firebase (Firestore, Authentication, Cloud Functions)
-- **AI/ML**: Voyage AI legal embeddings model for semantic search
+- **State Management**: React Context
+- **Styling**: Tailwind CSS with custom neumorphic design
 - **Payment Processing**: Stripe integration
 
 ## Getting Started
@@ -39,10 +31,10 @@ To run this project locally:
 
 ```sh
 # Clone the repository
-git clone https://github.com/bgr8t/lex-briefs-ai.git
+git clone https://github.com/bgr8t/lex-grove.git
 
 # Navigate to the project directory
-cd lex-briefs-ai-main
+cd lex-grove
 
 # Install dependencies
 npm install
@@ -51,9 +43,48 @@ npm install
 npm run dev
 ```
 
+## Brief Structure
+
+Briefs are structured with the following components in both English and French:
+
+### English
+- Case Title
+- Course
+- Tags
+- Court
+- Facts
+- Issue
+- Rule
+- Analysis
+- Conclusion
+
+### French
+- Titre du Cours
+- Tag
+- Cour
+- Faits
+- Question(s) en litige
+- Principe(s)
+- Analyse
+- Décision
+
+## Court Abbreviations
+
+### English
+- Supreme Court of Canada (SCC)
+- Court of Appeal (QCCA)
+- Superior Court (QCSC)
+- Quebec Court (QCQC)
+
+### French
+- Cour suprême du Canada (CSC)
+- Cour d'appel (QCCA)
+- Cour supérieure (QCCS)
+- Cour du Québec (QCCQ)
+
 ## Contributing
 
-Contributions to improve Lex Briefs AI are welcome. Please feel free to submit pull requests or open issues to discuss potential improvements.
+Contributions to improve Lex Grove are welcome. Please feel free to submit pull requests or open issues to discuss potential improvements.
 
 ## License
 
