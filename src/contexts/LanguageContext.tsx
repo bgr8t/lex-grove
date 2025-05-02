@@ -15,7 +15,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // App titles
     'app.title': 'Lex Grove',
-    'app.description': 'Intelligent legal research platform',
+    'app.description': 'Legal research platform',
     
     // Navigation
     'nav.library': 'Library',
@@ -40,23 +40,23 @@ const translations: Record<Language, Record<string, string>> = {
     'search.try_different': 'Try a different search term',
     
     // Hero section
-    'hero.tagline': 'Advanced Semantic Search',
-    'hero.title.1': 'Legal Briefs With',
-    'hero.title.2': 'Intelligent Search',
-    'hero.description': 'Access a database of case briefs created by law students, with search that understands natural language queries without keywords or boolean logic. Join a community that grows with its users and thrives on collaboration.',
+    'hero.tagline': 'Legal Research Made Simple',
+    'hero.title.1': 'Legal Briefs',
+    'hero.title.2': 'At Your Fingertips',
+    'hero.description': 'Access a database of case briefs created by law students. Join a community that grows with its users and thrives on collaboration.',
     'hero.browse_library': 'Browse Library',
     'hero.how_it_works': 'How It Works',
     
     // About page
     'about.title': 'About Lex Grove',
-    'about.subtitle': 'Revolutionizing legal education through intelligent search and case brief management.',
+    'about.subtitle': 'Revolutionizing legal education through collaborative case brief management.',
     'about.mission.title': 'Our Mission',
     'about.mission.paragraph1': 'Lex Grove was founded with a clear mission: to make legal education more accessible, efficient, and collaborative. We believe that law students and professionals should have powerful tools that help them analyze, understand, and share legal knowledge. Our community grows with each user contribution, creating a richer resource for everyone.',
-    'about.mission.paragraph2': 'Our platform combines the power of semantic search technology with a community-focused approach to create a comprehensive ecosystem for case brief management, research, and learning.',
+    'about.mission.paragraph2': 'Our platform combines modern technology with a community-focused approach to create a comprehensive ecosystem for case brief management, research, and learning.',
     'about.mission.quote': '"We envision a future where legal education transcends traditional boundaries, empowering the next generation of legal minds with tools that enhance understanding and collaboration."',
     'about.features.title': 'Key Features',
-    'about.features.ai.title': 'Intelligent Semantic Search',
-    'about.features.ai.description': 'Our advanced search understands legal concepts and natural language questions, extracting key insights from cases without relying on exact keyword matches or complex boolean logic.',
+    'about.features.ai.title': 'Smart Search',
+    'about.features.ai.description': 'Find relevant case briefs quickly and efficiently with our search functionality.',
     'about.features.library.title': 'Case Brief Library',
     'about.features.library.description': 'Access a comprehensive collection of case briefs covering major legal topics and precedents, organized for easy discovery and reference.',
     'about.features.community.title': 'Community-Driven Growth',
@@ -121,7 +121,7 @@ const translations: Record<Language, Record<string, string>> = {
   fr: {
     // App titles
     'app.title': 'Lex Grove',
-    'app.description': 'Plateforme de recherche juridique intelligente',
+    'app.description': 'Plateforme de recherche juridique',
     
     // Navigation
     'nav.library': 'Bibliothèque',
@@ -146,23 +146,23 @@ const translations: Record<Language, Record<string, string>> = {
     'search.try_different': 'Essayez un terme de recherche différent',
     
     // Hero section
-    'hero.tagline': 'Recherche Sémantique Avancée',
-    'hero.title.1': 'Mémoires Juridiques Avec',
-    'hero.title.2': 'Recherche Intelligente',
-    'hero.description': 'Accédez à une base de données de mémoires juridiques créés par des étudiants en droit, avec une recherche qui comprend les requêtes en langage naturel sans mots-clés ni logique booléenne. Rejoignez une communauté qui grandit avec ses utilisateurs et prospère grâce à la collaboration.',
+    'hero.tagline': 'La Recherche Juridique Simplifiée',
+    'hero.title.1': 'Mémoires Juridiques',
+    'hero.title.2': 'À Portée de Main',
+    'hero.description': 'Accédez à une base de données de mémoires juridiques créés par des étudiants en droit. Rejoignez une communauté qui grandit avec ses utilisateurs et prospère grâce à la collaboration.',
     'hero.browse_library': 'Explorer la Bibliothèque',
     'hero.how_it_works': 'Comment Ça Marche',
     
     // About page
     'about.title': 'À Propos de Lex Grove',
-    'about.subtitle': 'Révolutionner l\'éducation juridique grâce à la recherche intelligente et la gestion des mémoires juridiques.',
+    'about.subtitle': 'Révolutionner l\'éducation juridique grâce à la gestion collaborative des mémoires juridiques.',
     'about.mission.title': 'Notre Mission',
     'about.mission.paragraph1': 'Lex Grove a été fondé avec une mission claire : rendre l\'éducation juridique plus accessible, efficace et collaborative. Nous croyons que les étudiants en droit et les professionnels devraient disposer d\'outils puissants qui les aident à analyser, comprendre et partager les connaissances juridiques. Notre communauté s\'enrichit avec chaque contribution des utilisateurs, créant ainsi une ressource plus riche pour tous.',
-    'about.mission.paragraph2': 'Notre plateforme combine la puissance de la technologie de recherche sémantique avec une approche centrée sur la communauté pour créer un écosystème complet pour la gestion, la recherche et l\'apprentissage des mémoires juridiques.',
+    'about.mission.paragraph2': 'Notre plateforme combine la technologie moderne avec une approche centrée sur la communauté pour créer un écosystème complet pour la gestion, la recherche et l\'apprentissage des mémoires juridiques.',
     'about.mission.quote': '"Nous envisageons un avenir où l\'éducation juridique transcende les frontières traditionnelles, donnant à la prochaine génération de juristes des outils qui améliorent la compréhension et la collaboration."',
     'about.features.title': 'Fonctionnalités Clés',
-    'about.features.ai.title': 'Recherche Sémantique Intelligente',
-    'about.features.ai.description': 'Notre recherche avancée comprend les concepts juridiques et les questions en langage naturel, extrayant les informations clés des cas sans s\'appuyer sur des correspondances exactes de mots-clés ou une logique booléenne complexe.',
+    'about.features.ai.title': 'Recherche Efficace',
+    'about.features.ai.description': 'Trouvez rapidement et efficacement les mémoires juridiques pertinents avec notre fonctionnalité de recherche.',
     'about.features.library.title': 'Bibliothèque de Mémoires',
     'about.features.library.description': 'Accédez à une collection complète de mémoires juridiques couvrant les principaux sujets et précédents juridiques, organisée pour une découverte et référence faciles.',
     'about.features.community.title': 'Croissance Communautaire',

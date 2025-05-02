@@ -48,7 +48,7 @@ CustomSheetContent.displayName = "CustomSheetContent";
 // Custom Library Link component that checks membership status before navigating
 const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => {
   const { t } = useLanguage();
-  const { currentUser, checkMembershipStatus } = useAuth();
+  const { currentUser, checkMembershipStatus, membershipStatus } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -75,26 +75,39 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
               updatedAt: Date.now()
             });
             
-            // Check membership status again
+            // Check membership status again after update
             await checkMembershipStatus();
+            
+            // Navigate to library since user is a contributor
+            navigate('/library');
+            if (isMobile) {
+              closeMobileMenu();
+            }
+            return;
           }
         }
         
-        // Add a small delay to ensure the status update has propagated
-        setTimeout(() => {
+        // If the user is a contributor or premium member, navigate to library
+        if (status === 'contributor' || status === 'premium') {
           navigate('/library');
-          if (isMobile) {
-            closeMobileMenu();
-          }
-        }, 500); // Increased delay to allow status to update
+        } else {
+          // Otherwise, redirect to contribute page
+          navigate('/contribute');
+        }
+        
+        if (isMobile) {
+          closeMobileMenu();
+        }
       } catch (error) {
         console.error('Header: Error checking membership status', error);
-        navigate('/library'); // Navigate anyway as fallback
+        // Default to library page on error (user can be redirected if needed)
+        navigate('/library');
         if (isMobile) {
           closeMobileMenu();
         }
       }
     } else {
+      // If not logged in, just go to library
       navigate('/library');
       if (isMobile) {
         closeMobileMenu();
@@ -206,6 +219,15 @@ export const Header = () => {
           </Link>
           <HeaderLibraryLink />
           <Link 
+            to="/flash-deck" 
+            className={cn(
+              "text-sm font-medium transition-colors hover:text-primary",
+              location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
+            )}
+          >
+            Flash Deck
+          </Link>
+          <Link 
             to="/about" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
@@ -291,6 +313,16 @@ export const Header = () => {
                       {t('nav.home')}
                     </Link>
                     <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
+                    <Link 
+                      to="/flash-deck" 
+                      className={cn(
+                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
+                        location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Flash Deck
+                    </Link>
                     <Link 
                       to="/about" 
                       className={cn(

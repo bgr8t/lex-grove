@@ -1,18 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import HowItWorks from '@/components/HowItWorks';
 import PricingSection from '@/components/PricingSection';
 import SearchResults from '@/components/SearchResults';
+import TopBriefs from '@/components/TopBriefs';
 import Footer from '@/components/Footer';
 import { Brief } from '@/components/BriefCard';
 import { useToast } from '@/components/ui/use-toast';
-import { sampleBriefs } from '@/data/sampleBriefs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { caseBriefService } from '@/lib/services/caseBriefService';
+import { caseBriefToBrief } from '@/lib/utils';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
@@ -20,36 +24,11 @@ const Index = () => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
   
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     if (!query.trim()) return;
     
-    setSearchQuery(query);
-    setIsSearching(true);
-    
-    // Simulate search API call
-    setTimeout(() => {
-      // Filter briefs based on search query (in a real app, this would be an API call)
-      const filteredResults = sampleBriefs.filter(brief => 
-        brief.title.toLowerCase().includes(query.toLowerCase()) || 
-        brief.snippet.toLowerCase().includes(query.toLowerCase()) ||
-        brief.courseName.toLowerCase().includes(query.toLowerCase())
-      );
-      
-      setSearchResults(filteredResults);
-      setIsSearching(false);
-      
-      if (filteredResults.length === 0) {
-        toast({
-          title: t('search.no_results'),
-          description: `${t('search.no_results_desc')} "${query}". ${t('search.try_different')}`,
-        });
-      } else {
-        toast({
-          title: t('search.complete'),
-          description: `${t('search.found')} ${filteredResults.length} ${t('search.results_for')} "${query}"`,
-        });
-      }
-    }, 1500);
+    // Redirect to Library page with search query
+    navigate(`/library?q=${encodeURIComponent(query)}`);
   };
   
   return (
@@ -70,6 +49,7 @@ const Index = () => {
         <>
           <Hero onSearch={handleSearch} />
           <Features />
+          <TopBriefs />
           <HowItWorks />
           {!currentUser && <PricingSection />}
         </>
@@ -81,3 +61,4 @@ const Index = () => {
 };
 
 export default Index;
+

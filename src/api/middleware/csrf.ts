@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import Tokens from 'csrf';
+import { requireEnvVar } from '../../utils/security';
 
 // Create a new CSRF tokens instance
 const tokens = new Tokens();
+
+// CSRF token expiration time (1 hour)
+const CSRF_TOKEN_EXPIRATION = 60 * 60 * 1000;
 
 // Session declaration for Express
 declare global {
@@ -10,6 +14,7 @@ declare global {
     interface Request {
       session?: {
         csrfSecret?: string;
+        csrfTokenExpiry?: number;
         [key: string]: any;
       };
     }
@@ -21,25 +26,45 @@ declare global {
  */
 export const generateCsrfToken = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Generate a new CSRF token or use an existing one from session
-    const secret = req.session?.csrfSecret || tokens.secretSync();
-    const token = tokens.create(secret);
+    const now = Date.now();
     
-    // Store the secret in the session for later verification
-    if (req.session) {
-      req.session.csrfSecret = secret;
+    // Check if we need to generate a new token
+    const shouldGenerateNewToken = !req.session?.csrfSecret || 
+                                 !req.session?.csrfTokenExpiry || 
+                                 now > req.session.csrfTokenExpiry;
+    
+    if (shouldGenerateNewToken) {
+      // Generate new token
+      const secret = tokens.secretSync();
+      const token = tokens.create(secret);
+      
+      // Store the secret and expiry in the session
+      if (req.session) {
+        req.session.csrfSecret = secret;
+        req.session.csrfTokenExpiry = now + CSRF_TOKEN_EXPIRATION;
+      }
+      
+      // Add token to response headers
+      res.header('X-CSRF-Token', token);
+      res.header('X-CSRF-Token-Expiry', (now + CSRF_TOKEN_EXPIRATION).toString());
+      
+      // Make token available for templates
+      res.locals.csrfToken = token;
+    } else {
+      // Use existing token
+      const token = tokens.create(req.session.csrfSecret!);
+      res.header('X-CSRF-Token', token);
+      res.header('X-CSRF-Token-Expiry', req.session.csrfTokenExpiry.toString());
+      res.locals.csrfToken = token;
     }
-    
-    // Add token to response headers
-    res.header('X-CSRF-Token', token);
-    
-    // Make token available for templates
-    res.locals.csrfToken = token;
     
     next();
   } catch (error) {
     console.error('Error generating CSRF token:', error);
-    return res.status(500).json({ error: 'Failed to generate CSRF token' });
+    return res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: 'Failed to generate CSRF token'
+    });
   }
 };
 
@@ -49,9 +74,12 @@ export const generateCsrfToken = (req: Request, res: Response, next: NextFunctio
  */
 export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
   try {
+    const now = Date.now();
+    
     // Get token from request
     const token = req.headers['x-csrf-token'] as string || req.body?._csrf as string;
     const secret = req.session?.csrfSecret;
+    const expiry = req.session?.csrfTokenExpiry;
     
     // Skip CSRF verification in development environment if configured to do so
     if (process.env.NODE_ENV === 'development' && process.env.BYPASS_CSRF === 'true') {
@@ -59,24 +87,30 @@ export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction)
       return next();
     }
     
-    // Validate token
-    if (!token || !secret) {
+    // Check if token exists and is not expired
+    if (!token || !secret || !expiry || now > expiry) {
       return res.status(403).json({ 
-        error: 'CSRF token missing', 
-        details: 'A valid CSRF token is required for this operation'
+        error: 'Forbidden',
+        message: 'CSRF token missing or expired',
+        shouldRefresh: true
       });
     }
     
+    // Validate token
     if (!tokens.verify(secret, token)) {
       return res.status(403).json({ 
-        error: 'CSRF token invalid', 
-        details: 'The provided CSRF token is invalid or expired'
+        error: 'Forbidden',
+        message: 'Invalid CSRF token',
+        shouldRefresh: true
       });
     }
     
     next();
   } catch (error) {
     console.error('CSRF verification error:', error);
-    return res.status(500).json({ error: 'CSRF verification failed' });
+    return res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: 'CSRF verification failed'
+    });
   }
 }; 

@@ -1,12 +1,30 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { requireEnvVar, secureLog } from '../../utils/security';
 
-// Use environment variables for keys
-const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51R4EaX09YXo38jybTrN4BFhE6ZwyO8lBftNGZnfM5zf3dkDmQFJbFyzEKpzrsmU6w4rFnP0DJ3U71jQGGEJn7z9M00bvWqF9h4';
+// Use environment variables for keys with development defaults
+const STRIPE_PUBLISHABLE_KEY = requireEnvVar(
+  'VITE_STRIPE_PUBLISHABLE_KEY',
+  'pk_test_development_key' // Development default
+);
+
+const STRIPE_PAYMENT_LINK = requireEnvVar(
+  'VITE_STRIPE_PAYMENT_LINK',
+  'https://buy.stripe.com/test_link' // Development default
+);
+
+const MONTHLY_PRICE_ID = requireEnvVar(
+  'VITE_STRIPE_PRICE_ID',
+  'price_test_id' // Development default
+);
+
+// Log Stripe configuration status securely
+secureLog({
+  publishableKey: STRIPE_PUBLISHABLE_KEY,
+  paymentLink: STRIPE_PAYMENT_LINK,
+  priceId: MONTHLY_PRICE_ID
+}, ['publishableKey', 'paymentLink']);
+
 // Secret key should only be used on the server side
-
-// TODO: Replace with your actual Price ID from your Stripe Dashboard
-// Go to https://dashboard.stripe.com/products to find your product price ID
-const MONTHLY_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID || 'price_placeholder';
 
 // Initialize Stripe with publishable key
 let stripePromise: Promise<Stripe | null>;
@@ -22,44 +40,21 @@ export const getStripe = (): Promise<Stripe | null> => {
 };
 
 /**
- * Redirect to Stripe checkout page using client-only implementation
- * This is compatible with Firebase hosting
+ * Redirect to Stripe payment link
  */
-export const redirectToCheckout = async (userId: string): Promise<void> => {
+export const redirectToPayment = (userId: string): void => {
   try {
-    console.log('Starting checkout process with price ID:', MONTHLY_PRICE_ID);
-    
-    try {
-      // First try client-only checkout
-      const stripe = await getStripe();
-      if (!stripe) throw new Error('Stripe failed to initialize');
-      
-      // Use client-only checkout - this requires enabling client-only in Stripe dashboard
-      const { error } = await stripe.redirectToCheckout({
-        lineItems: [{ price: MONTHLY_PRICE_ID, quantity: 1 }],
-        mode: 'subscription',
-        successUrl: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/`,
-        clientReferenceId: userId,
-      });
-      
-      if (error) {
-        throw error;
-      }
-    } catch (stripeError) {
-      console.error('Stripe redirect error, trying payment link fallback:', stripeError);
-      
-      // Fallback to direct payment link
-      // Create checkout URL using Stripe's hosted checkout
-      const productId = MONTHLY_PRICE_ID; // Your price ID
-      const successUrl = encodeURIComponent(`${window.location.origin}/payment-success`);
-      const cancelUrl = encodeURIComponent(`${window.location.origin}/`);
-      
-      // Redirect to Stripe's hosted checkout page
-      window.location.href = `https://buy.stripe.com/test_8wM3e0aE3c4mbE4bII`;
+    if (!STRIPE_PAYMENT_LINK) {
+      throw new Error('Payment link not configured');
     }
+    
+    // Store the user ID for verification after payment success
+    localStorage.setItem('pending_payment_user', userId);
+    
+    // Redirect to the payment link
+    window.location.href = STRIPE_PAYMENT_LINK;
   } catch (error) {
-    console.error('Error redirecting to checkout:', error);
+    console.error('Error redirecting to payment:', error);
     throw error;
   }
 };
@@ -85,4 +80,6 @@ export const checkSubscriptionStatus = async (userId: string): Promise<boolean> 
  */
 export const setUserAsPremium = (userId: string): void => {
   localStorage.setItem(`premium_${userId}`, 'true');
+  // Clear the pending payment user
+  localStorage.removeItem('pending_payment_user');
 }; 

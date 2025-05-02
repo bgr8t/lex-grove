@@ -1,66 +1,83 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { handleStripeWebhook } from '../../api';
 import Stripe from 'stripe';
+import { buffer } from 'micro';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { updateUserSubscriptionStatus } from '@/lib/services/userProfileService';
 
-// This is your Stripe CLI webhook secret for testing your webhook handler locally
-const endpointSecret = 'whsec_12345';  // Replace with your webhook secret in production
+// Initialize Stripe with server-side secret key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+});
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  const stripe = new Stripe('***REDACTED_STRIPE_TEST_KEY***', {
-    apiVersion: '2025-02-24.acacia',
-  });
-
-  const sig = req.headers['stripe-signature'] as string;
-
-  try {
-    let event;
-
-    // Verify webhook signature
-    try {
-      const body = await buffer(req);
-      event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
-    } catch (err: any) {
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    // Handle the event
-    await handleStripeWebhook(event);
-
-    // Return a 200 response to acknowledge receipt of the event
-    res.status(200).json({ received: true });
-  } catch (error: any) {
-    console.error('Error processing webhook:', error);
-    return res.status(500).json({ 
-      error: 'Error processing webhook',
-      message: error.message
-    });
-  }
+if (!webhookSecret) {
+  console.error('Missing STRIPE_WEBHOOK_SECRET environment variable');
 }
 
-// This is needed to parse the request body as a buffer for Stripe signature verification
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Helper function to get the raw request body
-async function buffer(req: NextApiRequest): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    req.on('data', (chunk: Buffer) => {
-      chunks.push(chunk);
+  try {
+    const buf = await buffer(req);
+    const sig = req.headers['stripe-signature'];
+
+    if (!sig || !webhookSecret) {
+      throw new Error('Missing stripe signature or webhook secret');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return res.status(400).json({ error: 'Webhook signature verification failed' });
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.client_reference_id;
+        
+        if (!userId) {
+          throw new Error('Missing client_reference_id in session');
+        }
+
+        await updateUserSubscriptionStatus(userId, true);
+        break;
+      }
+      
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const userId = subscription.metadata.userId;
+        
+        if (!userId) {
+          throw new Error('Missing userId in subscription metadata');
+        }
+
+        await updateUserSubscriptionStatus(userId, false);
+        break;
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error processing webhook',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
-
-    req.on('end', () => {
-      resolve(Buffer.concat(chunks));
-    });
-
-    req.on('error', reject);
-  });
+  }
 } 

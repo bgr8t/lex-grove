@@ -1,5 +1,14 @@
 import { DocumentData, Timestamp } from 'firebase/firestore';
 
+// Define the Collection type
+export interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: number;
+  briefs: string[]; // Array of brief IDs
+}
+
 export interface UserProfile extends DocumentData {
   id?: string;
   uid: string;              // Firebase Auth user ID
@@ -14,6 +23,10 @@ export interface UserProfile extends DocumentData {
     lastWeekReset?: number; // Timestamp of last weekly reset
   };
   membershipStatus: 'contributor' | 'premium';
+  // Collections of case briefs
+  collections?: Collection[];
+  // Bookmarked briefs
+  bookmarkedBriefs?: string[]; // IDs of bookmarked briefs
   // Subscription info for premium users
   subscriptionInfo?: {
     active: boolean;        // Whether subscription is still active

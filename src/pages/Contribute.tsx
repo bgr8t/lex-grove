@@ -8,12 +8,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { PencilIcon, BookOpenIcon, ArrowRightIcon, CreditCardIcon, ArrowUpRightIcon } from 'lucide-react';
 import { CreateBriefModal } from '@/components/CreateBriefModal';
 import { toast } from '@/components/ui/use-toast';
-import { redirectToCheckout } from '@/lib/services/stripeService';
+import { redirectToPayment } from '@/lib/services/stripeService';
 import { Separator } from '@/components/ui/separator';
-import TestModeNotice from '@/components/TestModeNotice';
 
 export default function Contribute() {
-  const { currentUser } = useAuth();
+  const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -29,16 +28,38 @@ export default function Contribute() {
   const returnPath = location.state?.from?.pathname || '/library';
 
   useEffect(() => {
-    // Load user contribution status
-    const loadContributions = async () => {
+    // Check membership status first
+    const checkUserStatus = async () => {
       if (currentUser) {
         try {
+          // If the user already has contributor or premium status, redirect them
+          if (membershipStatus === 'contributor' || membershipStatus === 'premium') {
+            navigate(returnPath, { replace: true });
+            return;
+          }
+          
+          // Force a fresh check of membership status
+          const status = await checkMembershipStatus();
+          if (status === 'contributor' || status === 'premium') {
+            navigate(returnPath, { replace: true });
+            return;
+          }
+          
+          // Load user contribution status
           const profile = await userProfileService.getCurrentUserProfile();
           if (profile) {
             setContributions(profile.contributions);
             
-            // If contributions are already completed, redirect to library
+            // If contributions are already completed, update status and redirect to library
             if (profile.contributions.completed) {
+              // Ensure the status is set to contributor
+              if (profile.membershipStatus !== 'contributor') {
+                await userProfileService.update(profile.id!, {
+                  membershipStatus: 'contributor',
+                  updatedAt: Date.now()
+                });
+                await checkMembershipStatus();
+              }
               navigate(returnPath, { replace: true });
             }
           }
@@ -47,11 +68,13 @@ export default function Contribute() {
         } finally {
           setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
 
-    loadContributions();
-  }, [currentUser, navigate, returnPath]);
+    checkUserStatus();
+  }, [currentUser, navigate, returnPath, membershipStatus, checkMembershipStatus]);
 
   const handleCreateBrief = () => {
     setCreateModalOpen(true);
@@ -81,7 +104,7 @@ export default function Contribute() {
     navigate(returnPath, { replace: true });
   };
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = () => {
     if (!currentUser) {
       return navigate('/login');
     }
@@ -89,8 +112,8 @@ export default function Contribute() {
     try {
       setIsProcessingPayment(true);
       
-      // Redirect to Stripe checkout
-      await redirectToCheckout(currentUser.uid);
+      // Redirect to payment link
+      redirectToPayment(currentUser.uid);
       
     } catch (error) {
       console.error('Error processing subscription:', error);
@@ -121,9 +144,6 @@ export default function Contribute() {
           Choose between contributing case briefs or subscribing for immediate access
         </p>
       </div>
-      
-      {/* Test Mode Notice */}
-      <TestModeNotice />
       
       <div className="grid md:grid-cols-2 gap-6 mb-10">
         <Card className="border-2 border-primary/20">

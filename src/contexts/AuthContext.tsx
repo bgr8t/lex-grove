@@ -118,6 +118,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Use the user profile service to check status
       const status = await userProfileService.checkSubscriptionStatus(currentUser.uid);
+      
+      // If status is null, double check if user has completed contributions
+      if (status === null) {
+        const profile = await userProfileService.getUserProfileByUid(currentUser.uid);
+        if (profile && profile.contributions && profile.contributions.completed) {
+          console.log("Found completed contributions but status is null, forcing update to contributor");
+          // Force update to contributor status
+          await userProfileService.update(profile.id!, {
+            membershipStatus: 'contributor',
+            updatedAt: Date.now()
+          });
+          
+          // Set as contributor and return
+          setMembershipStatus('contributor');
+          return 'contributor';
+        }
+      }
+      
       setMembershipStatus(status);
       return status;
     } catch (error) {

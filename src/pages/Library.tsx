@@ -1,8 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { sampleBriefs } from '@/data/sampleBriefs';
 import { Brief, BriefCard } from '@/components/BriefCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
-import { CreateCollectionModal, Collection } from '@/components/CreateCollectionModal';
+import { CreateCollectionModal } from '@/components/CreateCollectionModal';
 import { BookmarkCollectionDialog } from '@/components/BookmarkCollectionDialog';
 import { CollectionDetail } from '@/components/CollectionDetail';
 import { CreateBriefModal } from '@/components/CreateBriefModal';
@@ -45,6 +44,8 @@ import { caseBriefService } from '@/lib/services/caseBriefService';
 import { caseBriefsToBriefs } from '@/lib/utils';
 import { semanticSearchExamples } from '@/examples/semanticSearchExamples';
 import { userProfileService } from '@/lib/services/userProfileService';
+import { Collection as UserCollection } from '@/lib/models/userProfile';
+import { caseBriefToBrief } from '@/lib/utils';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -53,8 +54,36 @@ const SUGGESTED_SEARCH_TERMS = [
   "constitutional law", "contracts", "property law", "legal precedent"
 ];
 
+// Define the UI Collection type to match CreateCollectionModal's type
+interface Collection {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: Date | number;
+  briefs: string[];
+}
+
+// Function to convert from UI Collection to User Profile Collection
+function toUserCollection(collection: Collection): UserCollection {
+  return {
+    ...collection,
+    createdAt: typeof collection.createdAt === 'number' 
+      ? collection.createdAt 
+      : collection.createdAt.getTime()
+  };
+}
+
+// Function to convert from User Profile Collection to UI Collection
+function toUICollection(collection: UserCollection): Collection {
+  return {
+    ...collection,
+    createdAt: collection.createdAt
+  };
+}
+
 const Library = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
   const [communityBriefs, setCommunityBriefs] = useState<Brief[]>([]);
@@ -75,12 +104,76 @@ const Library = () => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
   const [createBriefOpen, setCreateBriefOpen] = useState(false);
-  const [searchHelpOpen, setSearchHelpOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [allBriefsLoaded, setAllBriefsLoaded] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   
+  // Extract search query from URL parameters
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const queryFromUrl = queryParams.get('q');
+    
+    if (queryFromUrl) {
+      setSearchQuery(queryFromUrl);
+      // Perform search with the query from URL
+      performSearch(queryFromUrl);
+    }
+  }, [location.search]);
+  
+  // Function to perform search
+  const performSearch = async (query: string) => {
+    if (!query.trim()) return;
+    
+    setIsLoading(true);
+    setShowSearchResults(true);
+    
+    try {
+      // Use semantic search with caseBriefService
+      console.log(`Starting search for query: "${query}" with filter: ${searchFilter}`);
+      const briefs = await caseBriefService.searchCaseBriefs(
+        query,
+        searchFilter,
+        'relevant', // Default sort
+        20 // Limit results
+      );
+      
+      console.log(`Search returned ${briefs?.length || 0} results`);
+      
+      // Convert results to UI format - safely handle potentially null results
+      const results = (briefs || []).map(brief => caseBriefToBrief(brief));
+      
+      setSearchResults(results);
+      
+      // Save to recent searches if not already in there
+      if (!recentSearches.includes(query)) {
+        const newRecentSearches = [query, ...recentSearches].slice(0, 5);
+        setRecentSearches(newRecentSearches);
+        // Could save to localStorage here
+      }
+      
+      // Update URL to reflect the search query
+      navigate(`/library?q=${encodeURIComponent(query)}`, { replace: true });
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      // Log detailed error for debugging
+      if (error instanceof Error) {
+        console.error(`Error details: ${error.message}`);
+        console.error(`Error stack: ${error.stack}`);
+      }
+      
+      toast({
+        title: "Search Error",
+        description: "There was an error processing your search. Please try again.",
+        variant: "destructive"
+      });
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Check authentication and membership status immediately
   useEffect(() => {
     async function checkUserAccess() {
@@ -158,8 +251,7 @@ const Library = () => {
         if (briefs.length > 0) {
           setCommunityBriefs(briefs);
         } else {
-          // Fallback to sample briefs if no community briefs exist yet
-          setCommunityBriefs(sampleBriefs.slice(0, 6));
+          setCommunityBriefs([]);
         }
         
         // Load saved briefs for current user if logged in
@@ -174,27 +266,69 @@ const Library = () => {
             setSubmittedBriefs(userBriefsFormatted);
             setSavedBriefs(userBriefsFormatted);
           } else {
-            // Fallback to sample briefs if user has no saved briefs
+            // User has no saved briefs
             setSubmittedBriefs([]);
-            setSavedBriefs(sampleBriefs.slice(0, 3));
+            setSavedBriefs([]);
+          }
+          
+          // Load user's collections
+          try {
+            const userCollections = await userProfileService.getUserCollections();
+            if (userCollections.length > 0) {
+              // Convert to UI Collections
+              const uiCollections = userCollections.map(toUICollection);
+              setCollections(uiCollections);
+            }
+          } catch (error) {
+            console.error("Error loading collections:", error);
+          }
+          
+          // Load user's bookmarked briefs
+          try {
+            const bookmarkedBriefIds = await userProfileService.getBookmarkedBriefs();
+            if (bookmarkedBriefIds.length > 0) {
+              // Fetch the actual brief data for each ID
+              const bookmarkedBriefs = [];
+              for (const briefId of bookmarkedBriefIds) {
+                try {
+                  const brief = await caseBriefService.getCaseBriefById(briefId);
+                  if (brief) {
+                    bookmarkedBriefs.push(caseBriefToBrief(brief));
+                  }
+                } catch (err) {
+                  console.error("Error fetching bookmarked brief:", briefId, err);
+                }
+              }
+              
+              if (bookmarkedBriefs.length > 0) {
+                setSavedBriefs(prev => {
+                  // Combine with existing savedBriefs but avoid duplicates
+                  const existingIds = prev.map(b => b.id);
+                  const newBriefs = bookmarkedBriefs.filter(b => !existingIds.includes(b.id));
+                  return [...prev, ...newBriefs];
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Error loading bookmarked briefs:", error);
           }
         } else {
           setSubmittedBriefs([]);
-          setSavedBriefs(sampleBriefs.slice(0, 3));
+          setSavedBriefs([]);
         }
       } catch (error) {
         console.error("Error loading briefs:", error);
         
         if (!mounted) return;
         
-        // Fallback to sample data if loading fails
-        setCommunityBriefs(sampleBriefs.slice(0, 6));
+        // Show empty state if loading fails
+        setCommunityBriefs([]);
         setSubmittedBriefs([]);
-        setSavedBriefs(sampleBriefs.slice(0, 3));
+        setSavedBriefs([]);
         
         toast({
           title: "Error loading briefs",
-          description: "Could not load community briefs. Showing sample data instead.",
+          description: "Could not load community briefs. Please try again later.",
           variant: "destructive",
         });
       } finally {
@@ -240,177 +374,17 @@ const Library = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) {
-      setShowSearchResults(false);
-      return;
-    }
-    
-    // Add to recent searches
-    setRecentSearches(prev => {
-      const newSearches = [searchQuery, ...prev.filter(s => s !== searchQuery)].slice(0, 5);
-      return newSearches;
-    });
-    
-    setIsLoading(true);
-    
-    try {
-      // Search for briefs using the new search functionality
-      const searchResults = await caseBriefService.searchCaseBriefs(
-        searchQuery,
-        searchFilter,
-        'relevant',
-        20
-      );
-      
-      // Convert to UI Brief model
-      const results = caseBriefsToBriefs(searchResults);
-      
-      setSearchResults(results);
-      setShowSearchResults(true);
-      
-      toast({
-        title: results.length > 0 ? "Search results found" : "No results found",
-        description: results.length > 0 
-          ? `Found ${results.length} briefs matching "${searchQuery}"`
-          : `No briefs found matching "${searchQuery}". Try different keywords.`
-      });
-    } catch (error) {
-      console.error("Error searching briefs:", error);
-      toast({
-        title: "Search error",
-        description: "An error occurred while searching. Please try again.",
-        variant: "destructive",
-      });
-      
-      // Fallback to sample briefs if search fails
-      const query = searchQuery.toLowerCase().trim();
-      const results = sampleBriefs.filter(brief => {
-        // Apply filter based on selected search scope
-        if (searchFilter === 'title') {
-          return brief.title.toLowerCase().includes(query);
-        }
-        
-        if (searchFilter === 'content') {
-          return (
-            (brief.facts?.toLowerCase().includes(query) || false) ||
-            (brief.issue?.toLowerCase().includes(query) || false) ||
-            (brief.rule?.toLowerCase().includes(query) || false) ||
-            (brief.analysis?.toLowerCase().includes(query) || false) ||
-            (brief.conclusion?.toLowerCase().includes(query) || false) ||
-            brief.snippet.toLowerCase().includes(query)
-          );
-        }
-        
-        if (searchFilter === 'course') {
-          return brief.courseName.toLowerCase().includes(query);
-        }
-        
-        // If filter is 'all', search in all fields
-        return (
-          brief.title.toLowerCase().includes(query) ||
-          brief.snippet.toLowerCase().includes(query) ||
-          (brief.facts?.toLowerCase().includes(query) || false) ||
-          (brief.issue?.toLowerCase().includes(query) || false) ||
-          (brief.rule?.toLowerCase().includes(query) || false) ||
-          (brief.analysis?.toLowerCase().includes(query) || false) ||
-          (brief.conclusion?.toLowerCase().includes(query) || false) ||
-          brief.courseName.toLowerCase().includes(query) ||
-          brief.author.toLowerCase().includes(query)
-        );
-      });
-      
-      setSearchResults(results);
-      setShowSearchResults(true);
-    } finally {
-      setIsLoading(false);
-    }
+    await performSearch(searchQuery);
+  };
+
+  const handleSuggestedSearch = async (term: string) => {
+    setSearchQuery(term);
+    await performSearch(term);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
     setShowSearchResults(false);
-  };
-
-  const handleSuggestedSearch = async (term: string) => {
-    setSearchQuery(term);
-    
-    // Add to recent searches
-    setRecentSearches(prev => {
-      const newSearches = [term, ...prev.filter(s => s !== term)].slice(0, 5);
-      return newSearches;
-    });
-    
-    setIsLoading(true);
-    
-    try {
-      // Search for briefs using the new search functionality
-      const searchResults = await caseBriefService.searchCaseBriefs(
-        term,
-        searchFilter,
-        'relevant',
-        20
-      );
-      
-      // Convert to UI Brief model
-      const results = caseBriefsToBriefs(searchResults);
-      
-      setSearchResults(results);
-      setShowSearchResults(true);
-      
-      toast({
-        title: results.length > 0 ? "Search results found" : "No results found",
-        description: results.length > 0 
-          ? `Found ${results.length} briefs matching "${term}"`
-          : `No briefs found matching "${term}". Try different keywords.`
-      });
-    } catch (error) {
-      console.error("Error searching briefs:", error);
-      toast({
-        title: "Search error",
-        description: "An error occurred while searching. Please try again.",
-        variant: "destructive",
-      });
-      
-      // Fallback to sample briefs if search fails
-      const query = term.toLowerCase().trim();
-      const results = sampleBriefs.filter(brief => {
-        if (searchFilter === 'title') {
-          return brief.title.toLowerCase().includes(query);
-        }
-        
-        if (searchFilter === 'content') {
-          return (
-            (brief.facts?.toLowerCase().includes(query) || false) ||
-            (brief.issue?.toLowerCase().includes(query) || false) ||
-            (brief.rule?.toLowerCase().includes(query) || false) ||
-            (brief.analysis?.toLowerCase().includes(query) || false) ||
-            (brief.conclusion?.toLowerCase().includes(query) || false) ||
-            brief.snippet.toLowerCase().includes(query)
-          );
-        }
-        
-        if (searchFilter === 'course') {
-          return brief.courseName.toLowerCase().includes(query);
-        }
-        
-        return (
-          brief.title.toLowerCase().includes(query) ||
-          brief.snippet.toLowerCase().includes(query) ||
-          (brief.facts?.toLowerCase().includes(query) || false) ||
-          (brief.issue?.toLowerCase().includes(query) || false) ||
-          (brief.rule?.toLowerCase().includes(query) || false) ||
-          (brief.analysis?.toLowerCase().includes(query) || false) ||
-          (brief.conclusion?.toLowerCase().includes(query) || false) ||
-          brief.courseName.toLowerCase().includes(query) ||
-          brief.author.toLowerCase().includes(query)
-        );
-      });
-      
-      setSearchResults(results);
-      setShowSearchResults(true);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleCite = (brief: Brief) => {
@@ -455,19 +429,34 @@ const Library = () => {
 
   const handleCreateBrief = (brief: Brief, collectionId?: string) => {
     // First, add the brief to saved briefs
-    setSavedBriefs(prev => [brief, ...prev]);
+    setSavedBriefs(prev => {
+      // Check if already exists to prevent duplication
+      if (prev.some(b => b.id === brief.id)) {
+        return prev;
+      }
+      return [brief, ...prev];
+    });
     
     // Also add the brief to community briefs
-    setCommunityBriefs(prev => [brief, ...prev]);
+    setCommunityBriefs(prev => {
+      // Check if already exists to prevent duplication
+      if (prev.some(b => b.id === brief.id)) {
+        return prev;
+      }
+      return [brief, ...prev];
+    });
     
     // If a collection ID was provided, add the brief to that collection
     if (collectionId) {
       setCollections(collections.map(collection => {
         if (collection.id === collectionId) {
-          return {
-            ...collection,
-            briefs: [...collection.briefs, brief.id]
-          };
+          // Only add if not already in the collection
+          if (!collection.briefs.includes(brief.id)) {
+            return {
+              ...collection,
+              briefs: [...collection.briefs, brief.id]
+            };
+          }
         }
         return collection;
       }));
@@ -479,48 +468,88 @@ const Library = () => {
     });
   };
 
-  const handleCreateCollection = (collection: Collection) => {
-    setCollections(prev => [...prev, collection]);
-    toast({
-      title: "Collection created",
-      description: `"${collection.name}" collection has been created.`
-    });
-    
-    // If there was a brief in the process of being bookmarked, add it to the new collection
-    if (briefToBookmark) {
-      handleAddToCollection(briefToBookmark, collection.id);
-      setBriefToBookmark(null);
+  const handleCreateCollection = async (collection: Collection) => {
+    try {
+      // Add to local state first for immediate UI update
+      setCollections(prev => [...prev, collection]);
+      
+      // Then persist to database if user is logged in
+      if (currentUser) {
+        // Convert to UserCollection before saving
+        const userCollection = toUserCollection(collection);
+        await userProfileService.createCollection(userCollection);
+      }
+      
+      toast({
+        title: "Collection created",
+        description: `"${collection.name}" collection has been created.`
+      });
+      
+      // If there was a brief in the process of being bookmarked, add it to the new collection
+      if (briefToBookmark) {
+        handleAddToCollection(briefToBookmark, collection.id);
+        setBriefToBookmark(null);
+      }
+    } catch (error) {
+      console.error("Error creating collection:", error);
+      toast({
+        title: "Error creating collection",
+        description: "Failed to save your collection. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleBookmarkClick = (brief: Brief, e?: React.MouseEvent) => {
+  const handleBookmarkClick = async (brief: Brief, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation(); // Prevent card click event
     }
     
     // Check if already bookmarked
     if (savedBriefs.some(saved => saved.id === brief.id)) {
-      // Remove from bookmarks
-      const filteredBriefs = savedBriefs.filter(b => b.id !== brief.id);
-      setSavedBriefs(filteredBriefs);
-      
-      // Also remove from any collections
-      const updatedCollections = collections.map(collection => {
-        if (collection.briefs.includes(brief.id)) {
-          return {
-            ...collection,
-            briefs: collection.briefs.filter(id => id !== brief.id)
-          };
+      try {
+        // Remove from bookmarks in UI
+        const filteredBriefs = savedBriefs.filter(b => b.id !== brief.id);
+        setSavedBriefs(filteredBriefs);
+        
+        // Also remove from any collections
+        const updatedCollections = collections.map(collection => {
+          if (collection.briefs.includes(brief.id)) {
+            return {
+              ...collection,
+              briefs: collection.briefs.filter(id => id !== brief.id)
+            };
+          }
+          return collection;
+        });
+        
+        setCollections(updatedCollections);
+        
+        // Persist to database
+        if (currentUser) {
+          // Remove from bookmarked briefs
+          await userProfileService.removeBookmarkedBrief(brief.id);
+          
+          // Update collections that contained this brief
+          for (const collection of collections) {
+            if (collection.briefs.includes(brief.id)) {
+              await userProfileService.removeBriefFromCollection(collection.id, brief.id);
+            }
+          }
         }
-        return collection;
-      });
-      
-      setCollections(updatedCollections);
-      
-      toast({
-        title: "Brief removed",
-        description: "The brief has been removed from your bookmarks"
-      });
+        
+        toast({
+          title: "Brief removed",
+          description: "The brief has been removed from your bookmarks"
+        });
+      } catch (error) {
+        console.error("Error removing bookmark:", error);
+        toast({
+          title: "Error removing bookmark",
+          description: "Failed to remove the bookmark. Please try again.",
+          variant: "destructive"
+        });
+      }
     } else {
       // Show bookmark dialog
       setBriefToBookmark(brief);
@@ -528,31 +557,71 @@ const Library = () => {
     }
   };
   
-  const handleBookmarkOnly = (brief: Brief) => {
-    setSavedBriefs(prev => [...prev, brief]);
+  const handleBookmarkOnly = async (brief: Brief) => {
+    try {
+      // Add to local state
+      setSavedBriefs(prev => [...prev, brief]);
+      
+      // Persist to database
+      if (currentUser) {
+        await userProfileService.addBookmarkedBrief(brief.id);
+      }
+    } catch (error) {
+      console.error("Error bookmarking brief:", error);
+      toast({
+        title: "Error bookmarking",
+        description: "Failed to bookmark the brief. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
-  const handleAddToCollection = (brief: Brief, collectionId: string) => {
-    // Add to bookmarks if not already there
-    if (!savedBriefs.some(b => b.id === brief.id)) {
-      setSavedBriefs(prev => [...prev, brief]);
-    }
-    
-    // Add to the selected collection
-    setCollections(prev => 
-      prev.map(collection => {
-        if (collection.id === collectionId) {
-          // Avoid duplicates
-          if (!collection.briefs.includes(brief.id)) {
+  const handleAddToCollection = async (brief: Brief, collectionId: string) => {
+    try {
+      // Add to bookmarks if not already there
+      if (!savedBriefs.some(b => b.id === brief.id)) {
+        setSavedBriefs(prev => [...prev, brief]);
+        
+        // Persist bookmark
+        if (currentUser) {
+          await userProfileService.addBookmarkedBrief(brief.id);
+        }
+      }
+      
+      // Add to the selected collection only if not already present
+      setCollections(prev => {
+        // Find the target collection
+        const targetCollection = prev.find(c => c.id === collectionId);
+        
+        // If brief is already in collection, don't modify anything
+        if (targetCollection && targetCollection.briefs.includes(brief.id)) {
+          return prev;
+        }
+        
+        // Otherwise, add brief to collection
+        return prev.map(collection => {
+          if (collection.id === collectionId) {
             return {
               ...collection,
               briefs: [...collection.briefs, brief.id]
             };
           }
-        }
-        return collection;
-      })
-    );
+          return collection;
+        });
+      });
+      
+      // Persist to database
+      if (currentUser) {
+        await userProfileService.addBriefToCollection(collectionId, brief.id);
+      }
+    } catch (error) {
+      console.error("Error adding to collection:", error);
+      toast({
+        title: "Error adding to collection",
+        description: "Failed to add the brief to the collection. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleCollectionClick = (collection: Collection) => {
@@ -560,24 +629,38 @@ const Library = () => {
     setCollectionDetailOpen(true);
   };
   
-  const handleRemoveFromCollection = (collectionId: string, briefId: string) => {
-    // Update the collection by removing the brief
-    setCollections(prev => 
-      prev.map(collection => {
-        if (collection.id === collectionId) {
-          return {
-            ...collection,
-            briefs: collection.briefs.filter(id => id !== briefId)
-          };
-        }
-        return collection;
-      })
-    );
-    
-    toast({
-      title: "Brief removed",
-      description: "The brief has been removed from the collection"
-    });
+  const handleRemoveFromCollection = async (collectionId: string, briefId: string) => {
+    try {
+      // Update the collection by removing the brief in UI
+      setCollections(prev => 
+        prev.map(collection => {
+          if (collection.id === collectionId) {
+            return {
+              ...collection,
+              briefs: collection.briefs.filter(id => id !== briefId)
+            };
+          }
+          return collection;
+        })
+      );
+      
+      // Persist to database
+      if (currentUser) {
+        await userProfileService.removeBriefFromCollection(collectionId, briefId);
+      }
+      
+      toast({
+        title: "Brief removed",
+        description: "The brief has been removed from the collection"
+      });
+    } catch (error) {
+      console.error("Error removing from collection:", error);
+      toast({
+        title: "Error removing from collection",
+        description: "Failed to remove the brief from the collection. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Function to handle search filter change
@@ -639,19 +722,16 @@ const Library = () => {
           </p>
         </div>
 
-        {/* Intelligent Search-Powered Research Section */}
+        {/* Search Section */}
         <div className="max-w-7xl mx-auto mb-10 p-4 sm:p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900">
           <div className="flex items-start gap-4 sm:gap-6 flex-col md:flex-row">
             <div className="flex-1 w-full">
               <div className="flex items-center gap-2 mb-3">
                 <SparklesIcon className="h-5 w-5 text-blue-500" />
-                <h2 className="text-lg sm:text-xl font-semibold">Intelligent Search-Powered Legal Research</h2>
+                <h2 className="text-lg sm:text-xl font-semibold">Search Legal Resources</h2>
               </div>
-              <p className="text-sm sm:text-base text-muted-foreground mb-4">
-                Use our advanced intelligent search to find relevant case briefs, analyze legal concepts, or get insights on specific cases. 
-                Powered by Voyage AI's "voyage-law-2" legal embeddings model for semantic understanding of legal concepts.
-              </p>
-              
+
+              {/* Search Input */}
               <div className="mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2 sm:gap-3 text-sm">
                   <span className="font-medium">Search in:</span>
@@ -737,12 +817,8 @@ const Library = () => {
                 </Button>
               </form>
               
-              <div className="mt-3 flex justify-between items-center">
-                <Button variant="link" size="sm" className="text-xs sm:text-sm p-0 h-auto" onClick={() => setSearchHelpOpen(true)}>
-                  How to use intelligent search
-                </Button>
-                
-                <Button variant="ghost" size="sm" onClick={() => setCreateBriefOpen(true)} className="text-xs sm:text-sm h-8 mt-2 sm:mt-0">
+              <div className="mt-3 flex justify-end">
+                <Button variant="ghost" size="sm" onClick={() => setCreateBriefOpen(true)} className="text-xs sm:text-sm h-8">
                   <PlusIcon className="h-4 w-4 mr-1" />
                   Create Brief
                 </Button>
@@ -1301,7 +1377,9 @@ const Library = () => {
         open={collectionDetailOpen}
         onOpenChange={setCollectionDetailOpen}
         collection={selectedCollection}
-        allBriefs={[...savedBriefs, ...communityBriefs]}
+        allBriefs={Array.from(new Map(
+          [...communityBriefs, ...savedBriefs].map(brief => [brief.id, brief])
+        ).values())}
         onSaveBrief={handleBookmarkClick}
         onOpenBrief={handleViewFullBrief}
         onRemoveFromCollection={handleRemoveFromCollection}
@@ -1315,69 +1393,6 @@ const Library = () => {
         onCreateBrief={handleCreateBrief}
         onCreateCollection={handleCreateCollection}
       />
-      
-      {/* Intelligent Search Help Dialog */}
-      <Dialog open={searchHelpOpen} onOpenChange={setSearchHelpOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>How to use intelligent search</DialogTitle>
-            <DialogDescription>
-              Get the most out of our AI-powered semantic search for legal research.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Semantic understanding</h3>
-              <p className="text-sm text-muted-foreground">
-                Our search is powered by Voyage AI's "voyage-law-2" legal embeddings model, which understands legal concepts and relationships, not just keywords.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Natural language queries</h3>
-              <p className="text-sm text-muted-foreground">
-                Ask questions in plain language. For example: "What is the doctrine of stare decisis?" or "Find cases about proximate cause in medical malpractice."
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Filter by category</h3>
-              <p className="text-sm text-muted-foreground">
-                Use the filter buttons to narrow your search to case titles, content, or specific courses.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Use legal terminology</h3>
-              <p className="text-sm text-muted-foreground">
-                Our search engine understands legal concepts. Try searching for specific legal doctrines, principles, or case elements.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Combine concepts</h3>
-              <p className="text-sm text-muted-foreground">
-                Search for relationships between concepts, like "tort law negligence duty of care" to find briefs connecting these ideas, even if they don't use those exact words.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Example searches</h3>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
-                <li>"Criminal procedure exclusionary rule exceptions"</li>
-                <li>"Constitutional law equal protection scrutiny levels"</li>
-                <li>"Contract law consideration requirement cases"</li>
-                <li>"Quebec civil code property servitudes"</li>
-              </ul>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setSearchHelpOpen(false)}>Got it</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

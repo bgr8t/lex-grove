@@ -22,16 +22,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { Collection } from '@/lib/models/userProfile';
 
-// Define the Collection interface
-export interface Collection {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: Date;
-  briefs: string[]; // Array of brief IDs
-}
-
+// Collection schema for the form
 const collectionFormSchema = z.object({
   name: z.string().min(1, 'Collection name is required').max(50, 'Collection name must be 50 characters or less'),
   description: z.string().max(200, 'Description must be 200 characters or less').optional(),
@@ -70,7 +63,7 @@ export function CreateCollectionModal({
         id: crypto.randomUUID(), // Generate a unique ID
         name: values.name,
         description: values.description || '',
-        createdAt: new Date(),
+        createdAt: Date.now(), // Store as timestamp number
         briefs: [], // Start with empty briefs array
       };
       

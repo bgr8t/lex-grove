@@ -1,5 +1,5 @@
 import { FirestoreService } from '../firestore';
-import { UserProfile } from '../models/userProfile';
+import { Collection, UserProfile } from '../models/userProfile';
 import { auth } from '../firebase';
 import { doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -244,6 +244,182 @@ class UserProfileService extends FirestoreService<UserProfile> {
       console.error('Error checking subscription status:', error);
       return null;
     }
+  }
+
+  // Get user's collections
+  async getUserCollections(): Promise<Collection[]> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+    
+    return profile.collections || [];
+  }
+
+  // Create a new collection
+  async createCollection(collection: Collection): Promise<Collection> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const collections = profile.collections || [];
+    const newCollections = [...collections, collection];
+
+    await this.update(profile.id, {
+      collections: newCollections,
+      updatedAt: Date.now()
+    });
+
+    return collection;
+  }
+
+  // Update a collection
+  async updateCollection(collectionId: string, updates: Partial<Collection>): Promise<Collection> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const collections = profile.collections || [];
+    const collectionIndex = collections.findIndex(c => c.id === collectionId);
+    
+    if (collectionIndex === -1) {
+      throw new Error('Collection not found');
+    }
+
+    const updatedCollection = {
+      ...collections[collectionIndex],
+      ...updates
+    };
+    
+    collections[collectionIndex] = updatedCollection;
+
+    await this.update(profile.id, {
+      collections,
+      updatedAt: Date.now()
+    });
+
+    return updatedCollection;
+  }
+
+  // Delete a collection
+  async deleteCollection(collectionId: string): Promise<void> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const collections = profile.collections || [];
+    const newCollections = collections.filter(c => c.id !== collectionId);
+
+    await this.update(profile.id, {
+      collections: newCollections,
+      updatedAt: Date.now()
+    });
+  }
+
+  // Add brief to collection
+  async addBriefToCollection(collectionId: string, briefId: string): Promise<Collection> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const collections = profile.collections || [];
+    const collectionIndex = collections.findIndex(c => c.id === collectionId);
+    
+    if (collectionIndex === -1) {
+      throw new Error('Collection not found');
+    }
+
+    // Check if brief is already in collection
+    if (!collections[collectionIndex].briefs.includes(briefId)) {
+      collections[collectionIndex].briefs.push(briefId);
+
+      await this.update(profile.id, {
+        collections,
+        updatedAt: Date.now()
+      });
+    }
+
+    return collections[collectionIndex];
+  }
+
+  // Remove brief from collection
+  async removeBriefFromCollection(collectionId: string, briefId: string): Promise<Collection> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const collections = profile.collections || [];
+    const collectionIndex = collections.findIndex(c => c.id === collectionId);
+    
+    if (collectionIndex === -1) {
+      throw new Error('Collection not found');
+    }
+
+    collections[collectionIndex].briefs = collections[collectionIndex].briefs.filter(id => id !== briefId);
+
+    await this.update(profile.id, {
+      collections,
+      updatedAt: Date.now()
+    });
+
+    return collections[collectionIndex];
+  }
+
+  // Get bookmarked briefs
+  async getBookmarkedBriefs(): Promise<string[]> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+    
+    return profile.bookmarkedBriefs || [];
+  }
+
+  // Add bookmarked brief
+  async addBookmarkedBrief(briefId: string): Promise<string[]> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const bookmarkedBriefs = profile.bookmarkedBriefs || [];
+    
+    // Only add if not already bookmarked
+    if (!bookmarkedBriefs.includes(briefId)) {
+      const newBookmarkedBriefs = [...bookmarkedBriefs, briefId];
+      
+      await this.update(profile.id, {
+        bookmarkedBriefs: newBookmarkedBriefs,
+        updatedAt: Date.now()
+      });
+      
+      return newBookmarkedBriefs;
+    }
+    
+    return bookmarkedBriefs;
+  }
+
+  // Remove bookmarked brief
+  async removeBookmarkedBrief(briefId: string): Promise<string[]> {
+    const profile = await this.getCurrentUserProfile();
+    if (!profile) {
+      throw new Error('User profile not found');
+    }
+
+    const bookmarkedBriefs = profile.bookmarkedBriefs || [];
+    const newBookmarkedBriefs = bookmarkedBriefs.filter(id => id !== briefId);
+    
+    await this.update(profile.id, {
+      bookmarkedBriefs: newBookmarkedBriefs,
+      updatedAt: Date.now()
+    });
+    
+    return newBookmarkedBriefs;
   }
 }
 

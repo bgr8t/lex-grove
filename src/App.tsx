@@ -12,6 +12,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import PaymentSuccess from '@/pages/payment-success';
 import NotFound from '@/pages/NotFound';
+import { PineconeTest } from '@/pages/PineconeTest';
+import FlashDeck from '@/pages/FlashDeck';
 
 function App() {
   return (
@@ -22,6 +24,7 @@ function App() {
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
+            <Route path="/pinecone-test" element={<PineconeTest />} />
             
             {/* Auth routes - redirect to home if already logged in */}
             <Route 
@@ -61,6 +64,14 @@ function App() {
               } 
             />
             <Route 
+              path="/flash-deck" 
+              element={
+                <ProtectedRoute requireAuth={true} requireContribution={true}>
+                  <FlashDeck />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/case-brief/:id" 
               element={
                 <ProtectedRoute requireAuth={true} requireContribution={true}>
@@ -76,6 +87,9 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* 404 page */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
         </Router>

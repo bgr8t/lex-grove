@@ -2,7 +2,32 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all users for all documents during development
+    match /caseBriefs/{briefId} {
+      // Allow reading case briefs for all authenticated users
+      allow read: if request.auth != null;
+      
+      // Allow creating case briefs if user is authenticated and sets themselves as owner
+      allow create: if request.auth != null && 
+                   request.resource.data.userId == request.auth.uid;
+      
+      // Allow updating case briefs if user is the owner
+      allow update: if request.auth != null && 
+                   (
+                     // Allow owner to update all fields
+                     resource.data.userId == request.auth.uid ||
+                     // Allow view count increments for any authenticated user
+                     (
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+                       request.resource.data.viewCount == resource.data.viewCount + 1
+                     )
+                   );
+      
+      // Allow deleting case briefs if user is the owner
+      allow delete: if request.auth != null && 
+                   resource.data.userId == request.auth.uid;
+    }
+    
+    // Default rule for other collections
     match /{document=**} {
       allow read, write: if request.auth != null;
     }

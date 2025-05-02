@@ -7,6 +7,8 @@ import helmet from 'helmet';
 import { config } from 'dotenv';
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
+import rateLimit from 'express-rate-limit';
+import { requireEnvVar } from '../utils/security';
 
 // Import middleware
 import { verifyAuth, requirePremiumAccess, requireAdmin } from './middleware/auth';
@@ -15,6 +17,7 @@ import { generateCsrfToken, verifyCsrfToken } from './middleware/csrf';
 
 // Import API functions
 import { createCheckoutSession, handleStripeWebhook, checkSubscriptionStatus } from './index';
+import { flashcardsRouter } from './flashcards';
 
 // Initialize environment variables
 config();
@@ -37,8 +40,43 @@ const tokens = new Tokens();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Rate limiting middleware
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later'
+});
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
+
 // Middlewares
-app.use(helmet()); // Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://*.firebaseio.com", "https://*.googleapis.com"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      fontSrc: ["'self'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: {
+    action: 'deny'
+  },
+  referrerPolicy: {
+    policy: 'strict-origin-when-cross-origin'
+  }
+}));
 app.use(express.json()); // Parse JSON requests
 app.use(cookieParser()); // Parse cookies
 app.use(cors({
@@ -48,16 +86,20 @@ app.use(cors({
   credentials: true
 }));
 
-// Session middleware
+// Enhanced session middleware
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  secret: requireEnvVar('SESSION_SECRET'),
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'strict',
+    domain: process.env.NODE_ENV === 'production' ? '.your-domain.com' : undefined
+  },
+  rolling: true, // Refresh session on activity
+  name: '__Host-session', // More secure cookie name
 }));
 
 // Route to get CSRF token
@@ -404,6 +446,11 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req: 
     res.status(400).send(`Webhook Error: ${err.message}`);
   }
 });
+
+// API Routes
+app.use('/api/checkout', checkoutRouter(express.Router()));
+app.use('/api/webhook', webhookRouter(express.Router()));
+app.use('/api/flashcards', flashcardsRouter(express.Router()));
 
 // Start server
 app.listen(PORT, () => {

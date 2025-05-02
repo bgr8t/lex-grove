@@ -1,8 +1,8 @@
 /**
- * API Client with built-in CSRF protection
+ * API Client with built-in CSRF protection and token refresh
  * 
- * This module handles API requests with proper CSRF token handling
- * and authentication token inclusion.
+ * This module handles API requests with proper CSRF token handling,
+ * authentication token inclusion, and automatic token refresh.
  */
 
 import { auth } from './firebase';
@@ -12,30 +12,65 @@ interface RequestOptions extends RequestInit {
   skipCsrf?: boolean;
 }
 
+interface ApiError extends Error {
+  status?: number;
+  shouldRefresh?: boolean;
+}
+
 /**
  * Get the current CSRF token from localStorage or meta tag
  */
-const getCsrfToken = (): string | null => {
+const getCsrfToken = (): { token: string | null; expiry: number | null } => {
   // Try to get from localStorage first
   const storedToken = localStorage.getItem('csrfToken');
-  if (storedToken) {
-    return storedToken;
+  const storedExpiry = localStorage.getItem('csrfTokenExpiry');
+  
+  if (storedToken && storedExpiry) {
+    const expiry = parseInt(storedExpiry, 10);
+    if (Date.now() < expiry) {
+      return { token: storedToken, expiry };
+    }
   }
   
   // Try to get from meta tag as fallback
   const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-  if (metaToken) {
-    return metaToken;
+  const metaExpiry = document.querySelector('meta[name="csrf-token-expiry"]')?.getAttribute('content');
+  
+  if (metaToken && metaExpiry) {
+    const expiry = parseInt(metaExpiry, 10);
+    if (Date.now() < expiry) {
+      return { token: metaToken, expiry };
+    }
   }
   
-  return null;
+  return { token: null, expiry: null };
 };
 
 /**
- * Store a new CSRF token
+ * Store a new CSRF token and its expiry
  */
-const storeCsrfToken = (token: string): void => {
+const storeCsrfToken = (token: string, expiry: number): void => {
   localStorage.setItem('csrfToken', token);
+  localStorage.setItem('csrfTokenExpiry', expiry.toString());
+  
+  // Update meta tags
+  let metaToken = document.querySelector('meta[name="csrf-token"]');
+  let metaExpiry = document.querySelector('meta[name="csrf-token-expiry"]');
+  
+  if (!metaToken) {
+    metaToken = document.createElement('meta');
+    metaToken.setAttribute('name', 'csrf-token');
+    document.head.appendChild(metaToken);
+  }
+  
+  if (!metaExpiry) {
+    metaExpiry = document.createElement('meta');
+    metaExpiry.setAttribute('name', 'csrf-token-expiry');
+    document.head.appendChild(metaExpiry);
+  }
+  
+  metaToken.setAttribute('content', token);
+  metaExpiry.setAttribute('content', expiry.toString());
 };
 
 /**
@@ -59,11 +94,23 @@ export const apiRequest = async <T = any>(url: string, options: RequestOptions =
   
   // Add CSRF token for state-changing methods if not explicitly skipped
   if (!skipCsrf && (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH')) {
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      requestHeaders['X-CSRF-Token'] = csrfToken;
+    const { token, expiry } = getCsrfToken();
+    if (token && expiry) {
+      requestHeaders['X-CSRF-Token'] = token;
     } else {
-      console.warn('No CSRF token available for state-changing request');
+      // Try to refresh CSRF token
+      try {
+        await refreshCsrfToken();
+        const { token: newToken } = getCsrfToken();
+        if (newToken) {
+          requestHeaders['X-CSRF-Token'] = newToken;
+        } else {
+          throw new Error('Failed to obtain CSRF token');
+        }
+      } catch (error) {
+        console.error('Error refreshing CSRF token:', error);
+        throw new Error('CSRF token required but not available');
+      }
     }
   }
   
@@ -96,8 +143,18 @@ export const apiRequest = async <T = any>(url: string, options: RequestOptions =
     
     // Check for and store new CSRF token from response headers
     const newCsrfToken = response.headers.get('X-CSRF-Token');
-    if (newCsrfToken) {
-      storeCsrfToken(newCsrfToken);
+    const newCsrfExpiry = response.headers.get('X-CSRF-Token-Expiry');
+    if (newCsrfToken && newCsrfExpiry) {
+      storeCsrfToken(newCsrfToken, parseInt(newCsrfExpiry, 10));
+    }
+    
+    // Check for token refresh header
+    if (response.headers.get('X-Token-Refresh') === 'true') {
+      try {
+        await auth.currentUser?.getIdToken(true); // Force refresh
+      } catch (error) {
+        console.error('Error refreshing auth token:', error);
+      }
     }
     
     // Handle HTTP errors
@@ -105,9 +162,14 @@ export const apiRequest = async <T = any>(url: string, options: RequestOptions =
       // Try to get error details from response
       try {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error ${response.status}`);
+        const error = new Error(errorData.message || `HTTP error ${response.status}`) as ApiError;
+        error.status = response.status;
+        error.shouldRefresh = errorData.shouldRefresh;
+        throw error;
       } catch (jsonError) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+        const error = new Error(`HTTP error ${response.status}: ${response.statusText}`) as ApiError;
+        error.status = response.status;
+        throw error;
       }
     }
     
@@ -127,7 +189,7 @@ export const apiRequest = async <T = any>(url: string, options: RequestOptions =
 /**
  * Request a new CSRF token from the server
  */
-export const refreshCsrfToken = async (): Promise<string | null> => {
+export const refreshCsrfToken = async (): Promise<void> => {
   try {
     const response = await fetch('/api/csrf-token', {
       method: 'GET',
@@ -139,14 +201,15 @@ export const refreshCsrfToken = async (): Promise<string | null> => {
     }
     
     const newToken = response.headers.get('X-CSRF-Token');
-    if (newToken) {
-      storeCsrfToken(newToken);
-      return newToken;
-    }
+    const newExpiry = response.headers.get('X-CSRF-Token-Expiry');
     
-    return null;
+    if (newToken && newExpiry) {
+      storeCsrfToken(newToken, parseInt(newExpiry, 10));
+    } else {
+      throw new Error('Invalid CSRF token response');
+    }
   } catch (error) {
     console.error('Failed to refresh CSRF token:', error);
-    return null;
+    throw error;
   }
 }; 

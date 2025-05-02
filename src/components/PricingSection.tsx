@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { userProfileService } from '@/lib/services/userProfileService';
 import { ContributionProgress } from './ContributionProgress';
-import { redirectToCheckout } from '@/lib/services/stripeService';
+import { redirectToPayment } from '@/lib/services/stripeService';
 
 interface PricingSectionProps {
   className?: string;
@@ -103,8 +103,8 @@ const PricingSection = ({ className = '' }: PricingSectionProps) => {
         });
       }
       
-      // Redirect to Stripe checkout (now using client-side redirect)
-      await redirectToCheckout(currentUser.uid);
+      // Redirect to payment link
+      redirectToPayment(currentUser.uid);
       
     } catch (error) {
       console.error('Error processing subscription:', error);
@@ -116,8 +116,6 @@ const PricingSection = ({ className = '' }: PricingSectionProps) => {
       
       setIsProcessingPayment(false);
     }
-    // Note: We don't set isProcessingPayment to false in the success case
-    // because the page will redirect to Stripe
   };
   
   return (
