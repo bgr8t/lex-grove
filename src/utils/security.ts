@@ -57,6 +57,7 @@ export const checkEnvVars = (vars: string[]): Record<string, string> => {
  * @param sensitiveKeys Keys of sensitive data to mask
  */
 export const secureLog = (data: Record<string, any>, sensitiveKeys: string[] = []): void => {
+  if (import.meta.env.MODE !== 'development') return;
   const maskedData = { ...data };
   sensitiveKeys.forEach(key => {
     if (key in maskedData) {

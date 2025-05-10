@@ -25,6 +25,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'About',
     'nav.sign_in': 'Sign In',
     'nav.get_started': 'Get Started',
+    'nav.blog': 'Blog',
     
     // Search
     'search.placeholder': 'Search legal briefs...',
@@ -131,6 +132,7 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.about': 'À Propos',
     'nav.sign_in': 'Connexion',
     'nav.get_started': 'Commencer',
+    'nav.blog': 'Blog',
     
     // Search
     'search.placeholder': 'Rechercher des mémoires juridiques...',

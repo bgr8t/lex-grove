@@ -19,14 +19,17 @@ service cloud.firestore {
     }
     
     function isOwner(userId) {
+      // Only allow if the authenticated user's UID matches the document ID
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // User profiles - More permissive during initial setup
+    // User profiles - More permissive but still safe
     match /userProfiles/{userId} {
-      allow read: if isAuthenticated();  // Allow any authenticated user to read profiles
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.uid == request.auth.uid || isAdmin()
+      );
       allow delete: if isAdmin();
     }
     

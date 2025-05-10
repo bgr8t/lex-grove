@@ -14,6 +14,9 @@ import PaymentSuccess from '@/pages/payment-success';
 import NotFound from '@/pages/NotFound';
 import { PineconeTest } from '@/pages/PineconeTest';
 import FlashDeck from '@/pages/FlashDeck';
+import Blog from '@/pages/Blog';
+import BlogPostPage from '@/pages/BlogPostPage';
+import BlogPostCreate from '@/pages/BlogPostCreate';
 
 function App() {
   return (
@@ -25,6 +28,9 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/pinecone-test" element={<PineconeTest />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogPostPage />} />
+            <Route path="/blog/new" element={<BlogPostCreate />} />
             
             {/* Auth routes - redirect to home if already logged in */}
             <Route 

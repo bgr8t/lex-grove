@@ -27,27 +27,19 @@ class UserProfileService extends FirestoreService<UserProfile> {
   // Create new user profile
   async createUserProfile(profileData: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>): Promise<UserProfile> {
     const now = Date.now();
-    
-    // If uid is not provided, use the current user's uid
     const uid = profileData.uid || auth.currentUser?.uid;
-    
     if (!uid) {
       throw new Error('No authenticated user found');
     }
-    
-    // Add subscription info for premium users
     const profile: Omit<UserProfile, 'id'> = {
       ...profileData,
       uid,
       createdAt: now,
       updatedAt: now
     };
-    
     // If user is premium, ensure they have subscription info
     if (profileData.membershipStatus === 'premium' && !profileData.subscriptionInfo) {
-      // Calculate subscription end date (30 days from now)
       const subscriptionEndDate = now + (30 * 24 * 60 * 60 * 1000);
-      
       profile.subscriptionInfo = {
         active: true,
         startDate: now,
@@ -55,25 +47,42 @@ class UserProfileService extends FirestoreService<UserProfile> {
         lastUpdated: now
       };
     }
-    
-    // Make sure contributions object exists
     if (!profile.contributions) {
       profile.contributions = {
         count: 0,
         target: 3,
-        completed: profileData.membershipStatus === 'premium', // Premium users get automatic completion
+        completed: profileData.membershipStatus === 'premium',
         briefIds: []
       };
     }
+    await setDoc(doc(db, 'userProfiles', uid), profile, { merge: true });
+    return profile as UserProfile;
+  }
 
-    return this.create(profile);
+  // Update user profile (generic)
+  async updateUserProfile(uid: string, updates: Partial<UserProfile>) {
+    await setDoc(doc(db, 'userProfiles', uid), updates, { merge: true });
   }
 
   // Add a contribution (case brief) to user profile
   async addContribution(briefId: string): Promise<UserProfile | null> {
-    const profile = await this.getCurrentUserProfile();
+    let profile = await this.getCurrentUserProfile();
     if (!profile) {
-      throw new Error('User profile not found');
+      // Create the profile if missing
+      const user = auth.currentUser;
+      if (!user) throw new Error('No authenticated user found');
+      profile = await this.createUserProfile({
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || '',
+        membershipStatus: null,
+        contributions: {
+          count: 0,
+          target: 3,
+          completed: false,
+          briefIds: []
+        }
+      });
     }
 
     // Initialize contributions if it doesn't exist
@@ -107,14 +116,14 @@ class UserProfileService extends FirestoreService<UserProfile> {
       contributions.completed = true;
       
       // Upgrade membership
-      await this.update(profile.id, {
+      await this.updateUserProfile(profile.uid, {
         contributions,
         membershipStatus: 'contributor',
         updatedAt: now
       });
     } else {
       // Just update contributions
-      await this.update(profile.id, {
+      await this.updateUserProfile(profile.uid, {
         contributions,
         updatedAt: now
       });
@@ -266,7 +275,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     const collections = profile.collections || [];
     const newCollections = [...collections, collection];
 
-    await this.update(profile.id, {
+    await this.updateUserProfile(profile.uid, {
       collections: newCollections,
       updatedAt: Date.now()
     });
@@ -295,7 +304,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     
     collections[collectionIndex] = updatedCollection;
 
-    await this.update(profile.id, {
+    await this.updateUserProfile(profile.uid, {
       collections,
       updatedAt: Date.now()
     });
@@ -313,7 +322,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     const collections = profile.collections || [];
     const newCollections = collections.filter(c => c.id !== collectionId);
 
-    await this.update(profile.id, {
+    await this.updateUserProfile(profile.uid, {
       collections: newCollections,
       updatedAt: Date.now()
     });
@@ -337,7 +346,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     if (!collections[collectionIndex].briefs.includes(briefId)) {
       collections[collectionIndex].briefs.push(briefId);
 
-      await this.update(profile.id, {
+      await this.updateUserProfile(profile.uid, {
         collections,
         updatedAt: Date.now()
       });
@@ -362,7 +371,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
 
     collections[collectionIndex].briefs = collections[collectionIndex].briefs.filter(id => id !== briefId);
 
-    await this.update(profile.id, {
+    await this.updateUserProfile(profile.uid, {
       collections,
       updatedAt: Date.now()
     });
@@ -393,7 +402,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     if (!bookmarkedBriefs.includes(briefId)) {
       const newBookmarkedBriefs = [...bookmarkedBriefs, briefId];
       
-      await this.update(profile.id, {
+      await this.updateUserProfile(profile.uid, {
         bookmarkedBriefs: newBookmarkedBriefs,
         updatedAt: Date.now()
       });
@@ -414,7 +423,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
     const bookmarkedBriefs = profile.bookmarkedBriefs || [];
     const newBookmarkedBriefs = bookmarkedBriefs.filter(id => id !== briefId);
     
-    await this.update(profile.id, {
+    await this.updateUserProfile(profile.uid, {
       bookmarkedBriefs: newBookmarkedBriefs,
       updatedAt: Date.now()
     });

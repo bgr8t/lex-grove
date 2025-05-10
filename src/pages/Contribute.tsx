@@ -32,6 +32,23 @@ export default function Contribute() {
     const checkUserStatus = async () => {
       if (currentUser) {
         try {
+          // Ensure user profile exists
+          let profile = await userProfileService.getCurrentUserProfile();
+          if (!profile) {
+            profile = await userProfileService.createUserProfile({
+              uid: currentUser.uid,
+              email: currentUser.email || '',
+              displayName: currentUser.displayName || '',
+              membershipStatus: null,
+              contributions: {
+                count: 0,
+                target: 3,
+                completed: false,
+                briefIds: []
+              }
+            });
+          }
+
           // If the user already has contributor or premium status, redirect them
           if (membershipStatus === 'contributor' || membershipStatus === 'premium') {
             navigate(returnPath, { replace: true });
@@ -46,7 +63,6 @@ export default function Contribute() {
           }
           
           // Load user contribution status
-          const profile = await userProfileService.getCurrentUserProfile();
           if (profile) {
             setContributions(profile.contributions);
             
