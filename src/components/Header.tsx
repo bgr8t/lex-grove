@@ -209,7 +209,7 @@ export const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link 
-            to="/" 
+            to="/"
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
               location.pathname === "/" ? "text-primary" : "text-foreground/70"
@@ -226,15 +226,6 @@ export const Header = () => {
             )}
           >
             Flash Deck
-          </Link>
-          <Link 
-            to="/blog" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname.startsWith("/blog") ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            {t('nav.blog')}
           </Link>
           <Link 
             to="/about" 
@@ -312,7 +303,7 @@ export const Header = () => {
                   
                   <nav className="flex flex-col pt-8 px-5">
                     <Link 
-                      to="/" 
+                      to="/"
                       className={cn(
                         "py-4 text-[22px] font-normal transition-colors hover:text-primary",
                         location.pathname === "/" ? "text-primary" : "text-foreground/70"
@@ -331,16 +322,6 @@ export const Header = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Flash Deck
-                    </Link>
-                    <Link 
-                      to="/blog" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
-                        location.pathname.startsWith("/blog") ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.blog')}
                     </Link>
                     <Link 
                       to="/about" 
