@@ -57,77 +57,40 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
     
     if (currentUser) {
       try {
-        // Force a membership status check before navigating
-        console.log('Header: Checking membership status before navigation');
         const status = await checkMembershipStatus();
-        console.log('Header: Membership status updated to', status);
         
-        // If status is still null, try to force update based on contribution status
-        if (status === null) {
-          console.log('Header: Status is null, checking if user has completed contributions');
-          // This will fetch and fix the user's profile if they've completed contributions
-          const profile = await userProfileService.getCurrentUserProfile();
-          
-          if (profile && profile.contributions && profile.contributions.completed) {
-            console.log('Header: User has completed contributions, updating status to contributor');
-            await userProfileService.update(profile.id!, {
-              membershipStatus: 'contributor',
-              updatedAt: Date.now()
-            });
-            
-            // Check membership status again after update
-            await checkMembershipStatus();
-            
-            // Navigate to library since user is a contributor
-            navigate('/library');
-            if (isMobile) {
-              closeMobileMenu();
-            }
-            return;
-          }
-        }
-        
-        // If the user is a contributor or premium member, navigate to library
         if (status === 'contributor' || status === 'premium') {
-          navigate('/library');
+          navigate('/library/pro');
         } else {
-          // Otherwise, redirect to contribute page
-          navigate('/contribute');
-        }
-        
-        if (isMobile) {
-          closeMobileMenu();
+          navigate('/library');
         }
       } catch (error) {
-        console.error('Header: Error checking membership status', error);
-        // Default to library page on error (user can be redirected if needed)
+        console.error('Error checking membership status:', error);
         navigate('/library');
-        if (isMobile) {
-          closeMobileMenu();
-        }
       }
     } else {
-      // If not logged in, just go to library
       navigate('/library');
-      if (isMobile) {
-        closeMobileMenu();
-      }
+    }
+    
+    if (isMobile) {
+      closeMobileMenu();
     }
   };
 
   return (
-    <a 
-      href="/library"
+    <button
       onClick={handleLibraryClick}
       className={cn(
         isMobile ? 
           "py-4 text-[22px] font-normal transition-colors hover:text-primary" :
           "text-sm font-medium transition-colors hover:text-primary",
-        location.pathname === "/library" ? "text-primary" : "text-foreground/70"
+        (location.pathname === "/library" || location.pathname === "/library/pro") 
+          ? "text-primary" 
+          : "text-foreground/70"
       )}
     >
       {t('nav.library')}
-    </a>
+    </button>
   );
 };
 
@@ -301,22 +264,24 @@ export const Header = () => {
                     </div>
                   </div>
                   
-                  <nav className="flex flex-col pt-8 px-5">
+                  <nav className="flex flex-col pt-8 px-5 space-y-2 w-full">
                     <Link 
                       to="/"
                       className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
+                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
                         location.pathname === "/" ? "text-primary" : "text-foreground/70"
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t('nav.home')}
                     </Link>
-                    <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
+                    <div className="w-full">
+                      <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
+                    </div>
                     <Link 
                       to="/flash-deck" 
                       className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
+                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
                         location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
@@ -326,16 +291,17 @@ export const Header = () => {
                     <Link 
                       to="/about" 
                       className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary",
+                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
                         location.pathname === "/about" ? "text-primary" : "text-foreground/70"
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       {t('nav.about')}
                     </Link>
-                    
                     {/* Auth Buttons (Mobile) */}
-                    <AuthButtons isMobile />
+                    <div className="w-full flex flex-col space-y-2 mt-2">
+                      <AuthButtons isMobile />
+                    </div>
                   </nav>
                 </div>
               </CustomSheetContent>

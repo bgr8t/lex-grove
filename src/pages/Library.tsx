@@ -46,6 +46,7 @@ import { semanticSearchExamples } from '@/examples/semanticSearchExamples';
 import { userProfileService } from '@/lib/services/userProfileService';
 import { Collection as UserCollection } from '@/lib/models/userProfile';
 import { caseBriefToBrief } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -85,6 +86,7 @@ const Library = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
+  const isProLibrary = location.pathname === '/library/pro';
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
   const [communityBriefs, setCommunityBriefs] = useState<Brief[]>([]);
   const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
@@ -179,35 +181,12 @@ const Library = () => {
     async function checkUserAccess() {
       try {
         if (currentUser) {
-          // Check membership status first
           const status = await checkMembershipStatus();
-          console.log('Library: Membership status check result:', status);
           
-          // If status is still null, check if we need to update it
-          if (status === null) {
-            console.log('Library: User status is null, checking contributions');
-            const profile = await userProfileService.getCurrentUserProfile();
-            
-            if (profile && profile.contributions && profile.contributions.completed) {
-              console.log('Library: User has completed contributions, updating status to contributor');
-              await userProfileService.update(profile.id!, {
-                membershipStatus: 'contributor',
-                updatedAt: Date.now()
-              });
-              
-              // Check again
-              await checkMembershipStatus();
-            } else {
-              console.log('Library: User has not completed contributions, redirecting to home');
-              // User is authenticated but doesn't have access - redirect
-              toast({
-                title: "Access Required",
-                description: "Complete your contributions or upgrade to access the library.",
-                variant: "destructive",
-              });
-              navigate('/');
-              return;
-            }
+          // If user is on pro route but doesn't have access, redirect to public library
+          if (isProLibrary && status !== 'contributor' && status !== 'premium') {
+            navigate('/library');
+            return;
           }
         }
       } catch (error) {
@@ -218,7 +197,7 @@ const Library = () => {
     }
     
     checkUserAccess();
-  }, [currentUser, navigate, checkMembershipStatus]);
+  }, [currentUser, navigate, checkMembershipStatus, isProLibrary]);
 
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
@@ -504,7 +483,11 @@ const Library = () => {
     if (e) {
       e.stopPropagation(); // Prevent card click event
     }
-    
+
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     // Check if already bookmarked
     if (savedBriefs.some(saved => saved.id === brief.id)) {
       try {
@@ -716,10 +699,24 @@ const Library = () => {
       <main className="flex-1 container mx-auto px-4 py-8 mt-16">
         {/* Page Header */}
         <div className="max-w-7xl mx-auto mb-8">
-          <h1 className="text-3xl font-bold mb-2">Case Brief Library</h1>
-          <p className="text-muted-foreground">
-            Discover and explore case briefs from the legal community
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Case Brief Library</h1>
+              <p className="text-muted-foreground">
+                {isProLibrary ? 'Full access to all case briefs and features' : 'Browse case briefs from the legal community'}
+              </p>
+            </div>
+            {!isProLibrary && currentUser && membershipStatus !== 'premium' && membershipStatus !== 'contributor' && (
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-100 dark:border-blue-900">
+                <p className="text-blue-800 dark:text-blue-200">
+                  Want full access to all case briefs?{' '}
+                  <Link to="/contribute" className="font-medium underline">
+                    Contribute to unlock premium features
+                  </Link>
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search Section */}
@@ -956,52 +953,67 @@ const Library = () => {
                                 </Button>
                               </div>
                               <div className="flex items-center gap-2">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-8"
-                                      onClick={(e) => {
+                                {currentUser ? (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-8"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCite(brief);
+                                        }}
+                                      >
+                                        <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                                        Cite
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                      <DropdownMenuItem onClick={(e) => {
                                         e.stopPropagation();
-                                        handleCite(brief);
-                                      }}
-                                    >
-                                      <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
-                                      Cite
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem onClick={(e) => {
+                                        setCitationFormat('mcgill');
+                                        handleCopyToClipboard(generateCitation(brief, 'mcgill'));
+                                      }}>
+                                        McGill Guide
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCitationFormat('apa');
+                                        handleCopyToClipboard(generateCitation(brief, 'apa'));
+                                      }}>
+                                        APA
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCitationFormat('mla');
+                                        handleCopyToClipboard(generateCitation(brief, 'mla'));
+                                      }}>
+                                        MLA
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCitationFormat('chicago');
+                                        handleCopyToClipboard(generateCitation(brief, 'chicago'));
+                                      }}>
+                                        Chicago
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                ) : (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8"
+                                    onClick={(e) => {
                                       e.stopPropagation();
-                                      setCitationFormat('mcgill');
-                                      handleCopyToClipboard(generateCitation(brief, 'mcgill'));
-                                    }}>
-                                      McGill Guide
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCitationFormat('apa');
-                                      handleCopyToClipboard(generateCitation(brief, 'apa'));
-                                    }}>
-                                      APA
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCitationFormat('mla');
-                                      handleCopyToClipboard(generateCitation(brief, 'mla'));
-                                    }}>
-                                      MLA
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCitationFormat('chicago');
-                                      handleCopyToClipboard(generateCitation(brief, 'chicago'));
-                                    }}>
-                                      Chicago
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                      navigate('/login');
+                                    }}
+                                  >
+                                    <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                                    Cite
+                                  </Button>
+                                )}
                                 
                                 <Button 
                                   variant="ghost" 
@@ -1055,61 +1067,33 @@ const Library = () => {
           </div>
           
           {/* Sidebar - Personal Library */}
-          <div className="lg:col-span-1">
-            <div className="border rounded-xl p-5 bg-card">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold mb-1">Your Library</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Your saved briefs and collections
-                  </p>
-                </div>
-              </div>
-
-              {/* Submitted Briefs Section */}
-              {currentUser && submittedBriefs.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium flex items-center gap-1.5">
-                      <DocumentDuplicateIcon className="h-4 w-4" />
-                      Your Submitted Briefs
-                    </h3>
-                    <Button variant="link" size="sm" className="h-auto p-0">
-                      View All
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {submittedBriefs.slice(0, 3).map((brief) => (
-                      <div 
-                        key={brief.id} 
-                        className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                        onClick={() => handleViewFullBrief(brief)}
-                      >
-                        <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
-                      </div>
-                    ))}
+          {currentUser && (
+            <div className="lg:col-span-1">
+              <div className="border rounded-xl p-5 bg-card">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold mb-1">Your Library</h2>
+                    <p className="text-muted-foreground text-sm">
+                      Your saved briefs and collections
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* Saved Briefs Section */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium flex items-center gap-1.5">
-                    <BookmarkIcon className="h-4 w-4" />
-                    Bookmarked Briefs
-                  </h3>
-                  <Button variant="link" size="sm" className="h-auto p-0">
-                    View All
-                  </Button>
-                </div>
-                
-                <div className="space-y-3">
-                  {savedBriefs.length > 0 ? (
-                    <>
-                      {savedBriefs.map((brief) => (
+                {/* Submitted Briefs Section */}
+                {currentUser && submittedBriefs.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium flex items-center gap-1.5">
+                        <DocumentDuplicateIcon className="h-4 w-4" />
+                        Your Submitted Briefs
+                      </h3>
+                      <Button variant="link" size="sm" className="h-auto p-0">
+                        View All
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {submittedBriefs.slice(0, 3).map((brief) => (
                         <div 
                           key={brief.id} 
                           className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
@@ -1119,105 +1103,135 @@ const Library = () => {
                           <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
                         </div>
                       ))}
-                      
-                      {/* Add Brief button at the end of the list */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full flex items-center justify-center gap-1.5 group hover:bg-accent/30 border-dashed border-2 transition-all duration-300 py-5"
-                        onClick={() => setCreateBriefOpen(true)}
-                      >
-                        <PlusIcon className="h-4 w-4 group-hover:scale-125 transition-transform duration-300" />
-                        <span>Add New Brief</span>
-                      </Button>
-                    </>
+                    </div>
+                  </div>
+                )}
+
+                {/* Saved Briefs Section */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium flex items-center gap-1.5">
+                      <BookmarkIcon className="h-4 w-4" />
+                      Bookmarked Briefs
+                    </h3>
+                    <Button variant="link" size="sm" className="h-auto p-0">
+                      View All
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {savedBriefs.length > 0 ? (
+                      <>
+                        {savedBriefs.map((brief) => (
+                          <div 
+                            key={brief.id} 
+                            className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
+                            onClick={() => handleViewFullBrief(brief)}
+                          >
+                            <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
+                          </div>
+                        ))}
+                        
+                        {/* Add Brief button at the end of the list */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full flex items-center justify-center gap-1.5 group hover:bg-accent/30 border-dashed border-2 transition-all duration-300 py-5"
+                          onClick={() => setCreateBriefOpen(true)}
+                        >
+                          <PlusIcon className="h-4 w-4 group-hover:scale-125 transition-transform duration-300" />
+                          <span>Add New Brief</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
+                        <div className="relative">
+                          <BookmarkIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
+                          <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
+                        </div>
+                        <h4 className="text-sm font-medium mb-1">No saved briefs</h4>
+                        <p className="text-xs text-muted-foreground mb-4">
+                          Create your first brief or bookmark an existing one
+                        </p>
+                        <Button 
+                          size="sm"
+                          className="relative overflow-hidden group animate-subtle-bounce bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
+                          onClick={() => setCreateBriefOpen(true)}
+                        >
+                          <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                          <span className="relative z-10 flex items-center gap-1.5">
+                            <PlusIcon className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+                            <span>Create First Brief</span>
+                          </span>
+                          <span className="absolute inset-0 -z-10 animate-shimmer opacity-0 group-hover:opacity-100 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0"></span>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collections Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium flex items-center gap-1.5">
+                      <FolderIcon className="h-4 w-4" />
+                      Your Collections
+                    </h3>
+                    <Button variant="link" size="sm" className="h-auto p-0">
+                      View All
+                    </Button>
+                  </div>
+                  
+                  {collections.length > 0 ? (
+                    <div className="space-y-3">
+                      {collections.map((collection) => (
+                        <div 
+                          key={collection.id} 
+                          className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
+                          onClick={() => handleCollectionClick(collection)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-sm">{collection.name}</h4>
+                            <span className="text-xs text-muted-foreground">
+                              {collection.briefs.length} {collection.briefs.length === 1 ? 'brief' : 'briefs'}
+                            </span>
+                          </div>
+                          {collection.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              {collection.description}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
                       <div className="relative">
-                        <BookmarkIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
+                        <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
                         <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
                       </div>
-                      <h4 className="text-sm font-medium mb-1">No saved briefs</h4>
+                      <h4 className="text-sm font-medium mb-1">No collections yet</h4>
                       <p className="text-xs text-muted-foreground mb-4">
-                        Create your first brief or bookmark an existing one
+                        Create collections to organize your briefs
                       </p>
                       <Button 
                         size="sm"
-                        className="relative overflow-hidden group animate-subtle-bounce bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
-                        onClick={() => setCreateBriefOpen(true)}
+                        className="relative overflow-hidden group bg-gradient-to-r from-primary/80 to-primary/70 hover:from-primary/90 hover:to-primary/80 shadow-sm"
+                        onClick={() => setCreateCollectionOpen(true)}
                       >
                         <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                         <span className="relative z-10 flex items-center gap-1.5">
-                          <PlusIcon className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
-                          <span>Create First Brief</span>
+                          <FolderIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+                          <span>Create Collection</span>
                         </span>
-                        <span className="absolute inset-0 -z-10 animate-shimmer opacity-0 group-hover:opacity-100 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0"></span>
                       </Button>
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Collections Section */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium flex items-center gap-1.5">
-                    <FolderIcon className="h-4 w-4" />
-                    Your Collections
-                  </h3>
-                  <Button variant="link" size="sm" className="h-auto p-0">
-                    View All
-                  </Button>
-                </div>
-                
-                {collections.length > 0 ? (
-                  <div className="space-y-3">
-                    {collections.map((collection) => (
-                      <div 
-                        key={collection.id} 
-                        className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                        onClick={() => handleCollectionClick(collection)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm">{collection.name}</h4>
-                          <span className="text-xs text-muted-foreground">
-                            {collection.briefs.length} {collection.briefs.length === 1 ? 'brief' : 'briefs'}
-                          </span>
-                        </div>
-                        {collection.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                            {collection.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
-                    <div className="relative">
-                      <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
-                      <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
-                    </div>
-                    <h4 className="text-sm font-medium mb-1">No collections yet</h4>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Create collections to organize your briefs
-                    </p>
-                    <Button 
-                      size="sm"
-                      className="relative overflow-hidden group bg-gradient-to-r from-primary/80 to-primary/70 hover:from-primary/90 hover:to-primary/80 shadow-sm"
-                      onClick={() => setCreateCollectionOpen(true)}
-                    >
-                      <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                      <span className="relative z-10 flex items-center gap-1.5">
-                        <FolderIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
-                        <span>Create Collection</span>
-                      </span>
-                    </Button>
-                  </div>
-                )}
-              </div>
             </div>
-          </div>
+          )}
         </div>
         )}
       </main>

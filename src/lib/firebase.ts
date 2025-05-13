@@ -4,20 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
-import { requireEnvVar, secureLog } from '../utils/security';
+import { requireEnvVar } from '../utils/security';
 
 // Helper function to get environment variables from either source
 const getEnv = (key: string) => {
   // @ts-ignore - process.env might not be typed correctly
   return import.meta.env[key] || (typeof process !== 'undefined' && process.env && process.env[key]) || null;
 };
-
-// Log environment variables for debugging
-console.log("Firebase config check:", {
-  apiKey: getEnv('VITE_FIREBASE_API_KEY') ? "defined" : "undefined",
-  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') ? "defined" : "undefined",
-  projectId: getEnv('VITE_FIREBASE_PROJECT_ID') ? "defined" : "undefined"
-});
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -29,9 +22,6 @@ const firebaseConfig = {
   appId: requireEnvVar('VITE_FIREBASE_APP_ID'),
   measurementId: requireEnvVar('VITE_FIREBASE_MEASUREMENT_ID')
 };
-
-// Log Firebase configuration status securely
-secureLog(firebaseConfig, ['apiKey', 'messagingSenderId', 'appId']);
 
 // Check for missing configuration
 const missingConfig = Object.entries(firebaseConfig)

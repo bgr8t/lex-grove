@@ -18,7 +18,6 @@ const ENV_VARS_TO_CHECK = [
 
 export function checkEnvVariables() {
   const envStatus = checkEnvVars(ENV_VARS_TO_CHECK);
-  secureLog(envStatus);
 }
 
 // Check if running in development

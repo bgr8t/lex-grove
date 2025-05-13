@@ -17,15 +17,6 @@ const MONTHLY_PRICE_ID = requireEnvVar(
   'price_test_id' // Development default
 );
 
-// Log Stripe configuration status securely
-secureLog({
-  publishableKey: STRIPE_PUBLISHABLE_KEY,
-  paymentLink: STRIPE_PAYMENT_LINK,
-  priceId: MONTHLY_PRICE_ID
-}, ['publishableKey', 'paymentLink']);
-
-// Secret key should only be used on the server side
-
 // Initialize Stripe with publishable key
 let stripePromise: Promise<Stripe | null>;
 

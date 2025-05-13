@@ -15,8 +15,6 @@ import NotFound from '@/pages/NotFound';
 import { PineconeTest } from '@/pages/PineconeTest';
 import FlashDeck from '@/pages/FlashDeck';
 import Blog from '@/pages/Blog';
-import BlogPostPage from '@/pages/BlogPostPage';
-import BlogPostCreate from '@/pages/BlogPostCreate';
 
 function App() {
   return (
@@ -28,9 +26,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/pinecone-test" element={<PineconeTest />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPostPage />} />
-            <Route path="/blog/new" element={<BlogPostCreate />} />
+            <Route path="/library" element={<Library />} />
             
             {/* Auth routes - redirect to home if already logged in */}
             <Route 
@@ -62,7 +58,7 @@ function App() {
             
             {/* Protected routes with contribution requirement */}
             <Route 
-              path="/library" 
+              path="/library/pro" 
               element={
                 <ProtectedRoute requireAuth={true} requireContribution={true}>
                   <Library />
@@ -79,11 +75,7 @@ function App() {
             />
             <Route 
               path="/case-brief/:id" 
-              element={
-                <ProtectedRoute requireAuth={true} requireContribution={true}>
-                  <CaseBrief />
-                </ProtectedRoute>
-              } 
+              element={<CaseBrief />} 
             />
             <Route 
               path="/payment-success" 

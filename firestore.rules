@@ -46,8 +46,16 @@ service cloud.firestore {
       // Only authenticated users can create new briefs
       allow create: if isAuthenticated();
       
-      // Only the owner or admin can update or delete briefs
-      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+      // Allow authenticated users to update viewCount; owners/admins to update all fields
+      allow update: if isAuthenticated() && (
+                       (isOwner(resource.data.userId) || isAdmin()) ||
+                       (
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+                         request.resource.data.viewCount == resource.data.viewCount + 1
+                       )
+                     );
+      // Only the owner or admin can delete briefs
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
     
     // Collections (user's saved briefs)

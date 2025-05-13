@@ -7,6 +7,7 @@ import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { cn } from '@/lib/utils';
 import { BriefModal } from './BriefModal';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Brief {
   id: string;
@@ -45,12 +46,17 @@ export const BriefCard = ({
   actions
 }: BriefCardProps) => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [isSaved, setIsSaved] = useState(saved);
   const [isHovered, setIsHovered] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const handleSave = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking save button
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     setIsSaved(!isSaved);
     if (onSave) {
       onSave(brief);
@@ -71,6 +77,10 @@ export const BriefCard = ({
 
   const handleCite = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking cite button
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
   };
   
   return (

@@ -19,6 +19,7 @@ import {
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { caseBriefToBrief } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CaseBrief = () => {
   const params = useParams();
@@ -26,6 +27,7 @@ const CaseBrief = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   
   const [brief, setBrief] = useState<Brief | null>(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -85,6 +87,10 @@ const CaseBrief = () => {
   }, [id, toast, t, navigate]);
 
   const handleSave = () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     setIsSaved(!isSaved);
     toast({
       title: isSaved ? t('brief.removed') : t('brief.added'),
@@ -95,38 +101,30 @@ const CaseBrief = () => {
   };
 
   const handleVote = async (direction: 'up' | 'down') => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     if (!id) return;
-    
     let voteChange = 0;
-    
     if (userVote === direction) {
-      // User is removing their vote
       setUserVote(null);
       voteChange = direction === 'up' ? -1 : 1;
     } else {
-      // User is adding or changing their vote
       setUserVote(direction);
       if (userVote === null) {
-        // New vote
         voteChange = direction === 'up' ? 1 : -1;
       } else {
-        // Changing vote (e.g., from down to up)
         voteChange = direction === 'up' ? 2 : -2;
       }
     }
-    
-    // Update local state
     setVotes(prevVotes => prevVotes + voteChange);
-    
-    // Update in Firestore
     try {
       await caseBriefService.updateUpvotes(id, voteChange);
     } catch (error) {
       console.error("Error updating votes:", error);
-      // Revert local state on error
       setVotes(prevVotes => prevVotes - voteChange);
       setUserVote(prevUserVote => prevUserVote);
-      
       toast({
         title: t('brief.error'),
         description: "Failed to update vote",
