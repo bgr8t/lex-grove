@@ -112,14 +112,26 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
                 </span>
               </div>
             </div>
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? 'Logging out...' : 'Sign out'}
-            </Button>
+            <div className="flex gap-2">
+              <Link to="/my-library">
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="min-w-[48px]"
+                >
+                  My Library
+                </Button>
+              </Link>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="min-w-[48px]"
+              >
+                {isLoggingOut ? 'Logging out...' : 'Sign out'}
+              </Button>
+            </div>
           </div>
           
           {/* Show contribution status on mobile */}
@@ -202,7 +214,7 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
             </>
           )}
           
-          <Link to="/library">
+          <Link to="/my-library">
             <DropdownMenuItem>
               My Library
             </DropdownMenuItem>
