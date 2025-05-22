@@ -47,6 +47,9 @@ import { userProfileService } from '@/lib/services/userProfileService';
 import { Collection as UserCollection } from '@/lib/models/userProfile';
 import { caseBriefToBrief } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FireIcon } from '@heroicons/react/24/solid';
+import { useQuery } from '@tanstack/react-query';
 
 // Add these suggested search terms
 const SUGGESTED_SEARCH_TERMS = [
@@ -88,7 +91,6 @@ const Library = () => {
   const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
   const isProLibrary = location.pathname === '/library/pro';
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
-  const [communityBriefs, setCommunityBriefs] = useState<Brief[]>([]);
   const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Brief[]>([]);
@@ -106,11 +108,27 @@ const Library = () => {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
   const [createBriefOpen, setCreateBriefOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [allBriefsLoaded, setAllBriefsLoaded] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  
+
+  // React Query for community briefs
+  const {
+    data: communityBriefs = [],
+    isLoading: isBriefsLoading,
+    isFetching: isBriefsFetching,
+    refetch: refetchBriefs,
+  } = useQuery({
+    queryKey: ['communityBriefs'],
+    queryFn: async () => {
+      const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
+      return caseBriefsToBriefs(firebaseBriefs);
+    },
+    staleTime: 20 * 60 * 1000, // 20 minutes
+    refetchOnWindowFocus: false,
+    enabled: authChecked, // Only run after auth check
+  });
+
   // Extract search query from URL parameters
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -127,7 +145,6 @@ const Library = () => {
   const performSearch = async (query: string) => {
     if (!query.trim()) return;
     
-    setIsLoading(true);
     setShowSearchResults(true);
     
     try {
@@ -171,8 +188,6 @@ const Library = () => {
         variant: "destructive"
       });
       setSearchResults([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -209,145 +224,20 @@ const Library = () => {
     ).slice(0, 5);
   }, [searchQuery]);
 
-  // Load community briefs on component mount
-  useEffect(() => {
-    // Only load briefs if auth check is complete and user has access
-    if (!authChecked) return;
-    
-    let mounted = true;
-    
-    async function loadBriefs() {
-      try {
-        setIsLoading(true);
-        // Fetch community briefs from Firebase
-        const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
-        const briefs = caseBriefsToBriefs(firebaseBriefs);
-        
-        // Only update state if component is still mounted
-        if (!mounted) return;
-        
-        // If we have briefs from Firebase, use those
-        if (briefs.length > 0) {
-          setCommunityBriefs(briefs);
-        } else {
-          setCommunityBriefs([]);
-        }
-        
-        // Load saved briefs for current user if logged in
-        if (currentUser) {
-          const userBriefs = await caseBriefService.getCaseBriefsByUser(currentUser.uid);
-          const userBriefsFormatted = caseBriefsToBriefs(userBriefs);
-          
-          if (!mounted) return;
-          
-          if (userBriefsFormatted.length > 0) {
-            // Set user's submitted briefs
-            setSubmittedBriefs(userBriefsFormatted);
-            setSavedBriefs(userBriefsFormatted);
-          } else {
-            // User has no saved briefs
-            setSubmittedBriefs([]);
-            setSavedBriefs([]);
-          }
-          
-          // Load user's collections
-          try {
-            const userCollections = await userProfileService.getUserCollections();
-            if (userCollections.length > 0) {
-              // Convert to UI Collections
-              const uiCollections = userCollections.map(toUICollection);
-              setCollections(uiCollections);
-            }
-          } catch (error) {
-            console.error("Error loading collections:", error);
-          }
-          
-          // Load user's bookmarked briefs
-          try {
-            const bookmarkedBriefIds = await userProfileService.getBookmarkedBriefs();
-            if (bookmarkedBriefIds.length > 0) {
-              // Fetch the actual brief data for each ID
-              const bookmarkedBriefs = [];
-              for (const briefId of bookmarkedBriefIds) {
-                try {
-                  const brief = await caseBriefService.getCaseBriefById(briefId);
-                  if (brief) {
-                    bookmarkedBriefs.push(caseBriefToBrief(brief));
-                  }
-                } catch (err) {
-                  console.error("Error fetching bookmarked brief:", briefId, err);
-                }
-              }
-              
-              if (bookmarkedBriefs.length > 0) {
-                setSavedBriefs(prev => {
-                  // Combine with existing savedBriefs but avoid duplicates
-                  const existingIds = prev.map(b => b.id);
-                  const newBriefs = bookmarkedBriefs.filter(b => !existingIds.includes(b.id));
-                  return [...prev, ...newBriefs];
-                });
-              }
-            }
-          } catch (error) {
-            console.error("Error loading bookmarked briefs:", error);
-          }
-        } else {
-          setSubmittedBriefs([]);
-          setSavedBriefs([]);
-        }
-      } catch (error) {
-        console.error("Error loading briefs:", error);
-        
-        if (!mounted) return;
-        
-        // Show empty state if loading fails
-        setCommunityBriefs([]);
-        setSubmittedBriefs([]);
-        setSavedBriefs([]);
-        
-        toast({
-          title: "Error loading briefs",
-          description: "Could not load community briefs. Please try again later.",
-          variant: "destructive",
-        });
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-    
-    loadBriefs();
-    
-    return () => {
-      mounted = false;
-    };
-  }, [currentUser, authChecked]);
-
+  // Replace handleRefresh with React Query refetch
   const handleRefresh = async () => {
     try {
-      setIsLoading(true);
-      // Refresh briefs from Firebase
-      const firebaseBriefs = await caseBriefService.getAllCommunityBriefs();
-      const briefs = caseBriefsToBriefs(firebaseBriefs);
-      
-      if (briefs.length > 0) {
-        setCommunityBriefs(briefs);
-      }
-      
+      await refetchBriefs();
       toast({
-        title: "Library refreshed",
-        description: "Your library has been updated with the latest content."
+        title: 'Library refreshed',
+        description: 'Your library has been updated with the latest content.'
       });
     } catch (error) {
-      console.error("Error refreshing briefs:", error);
       toast({
-        title: "Error refreshing library",
-        description: "Could not refresh community briefs. Please try again.",
-        variant: "destructive",
+        title: 'Error refreshing library',
+        description: 'Could not refresh community briefs. Please try again.',
+        variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -409,15 +299,6 @@ const Library = () => {
   const handleCreateBrief = (brief: Brief, collectionId?: string) => {
     // First, add the brief to saved briefs
     setSavedBriefs(prev => {
-      // Check if already exists to prevent duplication
-      if (prev.some(b => b.id === brief.id)) {
-        return prev;
-      }
-      return [brief, ...prev];
-    });
-    
-    // Also add the brief to community briefs
-    setCommunityBriefs(prev => {
       // Check if already exists to prevent duplication
       if (prev.some(b => b.id === brief.id)) {
         return prev;
@@ -665,9 +546,6 @@ const Library = () => {
       const briefs = caseBriefsToBriefs(firebaseBriefs);
       
       if (briefs.length > 0) {
-        // Update the community briefs with all briefs
-        setCommunityBriefs(briefs);
-        
         // Mark that we've loaded all briefs
         setAllBriefsLoaded(true);
         
@@ -888,23 +766,17 @@ const Library = () => {
                 size="sm" 
                 className="h-9"
                 onClick={handleRefresh}
-                disabled={isLoading}
+                disabled={isBriefsFetching}
               >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></span>
-                    Loading...
-                  </span>
-                ) : (
-                  <>
-                    <ArrowPathIcon className="h-4 w-4 mr-2" />
-                    Refresh
-                  </>
-                )}
+                <ArrowPathIcon
+                  className={`h-5 w-5 mr-2 ${isBriefsFetching ? 'animate-spin' : ''}`}
+                  aria-hidden="true"
+                />
+                Refresh
               </Button>
             </div>
             
-            {isLoading ? (
+            {isBriefsLoading ? (
               <div className="flex items-center justify-center p-12 border rounded-lg">
                 <div className="flex flex-col items-center gap-4">
                   <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
@@ -1066,172 +938,21 @@ const Library = () => {
             )}
           </div>
           
-          {/* Sidebar - Personal Library */}
-          {currentUser && (
-            <div className="lg:col-span-1">
-              <div className="border rounded-xl p-5 bg-card">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold mb-1">Your Library</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Your saved briefs and collections
-                    </p>
-                  </div>
-                </div>
-
-                {/* Submitted Briefs Section */}
-                {currentUser && submittedBriefs.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium flex items-center gap-1.5">
-                        <DocumentDuplicateIcon className="h-4 w-4" />
-                        Your Submitted Briefs
-                      </h3>
-                      <Button variant="link" size="sm" className="h-auto p-0">
-                        View All
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {submittedBriefs.slice(0, 3).map((brief) => (
-                        <div 
-                          key={brief.id} 
-                          className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                          onClick={() => handleViewFullBrief(brief)}
-                        >
-                          <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Saved Briefs Section */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium flex items-center gap-1.5">
-                      <BookmarkIcon className="h-4 w-4" />
-                      Bookmarked Briefs
-                    </h3>
-                    <Button variant="link" size="sm" className="h-auto p-0">
-                      View All
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {savedBriefs.length > 0 ? (
-                      <>
-                        {savedBriefs.map((brief) => (
-                          <div 
-                            key={brief.id} 
-                            className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                            onClick={() => handleViewFullBrief(brief)}
-                          >
-                            <h4 className="font-medium text-sm line-clamp-1">{brief.title}</h4>
-                            <p className="text-xs text-muted-foreground mt-1">{brief.courseName}</p>
-                          </div>
-                        ))}
-                        
-                        {/* Add Brief button at the end of the list */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full flex items-center justify-center gap-1.5 group hover:bg-accent/30 border-dashed border-2 transition-all duration-300 py-5"
-                          onClick={() => setCreateBriefOpen(true)}
-                        >
-                          <PlusIcon className="h-4 w-4 group-hover:scale-125 transition-transform duration-300" />
-                          <span>Add New Brief</span>
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
-                        <div className="relative">
-                          <BookmarkIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
-                          <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
-                        </div>
-                        <h4 className="text-sm font-medium mb-1">No saved briefs</h4>
-                        <p className="text-xs text-muted-foreground mb-4">
-                          Create your first brief or bookmark an existing one
-                        </p>
-                        <Button 
-                          size="sm"
-                          className="relative overflow-hidden group animate-subtle-bounce bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md"
-                          onClick={() => setCreateBriefOpen(true)}
-                        >
-                          <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                          <span className="relative z-10 flex items-center gap-1.5">
-                            <PlusIcon className="h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
-                            <span>Create First Brief</span>
-                          </span>
-                          <span className="absolute inset-0 -z-10 animate-shimmer opacity-0 group-hover:opacity-100 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0"></span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Collections Section */}
+          {/* Sidebar - Top 3 Most Viewed Briefs */}
+          <div className="lg:col-span-1">
+            <div className="border rounded-xl p-5 bg-card">
+              <div className="mb-5 flex items-center justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium flex items-center gap-1.5">
-                      <FolderIcon className="h-4 w-4" />
-                      Your Collections
-                    </h3>
-                    <Button variant="link" size="sm" className="h-auto p-0">
-                      View All
-                    </Button>
-                  </div>
-                  
-                  {collections.length > 0 ? (
-                    <div className="space-y-3">
-                      {collections.map((collection) => (
-                        <div 
-                          key={collection.id} 
-                          className="p-3 border rounded-lg hover:bg-accent/10 transition-colors cursor-pointer"
-                          onClick={() => handleCollectionClick(collection)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-sm">{collection.name}</h4>
-                            <span className="text-xs text-muted-foreground">
-                              {collection.briefs.length} {collection.briefs.length === 1 ? 'brief' : 'briefs'}
-                            </span>
-                          </div>
-                          {collection.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                              {collection.description}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 border rounded-lg bg-gradient-to-b from-muted/5 to-muted/20 border-dashed">
-                      <div className="relative">
-                        <FolderIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2 animate-subtle-bounce" />
-                        <span className="absolute inset-0 mx-auto rounded-full h-12 w-12 animate-pulse-slow bg-primary/10 -z-10 top-[-8px]"></span>
-                      </div>
-                      <h4 className="text-sm font-medium mb-1">No collections yet</h4>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        Create collections to organize your briefs
-                      </p>
-                      <Button 
-                        size="sm"
-                        className="relative overflow-hidden group bg-gradient-to-r from-primary/80 to-primary/70 hover:from-primary/90 hover:to-primary/80 shadow-sm"
-                        onClick={() => setCreateCollectionOpen(true)}
-                      >
-                        <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                        <span className="relative z-10 flex items-center gap-1.5">
-                          <FolderIcon className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
-                          <span>Create Collection</span>
-                        </span>
-                      </Button>
-                    </div>
-                  )}
+                  <h2 className="text-xl font-semibold mb-1">Top 3 Most Viewed</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Most popular case briefs this week
+                  </p>
                 </div>
               </div>
+              {/* Ranking List */}
+              <TopViewedBriefsRanking limit={3} />
             </div>
-          )}
+          </div>
         </div>
         )}
       </main>
@@ -1240,6 +961,8 @@ const Library = () => {
       {/* Citation Dialog - Alternative to DropdownMenu if you prefer a dialog */}
       <Dialog>
         <DialogContent className="sm:max-w-md">
+          {/* Visually hidden DialogTitle for accessibility */}
+          <DialogTitle className="sr-only">Citation Formats</DialogTitle>
           <DialogHeader>
             <DialogTitle>Citation Formats</DialogTitle>
             <DialogDescription>
@@ -1410,5 +1133,56 @@ const Library = () => {
     </div>
   );
 };
+
+function TopViewedBriefsRanking({ limit = 3 }: { limit?: number }) {
+  const { data: briefs, isLoading, error } = useQuery<Brief[]>({
+    queryKey: ['topViewedBriefs', limit],
+    queryFn: () => caseBriefService.getTopViewedBriefs(limit).then(caseBriefsToBriefs),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  if (isLoading) {
+    return (
+      <div className="py-8 space-y-3">
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+      </div>
+    );
+  }
+  if (error) {
+    return <div className="text-center text-red-500 py-8">Failed to load top briefs.</div>;
+  }
+  if (!briefs || !briefs.length) {
+    return <div className="text-center text-muted-foreground py-8">No briefs found.</div>;
+  }
+  return (
+    <ol className="space-y-3">
+      {briefs.map((brief, idx) => (
+        <li key={brief.id}>
+          <button
+            className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-accent/10 transition-colors cursor-pointer text-left"
+            onClick={() => window.location.href = `/case-brief/${brief.id}`}
+            aria-label={`View ${brief.title}`}
+            style={{ minHeight: 48 }}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-lg text-primary/80 flex items-center gap-1">
+                {idx + 1}.
+                {idx === 0 && <FireIcon className="h-5 w-5 text-red-500" title="Hottest" />}
+                {idx === 1 && <FireIcon className="h-5 w-5 text-orange-400" title="2nd hottest" />}
+                {idx === 2 && <FireIcon className="h-5 w-5 text-yellow-400" title="3rd hottest" />}
+              </span>
+              <span className="font-medium text-sm line-clamp-1 min-w-0 truncate">{brief.title}</span>
+            </span>
+            <span className="text-sm font-mono font-medium text-blue-900/80 text-right min-w-[60px]">
+              {brief.viewCount} <span className="text-xs font-normal text-muted-foreground">views</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export default Library; 

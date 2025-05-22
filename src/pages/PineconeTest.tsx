@@ -58,4 +58,6 @@ export function PineconeTest() {
       </div>
     </div>
   );
-} 
+}
+
+export default PineconeTest; 

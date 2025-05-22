@@ -198,15 +198,18 @@ class CaseBriefService extends FirestoreService<CaseBrief> {
         return null;
       }
       
-      // Increment view count asynchronously (don't wait for it)
-      this.incrementViewCount(id).catch(err => {
-        console.error(`Failed to increment view count for brief ${id}:`, err);
-      });
+      // Only increment view count if user is authenticated
+      if (userId) {
+        // Increment view count asynchronously (don't wait for it)
+        this.incrementViewCount(id).catch(err => {
+          //console.error(`Failed to increment view count for brief ${id}:`, err);
+        });
+      }
       
       // Return the full brief for all users without content truncation
       return brief;
     } catch (error) {
-      console.error(`Error fetching case brief with ID ${id}:`, error);
+      //console.error(`Error fetching case brief with ID ${id}:`, error);
       return null;
     }
   }

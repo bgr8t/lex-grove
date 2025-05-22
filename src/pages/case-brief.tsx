@@ -59,8 +59,10 @@ const CaseBrief = () => {
           setBrief(uiBrief);
           setVotes(caseBrief.upvotes || 0);
           
-          // Increment view count
-          await caseBriefService.incrementViewCount(id);
+          // Only increment view count if user is authenticated
+          if (currentUser) {
+            await caseBriefService.incrementViewCount(id);
+          }
         } else {
           // Brief not found
           toast({
@@ -84,7 +86,7 @@ const CaseBrief = () => {
     };
 
     fetchBrief();
-  }, [id, toast, t, navigate]);
+  }, [id, toast, t, navigate, currentUser]);
 
   const handleSave = () => {
     if (!currentUser) {

@@ -88,9 +88,6 @@ const About = () => {
           <p className="text-lg mb-8">
             {t('about.cta.description')}
           </p>
-          <Button size="lg" className="px-8">
-            {t('nav.get_started')} <ArrowRightIcon className="h-4 w-4 ml-2" />
-          </Button>
         </section>
       </main>
       <Footer className="mt-auto" />
