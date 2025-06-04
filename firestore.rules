@@ -12,12 +12,7 @@ service cloud.firestore {
              get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
     }
     
-    function hasPremiumAccess() {
-      return isAuthenticated() && 
-             (exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.membershipStatus in ['premium', 'contributor']);
-    }
-    
+ 
     function isOwner(userId) {
       // Only allow if the authenticated user's UID matches the document ID
       return isAuthenticated() && request.auth.uid == userId;
@@ -36,10 +31,10 @@ service cloud.firestore {
     // Case briefs - Access control based on membership status
     match /caseBriefs/{briefId} {
       // Anyone can read basic brief metadata
-      allow read: true;
+      allow read: if true;
       
       // Only premium users, contributors, owners, and admins can read full brief content
-      allow read: true;
+      allow read: if true;
       
       // Only authenticated users can create new briefs
       allow create: if isAuthenticated();
