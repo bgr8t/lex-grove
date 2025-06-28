@@ -130,7 +130,7 @@ export class ProtectedResearchGroveService {
 
     await Promise.all(
       sources.map(source => 
-        sourcesService.update(source.id!, { questionId: undefined })
+        sourcesService.update(source.id!, { questionId: null })
       )
     );
 

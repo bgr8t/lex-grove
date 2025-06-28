@@ -1,3 +1,4 @@
+import React from 'react';
 import { Mandate, Source, LegalQuestion } from '../models/mandate';
 import { useResearchGroveService } from './firestoreResearchGrove';
 
@@ -55,7 +56,7 @@ export const migrateToFirestore = async () => {
 export const useAsyncResearchGroveStorage = () => {
   const service = useResearchGroveService();
 
-  return {
+  return React.useMemo(() => ({
     // Mandate operations
     async getMandates(): Promise<Mandate[]> {
       return await service.getUserMandates();
@@ -114,7 +115,7 @@ export const useAsyncResearchGroveStorage = () => {
     async deleteSource(id: string): Promise<void> {
       return await service.deleteSource(id);
     }
-  };
+  }), [service]);
 };
 
 // Legacy synchronous storage (throws errors to force migration)

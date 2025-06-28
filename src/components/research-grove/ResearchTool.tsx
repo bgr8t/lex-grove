@@ -81,7 +81,7 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
       quote: '',
       fullSource: '',
       note: '',
-      questionId: undefined,
+      questionId: '',
     },
   });
 
@@ -109,16 +109,21 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
     };
 
     loadData();
-  }, [mandate.id]);
+  }, [mandate.id, storage]);
 
   const handleAddSource = async (data: SourceFormData) => {
+    // Prevent multiple submissions
+    if (isLoading) {
+      return;
+    }
+
     try {
       setIsLoading(true);
       
-      // Convert "unassigned" value to undefined to match existing logic
+      // Convert "unassigned" or empty values to null for Firestore compatibility
       const processedData = {
         ...data,
-        questionId: data.questionId === 'unassigned' ? undefined : data.questionId,
+        questionId: (data.questionId === 'unassigned' || !data.questionId) ? null : data.questionId,
       };
       
       const sourceData = {
@@ -127,18 +132,35 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
         createdAt: new Date().toISOString(),
       };
 
+      // Create the source first
       const newSource = await storage.addSource(sourceData);
+      
+      // Only update UI state after successful creation
       setSources(prev => [...prev, newSource]);
-      form.reset();
+      
+      // Reset form only after everything succeeds
+      form.reset({
+        quote: '',
+        fullSource: '',
+        note: '',
+        questionId: '',
+      });
 
       toast({
         title: "Success",
         description: "Research source added successfully.",
       });
     } catch (error) {
+      console.error('Error adding source:', error);
+      
+      // Provide more specific error messaging
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Failed to add research source. Please try again.";
+        
       toast({
         title: "Error",
-        description: "Failed to add research source.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
