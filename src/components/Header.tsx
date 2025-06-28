@@ -191,6 +191,15 @@ export const Header = () => {
             Flash Deck
           </Link>
           <Link 
+            to="/research-grove" 
+            className={cn(
+              "text-sm font-medium transition-colors hover:text-primary",
+              location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
+            )}
+          >
+            {t('nav.research_grove')}
+          </Link>
+          <Link 
             to="/about" 
             className={cn(
               "text-sm font-medium transition-colors hover:text-primary",
@@ -287,6 +296,16 @@ export const Header = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Flash Deck
+                    </Link>
+                    <Link 
+                      to="/research-grove" 
+                      className={cn(
+                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                        location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {t('nav.research_grove')}
                     </Link>
                     <Link 
                       to="/about" 

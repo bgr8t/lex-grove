@@ -81,5 +81,44 @@ service cloud.firestore {
     match /flashcardDecks/{deckId} {
       allow read, write: if isAuthenticated();  // More permissive for initial setup
     }
+
+    // Research Grove Collections - Protected Premium Feature
+    
+    // Helper function to check membership for Research Grove access
+    function hasValidMembership() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.membershipStatus in ['contributor', 'premium'];
+    }
+    
+    // Mandates - only authenticated users with valid membership can access their own
+    match /mandates/{mandateId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
+    
+    // Legal questions - only mandate owners can access
+    match /legal_questions/{questionId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
+    
+    // Research sources - only mandate owners can access  
+    match /research_sources/{sourceId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
   }
 } 

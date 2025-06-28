@@ -21,6 +21,7 @@ const PineconeTest = lazy(() => import('@/pages/PineconeTest'));
 const FlashDeck = lazy(() => import('@/pages/FlashDeck'));
 const Blog = lazy(() => import('@/pages/Blog'));
 const MyLibrary = lazy(() => import('@/pages/MyLibrary'));
+const ResearchGrove = lazy(() => import('@/pages/ResearchGrove'));
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
+                <Route path="/research-grove" element={<ResearchGrove />} />
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
                 
