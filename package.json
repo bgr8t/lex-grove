@@ -93,6 +93,7 @@
     "ts-node": "^10.9.2",
     "undici": "^7.9.0",
     "vaul": "^0.9.3",
+    "web-vitals": "^5.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -112,6 +113,7 @@
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
+    "terser": "^5.43.1",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"

@@ -1,103 +1,202 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon1.ico" />
-    <link rel="shortcut icon" href="/favicon1.ico" type="image/x-icon" />
-
-    <!-- Social Sharing Meta Tags -->
-    <meta property="og:title" content="Lex Grove | Intelligent Legal Research" />
-    <meta property="og:description" content="Join collaborative legal research and access a modern, Intelligent legal knowledge platform." />
-    <meta property="og:image" content="/images/social_media_preview.jpg" />
-    <meta property="og:url" content="https://www.lexgrove.com" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Lex Grove | Intelligent Legal Research" />
-    <meta name="twitter:description" content="Join collaborative legal research and access a modern, AI-powered legal knowledge platform." />
-    <meta name="twitter:image" content="/images/social_media_preview.jpg" />
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.4.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.4.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.4.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  
+  <!-- Performance & Resource Hints -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" />
+  <link rel="dns-prefetch" href="https://firebase.googleapis.com" />
+  <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+  
+  <!-- Viewport and responsive -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  
+  <!-- Primary Meta Tags -->
+  <title>Lex Grove | Intelligent Legal Research Platform</title>
+  <meta name="title" content="Lex Grove | Intelligent Legal Research Platform" />
+  <meta name="description" content="Join collaborative legal research and access a modern, AI-powered legal knowledge platform. Find case briefs, legal analysis, and research tools." />
+  <meta name="keywords" content="legal research, case briefs, legal analysis, AI legal platform, law research tools" />
+  <meta name="author" content="Lex Grove" />
+  <meta name="robots" content="index, follow" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Lex Grove | Intelligent Legal Research Platform" />
+  <meta property="og:description" content="Join collaborative legal research and access a modern, AI-powered legal knowledge platform." />
+  <meta property="og:url" content="https://www.lexgrove.com" />
+  <meta property="og:site_name" content="Lex Grove" />
+  <meta property="og:image" content="/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Lex Grove - Intelligent Legal Research" />
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Lex Grove | Intelligent Legal Research Platform" />
+  <meta name="twitter:description" content="Join collaborative legal research and access a modern, AI-powered legal knowledge platform." />
+  <meta name="twitter:image" content="/og-image.png" />
+  <meta name="twitter:image:alt" content="Lex Grove - Intelligent Legal Research" />
+  
+  <!-- Favicons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+  <link rel="manifest" href="/icons/site.webmanifest" />
+  
+  <!-- Theme & App -->
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Lex Grove" />
+  
+  <!-- Performance optimizations -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="format-detection" content="telephone=no" />
+  
+  <!-- Fonts with display swap for better performance -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  </noscript>
+  
+  <!-- Critical CSS inline - prevents FOUC -->
+  <style>
+    /* Critical loading styles */
+    * {
+      box-sizing: border-box;
+    }
+    
+    html {
+      line-height: 1.15;
+      -webkit-text-size-adjust: 100%;
+    }
+    
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #ffffff;
+      color: #1f2937;
+    }
+    
+    /* Initial loading screen */
+    #root {
+      min-height: 100vh;
+    }
+    
+    .loading-fallback {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Hide loading fallback when React loads */
+    .react-loaded .loading-fallback {
+      display: none;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #0f172a;
+        color: #f8fafc;
       }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+      
+      .loading-fallback {
+        background-color: #0f172a;
+      }
+      
+      .loading-spinner {
+        border-color: #475569;
+        border-top-color: #3b82f6;
+      }
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+      <h1>JavaScript Required</h1>
+      <p>You need to enable JavaScript to run this application.</p>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+  </noscript>
+  
+  <!-- Loading fallback while React loads -->
+  <div class="loading-fallback" id="loading-fallback">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- React app root -->
+  <div id="root"></div>
+  
+  <!-- Service worker registration -->
+  <script>
+    // Remove loading fallback when React loads
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length > 0) {
+          document.body.classList.add('react-loaded');
+          observer.disconnect();
         }
       });
-    </script>
-  </body>
+    });
+    
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      observer.observe(rootElement, { childList: true, subtree: true });
+    }
+    
+    // Register service worker for caching
+    if ('serviceWorker' in navigator && 'production' === 'production') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+    
+    // Performance monitoring script
+    window.addEventListener('load', () => {
+      // Hide loading fallback after a maximum time
+      setTimeout(() => {
+        const fallback = document.getElementById('loading-fallback');
+        if (fallback) {
+          fallback.style.display = 'none';
+        }
+      }, 5000);
+    });
+  </script>
+</body>
 </html>
