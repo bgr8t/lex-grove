@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import ReactMarkdown from 'react-markdown';
+import html2pdf from 'html2pdf.js';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +49,8 @@ import {
   ClipboardIcon,
   QuestionMarkCircleIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { Mandate, Source, SourceFormData, LegalQuestion } from '@/lib/models/mandate';
 import { useAsyncResearchGroveStorage } from '@/lib/services/researchGroveStorage';
@@ -74,6 +79,9 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedQuestionFilter, setSelectedQuestionFilter] = useState<string>('all');
   const [isQuestionsCollapsed, setIsQuestionsCollapsed] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
+  const documentRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<SourceFormData>({
     resolver: zodResolver(sourceSchema),
@@ -109,7 +117,7 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
     };
 
     loadData();
-  }, [mandate.id, storage]);
+  }, [mandate.id]); // Only depend on mandate.id to prevent flickering
 
   const handleAddSource = async (data: SourceFormData) => {
     // Prevent multiple submissions
@@ -284,6 +292,219 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
     }
   };
 
+  const generatePDF = async () => {
+    if (!documentRef.current) return;
+    
+    setIsGeneratingPdf(true);
+    try {
+      const element = documentRef.current;
+      
+      const opt = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `${mandate.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_research_document.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { 
+          unit: 'in', 
+          format: 'letter', 
+          orientation: 'portrait' 
+        }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+      
+      toast({
+        title: "PDF Generated",
+        description: "Your research document has been downloaded as PDF.",
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "Unable to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const generateDOCX = async () => {
+    setIsGeneratingDoc(true);
+    try {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            // Document Title
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: mandate.title,
+                  bold: true,
+                  size: 32,
+                }),
+              ],
+              heading: HeadingLevel.TITLE,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+
+            // Document Metadata
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Client: ", bold: true }),
+                new TextRun({ text: mandate.clientName }),
+              ],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Legal Area: ", bold: true }),
+                new TextRun({ text: mandate.legalArea }),
+              ],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Priority: ", bold: true }),
+                new TextRun({ text: mandate.priority }),
+              ],
+              spacing: { after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Deadline: ", bold: true }),
+                new TextRun({ text: new Date(mandate.deadline).toLocaleDateString() }),
+              ],
+              spacing: { after: 200 },
+            }),
+            
+            ...(mandate.assignedLawyer ? [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Assigned Lawyer: ", bold: true }),
+                  new TextRun({ text: mandate.assignedLawyer }),
+                ],
+                spacing: { after: 400 },
+              })
+            ] : []),
+
+            // Research Objective
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Research Objective",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 400, after: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: mandate.researchObjective }),
+              ],
+              spacing: { after: 400 },
+            }),
+
+            // Sources Section
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Sources and Analysis",
+                  bold: true,
+                  size: 24,
+                }),
+              ],
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 400, after: 200 },
+            }),
+
+            // Add sources
+            ...sources.flatMap((source, index) => [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `Source ${index + 1}`,
+                    bold: true,
+                    size: 20,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 300, after: 200 },
+              }),
+              ...(source.quote ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `"${source.quote}"`, italics: true }),
+                  ],
+                  spacing: { after: 200 },
+                }),
+              ] : []),
+              ...(source.fullSource ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: "Citation: ", bold: true }),
+                    new TextRun({ text: source.fullSource }),
+                  ],
+                  spacing: { after: 200 },
+                }),
+              ] : []),
+              ...(source.note ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: "Analysis: ", bold: true }),
+                    new TextRun({ text: source.note }),
+                  ],
+                  spacing: { after: 300 },
+                }),
+              ] : []),
+            ]),
+
+            // Footer
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
+                  size: 18,
+                  color: "666666",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 600 },
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const filename = `${mandate.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_research_document.docx`;
+      
+      saveAs(blob, filename);
+      
+      toast({
+        title: "Word Document Generated",
+        description: "Your research document has been downloaded as DOCX.",
+      });
+    } catch (error) {
+      console.error('DOCX generation error:', error);
+      toast({
+        title: "Document Generation Failed",
+        description: "Unable to generate Word document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingDoc(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -295,29 +516,56 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
     ? sources.filter(s => !s.questionId)
     : sources.filter(s => s.questionId === selectedQuestionFilter);
 
-  // Group sources by question for display
   const groupedSources = () => {
-    const groups: { question: LegalQuestion | null; sources: Source[] }[] = [];
+    if (questions.length === 0) {
+      return [{
+        question: null,
+        sources: sources
+      }];
+    }
+
+    const groups = [];
     
-    // Add question groups
+    // Add sources for each question
     questions.forEach(question => {
       const questionSources = sources.filter(s => s.questionId === question.id);
-      groups.push({ question, sources: questionSources });
+      if (questionSources.length > 0) {
+        groups.push({
+          question,
+          sources: questionSources
+        });
+      }
     });
-    
+
     // Add unassigned sources
     const unassignedSources = sources.filter(s => !s.questionId);
     if (unassignedSources.length > 0) {
-      groups.push({ question: null, sources: unassignedSources });
+      groups.push({
+        question: null,
+        sources: unassignedSources
+      });
     }
-    
+
     return groups;
   };
 
+  if (isDataLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading research data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40">
+      <div className="bg-white shadow-sm border-b border-gray-100">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -325,16 +573,16 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
                 variant="ghost"
                 size="sm"
                 onClick={onBack}
-                className="hover:bg-primary/10"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
               >
-                <ArrowLeftIcon className="w-4 h-4 mr-2" />
-                Back to Dashboard
+                <ArrowLeftIcon className="w-4 h-4" />
+                Back to Mandates
               </Button>
               <Separator orientation="vertical" className="h-6" />
               <div>
-                <h1 className="text-xl font-semibold">{mandate.title}</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{mandate.title}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {mandate.clientName} • {mandate.legalArea}
+                  {mandate.clientName} • Due {formatDate(mandate.deadline)}
                 </p>
               </div>
             </div>
@@ -352,29 +600,135 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
                     Generate Document
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden">
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
                   <DialogHeader>
                     <DialogTitle className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
                         <DocumentTextIcon className="w-5 h-5" />
                         Document Preview - {mandate.title}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyToClipboard}
-                        className="flex items-center gap-2"
-                      >
-                        <ClipboardIcon className="w-4 h-4" />
-                        Copy
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={generateDOCX}
+                          disabled={isGeneratingDoc}
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowDownTrayIcon className="w-4 h-4" />
+                          {isGeneratingDoc ? 'Generating...' : 'Download DOC'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={generatePDF}
+                          disabled={isGeneratingPdf}
+                          className="flex items-center gap-2"
+                        >
+                          <ArrowDownTrayIcon className="w-4 h-4" />
+                          {isGeneratingPdf ? 'Generating...' : 'Download PDF'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyToClipboard}
+                          className="flex items-center gap-2"
+                        >
+                          <ClipboardIcon className="w-4 h-4" />
+                          Copy
+                        </Button>
+                      </div>
                     </DialogTitle>
                   </DialogHeader>
-                  <ScrollArea className="h-[65vh] mt-4">
-                    <div className="p-4 bg-muted/30 rounded-lg">
-                      <pre className="whitespace-pre-wrap text-sm text-foreground font-mono leading-relaxed">
-                        {generateMarkdownPreview()}
-                      </pre>
+                  <ScrollArea className="h-[75vh] mt-4">
+                    <div 
+                      ref={documentRef}
+                      className="bg-white border border-gray-200 shadow-lg mx-auto max-w-4xl"
+                    >
+                      {/* Document Header - Word-like styling */}
+                      <div className="px-16 py-12 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+                        <div className="text-center space-y-2">
+                          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                            {mandate.title}
+                          </h1>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <p><span className="font-semibold">Client:</span> {mandate.clientName}</p>
+                            <p><span className="font-semibold">Legal Area:</span> {mandate.legalArea}</p>
+                            <div className="flex justify-center items-center gap-4">
+                              <span><span className="font-semibold">Priority:</span> {mandate.priority}</span>
+                              <span><span className="font-semibold">Deadline:</span> {new Date(mandate.deadline).toLocaleDateString()}</span>
+                            </div>
+                            {mandate.assignedLawyer && (
+                              <p><span className="font-semibold">Assigned Lawyer:</span> {mandate.assignedLawyer}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Document Body with Word-like typography */}
+                      <div className="px-16 py-8">
+                        <div className="prose prose-lg prose-gray max-w-none leading-relaxed">
+                          <ReactMarkdown
+                            components={{
+                              h1: ({children}) => (
+                                <h1 className="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({children}) => (
+                                <h2 className="text-xl font-semibold text-gray-800 mt-8 mb-4 pb-1 border-b border-gray-100">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({children}) => (
+                                <h3 className="text-lg font-semibold text-gray-800 mt-6 mb-3">
+                                  {children}
+                                </h3>
+                              ),
+                              h4: ({children}) => (
+                                <h4 className="text-base font-semibold text-gray-700 mt-4 mb-2">
+                                  {children}
+                                </h4>
+                              ),
+                              p: ({children}) => (
+                                <p className="mb-4 text-gray-700 leading-7 text-justify">
+                                  {children}
+                                </p>
+                              ),
+                              blockquote: ({children}) => (
+                                <blockquote className="border-l-4 border-blue-500 pl-6 py-2 my-6 bg-blue-50 italic text-gray-700 rounded-r-lg">
+                                  {children}
+                                </blockquote>
+                              ),
+                              strong: ({children}) => (
+                                <strong className="font-semibold text-gray-900">
+                                  {children}
+                                </strong>
+                              ),
+                              hr: () => (
+                                <hr className="my-8 border-0 border-t border-gray-300" />
+                              ),
+                              ul: ({children}) => (
+                                <ul className="list-disc list-inside mb-4 space-y-2 text-gray-700">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({children}) => (
+                                <ol className="list-decimal list-inside mb-4 space-y-2 text-gray-700">
+                                  {children}
+                                </ol>
+                              ),
+                            }}
+                          >
+                            {generateMarkdownPreview()}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                      
+                      {/* Document Footer */}
+                      <div className="px-16 py-6 bg-gray-50 border-t border-gray-100 text-center text-sm text-gray-500">
+                        Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+                      </div>
                     </div>
                   </ScrollArea>
                 </DialogContent>
@@ -395,8 +749,6 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
           </div>
         </div>
       </div>
-
-
 
       {/* Two-panel layout */}
       <div className="container mx-auto px-4 py-6">
@@ -504,7 +856,7 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
             </CardContent>
           </Card>
 
-          {/* Right Panel - Sources List (grouped by questions) */}
+          {/* Right Panel - Sources List */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -552,157 +904,52 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
                       <p>No research sources added yet.</p>
                       <p className="text-sm">Add your first source using the form on the left.</p>
                     </div>
-                  ) : selectedQuestionFilter !== 'all' ? (
-                    // Filtered view
-                    <div className="space-y-4">
-                      {filteredSources.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <DocumentTextIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <p>No sources found for this filter.</p>
-                        </div>
-                      ) : (
-                        filteredSources.map((source, index) => (
-                          <div key={source.id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
-                            <div className="flex items-start justify-between mb-3">
-                              <Badge variant="secondary" className="text-xs">
-                                Source {index + 1}
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteSource(source.id)}
-                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </Button>
-                            </div>
-
-                            {source.questionId && (
-                              <div className="mb-3">
-                                <Badge variant="outline" className="text-xs">
-                                  Q: {questions.find(q => q.id === source.questionId)?.question.substring(0, 30)}...
-                                </Badge>
-                              </div>
-                            )}
-
-                            {source.quote && (
-                              <div className="mb-3">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <ChatBubbleLeftRightIcon className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-xs font-medium text-muted-foreground">Quote</span>
-                                </div>
-                                <blockquote className="text-sm italic text-foreground border-l-2 border-primary/20 pl-2">
-                                  "{source.quote}"
-                                </blockquote>
-                              </div>
-                            )}
-
-                            {source.fullSource && (
-                              <div className="mb-3">
-                                <span className="text-xs font-medium text-muted-foreground">Source</span>
-                                <p className="text-sm text-foreground">{source.fullSource}</p>
-                              </div>
-                            )}
-
-                            {source.note && (
-                              <div className="mb-3">
-                                <span className="text-xs font-medium text-muted-foreground">Analysis</span>
-                                <p className="text-sm text-foreground">{source.note}</p>
-                              </div>
-                            )}
-
-                            <div className="text-xs text-muted-foreground">
-                              Added {formatDate(source.createdAt)}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
                   ) : (
-                    // Grouped view (default)
-                    <div className="space-y-6">
-                      {groupedSources().map((group, groupIndex) => (
-                        <div key={group.question?.id || 'unassigned'}>
-                          {/* Group Header */}
-                          <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-                            {group.question ? (
-                              <>
-                                <QuestionMarkCircleIcon className="w-4 h-4 text-primary" />
-                                <h3 className="font-medium text-sm">
-                                  Question {questions.findIndex(q => q.id === group.question?.id) + 1}: {group.question.question}
-                                </h3>
-                                <Badge variant="outline" className="text-xs">
-                                  {group.sources.length} sources
-                                </Badge>
-                              </>
-                            ) : (
-                              <>
-                                <DocumentTextIcon className="w-4 h-4 text-muted-foreground" />
-                                <h3 className="font-medium text-sm text-muted-foreground">
-                                  General Research
-                                </h3>
-                                <Badge variant="outline" className="text-xs">
-                                  {group.sources.length} sources
-                                </Badge>
-                              </>
-                            )}
+                    <div className="space-y-4">
+                      {filteredSources.map((source, index) => (
+                        <div
+                          key={source.id}
+                          className="p-4 border border-gray-200 rounded-lg bg-white hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-900">
+                              Source {index + 1}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSource(source.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </Button>
                           </div>
-
-                          {/* Sources in this group */}
-                          <div className="space-y-3 ml-6">
-                            {group.sources.length === 0 && group.question ? (
-                              <p className="text-sm text-muted-foreground italic">
-                                No sources assigned to this question yet.
-                              </p>
-                            ) : (
-                              group.sources.map((source, index) => (
-                                <div key={source.id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow bg-muted/30">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <Badge variant="secondary" className="text-xs">
-                                      Source {index + 1}
-                                    </Badge>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteSource(source.id)}
-                                      className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                                    >
-                                      <TrashIcon className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-
-                                  {source.quote && (
-                                    <div className="mb-3">
-                                      <div className="flex items-center gap-1 mb-1">
-                                        <ChatBubbleLeftRightIcon className="w-3 h-3 text-muted-foreground" />
-                                        <span className="text-xs font-medium text-muted-foreground">Quote</span>
-                                      </div>
-                                      <blockquote className="text-sm italic text-foreground border-l-2 border-primary/20 pl-2">
-                                        "{source.quote}"
-                                      </blockquote>
-                                    </div>
-                                  )}
-
-                                  {source.fullSource && (
-                                    <div className="mb-3">
-                                      <span className="text-xs font-medium text-muted-foreground">Source</span>
-                                      <p className="text-sm text-foreground">{source.fullSource}</p>
-                                    </div>
-                                  )}
-
-                                  {source.note && (
-                                    <div className="mb-3">
-                                      <span className="text-xs font-medium text-muted-foreground">Analysis</span>
-                                      <p className="text-sm text-foreground">{source.note}</p>
-                                    </div>
-                                  )}
-
-                                  <div className="text-xs text-muted-foreground">
-                                    Added {formatDate(source.createdAt)}
-                                  </div>
-                                </div>
-                              ))
-                            )}
+                          
+                          {source.quote && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Quote:</p>
+                              <blockquote className="text-sm text-gray-600 italic pl-3 border-l-2 border-blue-300">
+                                "{source.quote}"
+                              </blockquote>
+                            </div>
+                          )}
+                          
+                          {source.fullSource && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Citation:</p>
+                              <p className="text-sm text-gray-600">{source.fullSource}</p>
+                            </div>
+                          )}
+                          
+                          {source.note && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Analysis:</p>
+                              <p className="text-sm text-gray-600">{source.note}</p>
+                            </div>
+                          )}
+                          
+                          <div className="text-xs text-gray-400 mt-2">
+                            Added {formatDate(source.createdAt)}
                           </div>
                         </div>
                       ))}
