@@ -50,11 +50,17 @@ import {
   QuestionMarkCircleIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  SparklesIcon,
+  ExclamationTriangleIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 import { Mandate, Source, SourceFormData, LegalQuestion } from '@/lib/models/mandate';
 import { useAsyncResearchGroveStorage } from '@/lib/services/researchGroveStorage';
 import { useToast } from '@/hooks/use-toast';
+import { DocumentGenerationService } from '@/lib/services/documentGenerationService';
+import { AIGenerationWarning, AIGenerationGuidelines } from './AIGenerationWarning';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Form validation schema
 const sourceSchema = z.object({
@@ -82,6 +88,18 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const documentRef = useRef<HTMLDivElement>(null);
+  
+  // AI Document Generation State
+  const [isGeneratingAIDocument, setIsGeneratingAIDocument] = useState(false);
+  const [generatedDocument, setGeneratedDocument] = useState<any>(null);
+  const [showAIDocumentPreview, setShowAIDocumentPreview] = useState(false);
+  const [showAIWarning, setShowAIWarning] = useState(false);
+  const [documentOptions, setDocumentOptions] = useState({
+    includeAnalysis: true,
+    includeRecommendations: true,
+    citationStyle: 'mcgill' as const,
+    documentType: 'memo' as const,
+  });
 
   const form = useForm<SourceFormData>({
     resolver: zodResolver(sourceSchema),
@@ -191,6 +209,48 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
         description: "Failed to delete research source.",
         variant: "destructive",
       });
+    }
+  };
+
+  // AI Document Generation Handler
+  const handleGenerateAIDocument = async () => {
+    if (sources.length < 2) {
+      toast({
+        title: "Insufficient Sources",
+        description: "Please add at least 2 research sources before generating an AI document.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsGeneratingAIDocument(true);
+      
+      const documentService = new DocumentGenerationService();
+      const document = await documentService.generateDocument(
+        mandate,
+        sources,
+        questions,
+        documentOptions
+      );
+      
+      setGeneratedDocument(document);
+      setShowAIDocumentPreview(true);
+      setShowAIWarning(false); // Close warning dialog
+      
+      toast({
+        title: "Success",
+        description: "AI document generated successfully! Please review carefully.",
+      });
+    } catch (error) {
+      console.error('Error generating AI document:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAIDocument(false);
     }
   };
 
@@ -588,7 +648,151 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
             </div>
             
             <div className="flex items-center gap-3">
-              {/* Generate Document Button */}
+              {/* AI Generate Document Button */}
+              <Dialog open={showAIWarning} onOpenChange={setShowAIWarning}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2"
+                    disabled={isGeneratingAIDocument}
+                  >
+                    {isGeneratingAIDocument ? (
+                      <>
+                        <SparklesIcon className="w-4 h-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <SparklesIcon className="w-4 h-4" />
+                        AI Generate
+                      </>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <SparklesIcon className="h-5 w-5 text-blue-600" />
+                      AI Document Generation
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="p-1 rounded-full hover:bg-amber-100 transition-colors ml-2">
+                            <ExclamationTriangleIcon className="h-4 w-4 text-amber-600 hover:text-amber-700" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent 
+                          className="w-80 bg-amber-50 border-amber-200" 
+                          align="start"
+                          sideOffset={5}
+                        >
+                          <AIGenerationGuidelines />
+                        </PopoverContent>
+                      </Popover>
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6">
+                    <AIGenerationWarning 
+                      sourceCount={sources.length}
+                      questionCount={questions.length}
+                    />
+                    
+                    {/* Document Options */}
+                    <div className="bg-white border rounded-lg p-4">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <CogIcon className="h-4 w-4 text-gray-600" />
+                        Document Options
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Document Type</label>
+                          <Select 
+                            value={documentOptions.documentType} 
+                            onValueChange={(value: any) => setDocumentOptions(prev => ({...prev, documentType: value}))}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="memo">Legal Memo</SelectItem>
+                              <SelectItem value="brief">Legal Brief</SelectItem>
+                              <SelectItem value="report">Research Report</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Citation Style</label>
+                          <Select 
+                            value={documentOptions.citationStyle} 
+                            onValueChange={(value: any) => setDocumentOptions(prev => ({...prev, citationStyle: value}))}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="mcgill">McGill Guide</SelectItem>
+                              <SelectItem value="bluebook">Bluebook</SelectItem>
+                              <SelectItem value="chicago">Chicago</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={documentOptions.includeAnalysis}
+                            onChange={(e) => setDocumentOptions(prev => ({...prev, includeAnalysis: e.target.checked}))}
+                            className="rounded border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700">Include detailed legal analysis</span>
+                        </label>
+                        
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={documentOptions.includeRecommendations}
+                            onChange={(e) => setDocumentOptions(prev => ({...prev, includeRecommendations: e.target.checked}))}
+                            className="rounded border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700">Include strategic recommendations</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Generate Button */}
+                    <div className="flex justify-end gap-3 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAIWarning(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleGenerateAIDocument}
+                        disabled={sources.length < 2 || isGeneratingAIDocument}
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                      >
+                        {isGeneratingAIDocument ? (
+                          <>
+                            <SparklesIcon className="w-4 h-4 mr-2 animate-spin" />
+                            Generating Document...
+                          </>
+                        ) : (
+                          <>
+                            <SparklesIcon className="w-4 h-4 mr-2" />
+                            Generate AI Document
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Traditional Generate Document Button */}
               <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogTrigger asChild>
                   <Button 
@@ -961,6 +1165,119 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
           </Card>
         </div>
       </div>
+
+      {/* AI Generated Document Preview Dialog */}
+      <Dialog open={showAIDocumentPreview} onOpenChange={setShowAIDocumentPreview}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <SparklesIcon className="h-5 w-5 text-blue-600" />
+              AI-Generated Legal Document
+            </DialogTitle>
+            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <ExclamationTriangleIcon className="h-5 w-5 text-amber-600" />
+              <p className="text-sm text-amber-800">
+                This document was generated using AI. Please review carefully and verify all citations and legal conclusions.
+              </p>
+            </div>
+          </DialogHeader>
+          
+          {generatedDocument && (
+            <div className="space-y-6">
+              {/* Document Metadata */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2">Generation Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>Sources Used: {generatedDocument.metadata.sourceCount}</div>
+                  <div>Questions Addressed: {generatedDocument.metadata.questionCount}</div>
+                  <div>Citation Style: {generatedDocument.metadata.citationStyle}</div>
+                  <div>Generated: {new Date(generatedDocument.metadata.generatedAt).toLocaleString()}</div>
+                </div>
+              </div>
+
+              {/* Document Content */}
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap font-serif text-sm bg-white p-6 border rounded-lg leading-relaxed">
+                  {generatedDocument.content}
+                </div>
+              </div>
+
+              {/* Citations Summary */}
+              {generatedDocument.citations.length > 0 && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">Citations Included</h3>
+                  <ul className="text-sm space-y-1">
+                    {generatedDocument.citations.map((citation: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-blue-600 font-medium">{index + 1}.</span>
+                        <span>{citation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedDocument.content);
+                    toast({ title: "Copied to clipboard" });
+                  }}
+                  variant="outline"
+                >
+                  <ClipboardIcon className="h-4 w-4 mr-2" />
+                  Copy to Clipboard
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    // Create a downloadable PDF of the AI generated content
+                    const element = document.createElement('div');
+                    element.innerHTML = `
+                      <div style="font-family: serif; line-height: 1.6; max-width: 8.5in; margin: 0 auto; padding: 1in;">
+                        <div style="text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #333; padding-bottom: 1rem;">
+                          <h1 style="font-size: 24px; margin-bottom: 0.5rem;">${mandate.title}</h1>
+                          <p style="font-size: 14px; color: #666;">AI-Generated Legal Document</p>
+                          <p style="font-size: 12px; color: #666;">Generated on ${new Date().toLocaleDateString()}</p>
+                        </div>
+                        <pre style="white-space: pre-wrap; font-family: serif; font-size: 12px; line-height: 1.6;">${generatedDocument.content}</pre>
+                        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ccc; font-size: 10px; color: #666;">
+                          <p><strong>Disclaimer:</strong> This document was generated using artificial intelligence based on provided research sources. Please review all content, verify citations, and ensure accuracy before use.</p>
+                        </div>
+                      </div>
+                    `;
+                    document.body.appendChild(element);
+                    
+                    const opt = {
+                      margin: 0.5,
+                      filename: `${mandate.title}_AI_Generated.pdf`,
+                      image: { type: 'jpeg', quality: 0.98 },
+                      html2canvas: { scale: 2 },
+                      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                    };
+                    
+                    html2pdf().set(opt).from(element).save().then(() => {
+                      document.body.removeChild(element);
+                    });
+                  }}
+                  variant="outline"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                
+                <Button 
+                  onClick={() => setShowAIDocumentPreview(false)}
+                  className="ml-auto"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }; 
