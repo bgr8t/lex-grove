@@ -22,12 +22,15 @@ import { ProtectedResearchGrove } from '@/components/auth/ProtectedResearchGrove
 import { Mandate, MandateFormData } from '@/lib/models/mandate';
 import { useAsyncResearchGroveStorage } from '@/lib/services/researchGroveStorage';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate, useParams } from 'react-router-dom';
 
 type ViewMode = 'dashboard' | 'research';
 
 const ResearchGroveContent = () => {
   const { toast } = useToast();
   const storage = useAsyncResearchGroveStorage();
+  const navigate = useNavigate();
+  const { mandateId } = useParams();
   const [mandates, setMandates] = useState<Mandate[]>([]);
   const [filteredMandates, setFilteredMandates] = useState<Mandate[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +56,14 @@ const ResearchGroveContent = () => {
         const loadedMandates = await storage.getMandates();
         setMandates(loadedMandates);
         setFilteredMandates(loadedMandates);
+        // If mandateId is present in URL, select that mandate
+        if (mandateId) {
+          const found = loadedMandates.find(m => m.id === mandateId);
+          if (found) {
+            setSelectedMandate(found);
+            setViewMode('research');
+          }
+        }
       } catch (error) {
         console.error('Error loading mandates:', error);
         toast({
@@ -66,7 +77,7 @@ const ResearchGroveContent = () => {
     };
 
     loadMandates();
-  }, []);
+  }, [mandateId]);
 
   // Filter mandates based on search term
   useEffect(() => {
@@ -218,11 +229,13 @@ const ResearchGroveContent = () => {
   const handleOpenResearch = (mandate: Mandate) => {
     setSelectedMandate(mandate);
     setViewMode('research');
+    navigate(`/research-grove/${mandate.id}`);
   };
 
   const handleBackToDashboard = () => {
     setViewMode('dashboard');
     setSelectedMandate(null);
+    navigate('/research-grove');
   };
 
   // Research Tool View

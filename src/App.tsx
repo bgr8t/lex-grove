@@ -54,6 +54,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/research-grove" element={<ResearchGrove />} />
+                <Route path="/research-grove/:mandateId" element={<ResearchGrove />} />
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
                 
