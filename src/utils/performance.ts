@@ -1,4 +1,5 @@
 import { onCLS, onINP, onFCP, onLCP, onTTFB, type ReportCallback } from 'web-vitals';
+import React from 'react';
 
 // Performance thresholds based on Web Vitals recommendations
 const PERFORMANCE_THRESHOLDS = {
@@ -201,7 +202,4 @@ export const usePerformanceMonitoring = () => {
     analyzeBundleSize,
     monitorMemoryUsage,
   };
-};
-
-// React import for the hook
-import React from 'react'; 
+}; 

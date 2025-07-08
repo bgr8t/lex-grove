@@ -13,7 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
-import * as React from "react";
+import React from "react";
 import { userProfileService } from '@/lib/services/userProfileService';
 import { usePreload, preloadRoutes } from '@/hooks/use-preload';
 

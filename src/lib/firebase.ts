@@ -6,12 +6,6 @@ import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { requireEnvVar } from '../utils/security';
 
-// Helper function to get environment variables from either source
-const getEnv = (key: string) => {
-  // @ts-ignore - process.env might not be typed correctly
-  return import.meta.env[key] || (typeof process !== 'undefined' && process.env && process.env[key]) || null;
-};
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: requireEnvVar('VITE_FIREBASE_API_KEY'),

@@ -57,7 +57,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Mandate, Source, SourceFormData, LegalQuestion } from '@/lib/models/mandate';
 import { useAsyncResearchGroveStorage } from '@/lib/services/researchGroveStorage';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { DocumentGenerationService } from '@/lib/services/documentGenerationService';
 import { AIGenerationWarning, AIGenerationGuidelines } from './AIGenerationWarning';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

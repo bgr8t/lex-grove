@@ -24,7 +24,7 @@ export const maskSensitiveData = (value: string | undefined | null, showLength =
  * @throws Error if the environment variable is not set in production
  */
 export const requireEnvVar = (name: string, defaultValue?: string): string => {
-  const value = process.env[name] || import.meta.env[name];
+  const value = import.meta.env[name];
   
   if (!value) {
     if (import.meta.env.MODE === 'development' && defaultValue) {
@@ -45,7 +45,7 @@ export const requireEnvVar = (name: string, defaultValue?: string): string => {
 export const checkEnvVars = (vars: string[]): Record<string, string> => {
   const status: Record<string, string> = {};
   vars.forEach(name => {
-    const value = process.env[name] || import.meta.env[name];
+    const value = import.meta.env[name];
     status[name] = value ? 'configured' : 'not-configured';
   });
   return status;

@@ -21,7 +21,7 @@ import { ResearchTool } from '@/components/research-grove/ResearchTool';
 import { ProtectedResearchGrove } from '@/components/auth/ProtectedResearchGrove';
 import { Mandate, MandateFormData } from '@/lib/models/mandate';
 import { useAsyncResearchGroveStorage } from '@/lib/services/researchGroveStorage';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 
 type ViewMode = 'dashboard' | 'research';

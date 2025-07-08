@@ -1,10 +1,36 @@
-import { useTheme } from "next-themes"
 import { Toaster as Sonner } from "sonner"
+import { useEffect, useState } from "react"
+
+// Custom hook to detect theme for Vite/React (not Next.js)
+const useTheme = () => {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'dark' : 'light');
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return { theme };
+};
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const { theme } = useTheme()
 
   return (
     <Sonner

@@ -8,7 +8,7 @@ interface LanguageContextType {
   t: (key: string) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = React.createContext<LanguageContextType | undefined>(undefined);
 
 // Our translations
 const translations: Record<Language, Record<string, string>> = {
@@ -261,7 +261,7 @@ export const LanguageProvider: React.FC<{children: ReactNode}> = ({ children }) 
 
 // Custom hook to use the language context
 export const useLanguage = (): LanguageContextType => {
-  const context = useContext(LanguageContext);
+  const context = React.useContext(LanguageContext);
   if (context === undefined) {
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
