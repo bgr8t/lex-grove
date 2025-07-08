@@ -125,7 +125,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
           // Update subscription status
           await updateDoc(userRef, {
             subscriptionStatus: subscription.status,
-            membershipStatus: subscription.status === 'active' ? 'premium' : 'free',
+            membershipStatus: subscription.status === 'active' ? 'premium' : 'contributor',
             subscriptionPeriodEnd: Timestamp.fromMillis(subscription.current_period_end * 1000),
             updatedAt: Timestamp.now(),
           });
@@ -176,7 +176,7 @@ export async function checkSubscriptionStatus(userId: string) {
           } else {
             // Update status to free
             await updateDoc(userRef, {
-              membershipStatus: 'free',
+              membershipStatus: 'contributor',
               subscriptionStatus: subscription.status,
               updatedAt: Timestamp.now(),
             });

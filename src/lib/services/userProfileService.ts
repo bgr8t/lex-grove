@@ -75,7 +75,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
         uid: user.uid,
         email: user.email || '',
         displayName: user.displayName || '',
-        membershipStatus: null,
+        membershipStatus: 'contributor',
         contributions: {
           count: 0,
           target: 3,

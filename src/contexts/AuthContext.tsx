@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           uid: userCredential.user.uid,
           email: email,
           displayName: userCredential.user.displayName || '',
-          membershipStatus: null as any,
+          membershipStatus: 'contributor',
           contributions: {
             count: 0,
             target: 3,
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               uid: user.uid,
               email: user.email || '',
               displayName: user.displayName || '',
-              membershipStatus: null as any,
+              membershipStatus: 'contributor',
               contributions: {
                 count: 0,
                 target: 3,

@@ -23,7 +23,7 @@ declare global {
       user?: {
         uid: string;
         email?: string;
-        membershipStatus?: 'free' | 'premium' | 'contributor';
+        membershipStatus?: 'contributor' | 'premium';
         role?: string;
         lastTokenRefresh?: number;
       };
@@ -62,7 +62,7 @@ export const verifyAuth = async (req: Request, res: Response, next: NextFunction
       req.user = {
         uid: decodedToken.uid,
         email: decodedToken.email,
-        membershipStatus: userDoc.exists ? userDoc.data()?.membershipStatus : 'free',
+        membershipStatus: userDoc.exists ? userDoc.data()?.membershipStatus : 'contributor',
         role: userDoc.exists ? userDoc.data()?.role : 'user',
         lastTokenRefresh: shouldRefresh ? Date.now() : undefined
       };

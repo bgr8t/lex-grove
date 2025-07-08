@@ -115,7 +115,7 @@ export const profileValidator = [
   
   body('membershipStatus')
     .optional()
-    .isIn(['free', 'premium', 'contributor'])
+    .isIn(['premium', 'contributor'])
     .withMessage('Invalid membership status'),
   
   validateRequest

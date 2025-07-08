@@ -82,11 +82,11 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
       onClick={handleLibraryClick}
       className={cn(
         isMobile ? 
-          "py-4 text-[22px] font-normal transition-colors hover:text-primary" :
-          "text-sm font-medium transition-colors hover:text-primary",
+          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left" :
+          "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out hover:text-primary hover:scale-105 hover:shadow-sm",
         (location.pathname === "/library" || location.pathname === "/library/pro") 
-          ? "text-primary" 
-          : "text-foreground/70"
+          ? (isMobile ? "text-primary" : "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm")
+          : (isMobile ? "text-foreground/70" : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground")
       )}
     >
       {t('nav.library')}
@@ -158,63 +158,93 @@ export const Header = () => {
   }, []);
   
   return (
-    <header 
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 py-5 md:py-4 px-5 md:px-6 transition-all duration-300 ease-in-out",
-        scrolled ? "glass-panel subtle-shadow backdrop-blur-md" : "bg-transparent"
-      )}
-    >
-      <div className="w-full md:container md:mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2 text-primary transition-opacity hover:opacity-90">
-          <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{t('app.title')}</span>
+    <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 md:px-6 md:py-4">
+      <div className={cn(
+        "max-w-4xl mx-auto flex items-center justify-between",
+        "relative bg-white/20 dark:bg-black/20 backdrop-blur-xl rounded-full",
+        "border border-white/30 dark:border-white/10",
+        "px-6 py-3 transition-all duration-500 ease-out",
+        "shadow-lg shadow-black/5 dark:shadow-black/20",
+        // Glass morphism overlay
+        "before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/10 before:to-transparent before:pointer-events-none",
+        // Adaptive background on scroll
+        scrolled ? 
+          "bg-white/30 dark:bg-black/30 backdrop-blur-2xl border-white/40 dark:border-white/20 shadow-xl shadow-black/10 dark:shadow-black/30" :
+          "bg-white/20 dark:bg-black/20 backdrop-blur-xl border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/20"
+      )}>
+        
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2 text-primary transition-all duration-200 hover:scale-105 relative z-10">
+          <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            {t('app.title')}
+          </span>
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            to="/"
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/" ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            {t('nav.home')}
-          </Link>
-          <HeaderLibraryLink />
-          <Link 
-            to="/flash-deck" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            Flash Deck
-          </Link>
-          <Link 
-            to="/research-grove" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            {t('nav.research_grove')}
-          </Link>
-          <Link 
-            to="/about" 
-            className={cn(
-              "text-sm font-medium transition-colors hover:text-primary",
-              location.pathname === "/about" ? "text-primary" : "text-foreground/70"
-            )}
-          >
-            {t('nav.about')}
-          </Link>
+        <nav className="hidden md:flex items-center relative z-10">
+          <div className="flex items-center space-x-1 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20 dark:border-white/5">
+            <Link 
+              to="/"
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname === "/" 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              {t('nav.home')}
+            </Link>
+            
+            <HeaderLibraryLink />
+            
+            <Link 
+              to="/flash-deck" 
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname === "/flash-deck" 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              Flash Deck
+            </Link>
+            
+            <Link 
+              to="/research-grove" 
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname === "/research-grove" 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              {t('nav.research_grove')}
+            </Link>
+            
+            <Link 
+              to="/about" 
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname === "/about" 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              {t('nav.about')}
+            </Link>
+          </div>
         </nav>
         
-        <div className="flex items-center">
+        {/* Right Side Actions */}
+        <div className="flex items-center space-x-2 relative z-10">
           <Button 
             variant="ghost" 
             size="icon"
-            className="rounded-full w-9 h-9 flex items-center justify-center md:mr-3"
+            className="rounded-full w-10 h-10 transition-all duration-200 hover:scale-105 hover:bg-white/30 dark:hover:bg-white/10 backdrop-blur-sm"
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
@@ -231,105 +261,111 @@ export const Header = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden ml-3">
+          <div className="md:hidden">
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-full flex items-center justify-center">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full w-10 h-10 transition-all duration-200 hover:scale-105 hover:bg-white/30 dark:hover:bg-white/10 backdrop-blur-sm"
+                >
                   <Bars3Icon className="h-6 w-6" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <CustomSheetContent 
-                side="left" 
-                className="w-full p-0 border-0 bg-background text-foreground"
-              >
-                <div className="flex flex-col h-full">
-                  <div className="flex items-center justify-between p-4">
-                    <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{t('app.title')}</span>
-                    </Link>
-                    <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="rounded-full border border-border bg-transparent hover:bg-accent h-10 w-10 flex items-center justify-center"
-                        onClick={toggleTheme}
-                        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                      >
-                        {theme === 'light' ? (
-                          <MoonIcon className="h-4 w-4" />
-                        ) : (
-                          <SunIcon className="h-4 w-4" />
+                <CustomSheetContent 
+                  side="left" 
+                  className="w-full p-0 border-0 bg-background text-foreground"
+                >
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between p-4">
+                      <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
+                        <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                          {t('app.title')}
+                        </span>
+                      </Link>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="rounded-full border border-white/30 dark:border-white/10 bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-white/10 h-10 w-10 flex items-center justify-center transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                          onClick={toggleTheme}
+                          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                        >
+                          {theme === 'light' ? (
+                            <MoonIcon className="h-4 w-4" />
+                          ) : (
+                            <SunIcon className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="rounded-full border border-white/30 dark:border-white/10 bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-white/10 h-12 w-12 flex items-center justify-center transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <XMarkIcon className="h-5 w-5 text-foreground" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <nav className="flex flex-col pt-8 px-5 space-y-2 w-full">
+                      <Link 
+                        to="/"
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname === "/" ? "text-primary" : "text-foreground/70"
                         )}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="rounded-full border border-border bg-transparent hover:bg-accent h-12 w-12 flex items-center justify-center"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <XMarkIcon className="h-5 w-5 text-foreground" />
-                      </Button>
-                    </div>
+                        {t('nav.home')}
+                      </Link>
+                      <div className="w-full">
+                        <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
+                      </div>
+                      <Link 
+                        to="/flash-deck" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Flash Deck
+                      </Link>
+                      <Link 
+                        to="/research-grove" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {t('nav.research_grove')}
+                      </Link>
+                      <Link 
+                        to="/about" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname === "/about" ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {t('nav.about')}
+                      </Link>
+                      {/* Auth Buttons (Mobile) */}
+                      <div className="w-full flex flex-col space-y-2 mt-2">
+                        <AuthButtons isMobile />
+                      </div>
+                    </nav>
                   </div>
-                  
-                  <nav className="flex flex-col pt-8 px-5 space-y-2 w-full">
-                    <Link 
-                      to="/"
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                        location.pathname === "/" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.home')}
-                    </Link>
-                    <div className="w-full">
-                      <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
-                    </div>
-                    <Link 
-                      to="/flash-deck" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                        location.pathname === "/flash-deck" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Flash Deck
-                    </Link>
-                    <Link 
-                      to="/research-grove" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                        location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.research_grove')}
-                    </Link>
-                    <Link 
-                      to="/about" 
-                      className={cn(
-                        "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                        location.pathname === "/about" ? "text-primary" : "text-foreground/70"
-                      )}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {t('nav.about')}
-                    </Link>
-                    {/* Auth Buttons (Mobile) */}
-                    <div className="w-full flex flex-col space-y-2 mt-2">
-                      <AuthButtons isMobile />
-                    </div>
-                  </nav>
-                </div>
-              </CustomSheetContent>
-            </Sheet>
+                </CustomSheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>
-    </header>
-  );
-};
+    );
+  };
 
 export default Header;

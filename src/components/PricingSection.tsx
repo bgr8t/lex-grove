@@ -44,7 +44,7 @@ const PricingSection = ({ className = '' }: PricingSectionProps) => {
             completed: false,
             briefIds: []
           },
-          membershipStatus: 'free',
+          membershipStatus: 'contributor',
         });
         
         toast({
@@ -99,7 +99,7 @@ const PricingSection = ({ className = '' }: PricingSectionProps) => {
             completed: false,
             briefIds: []
           },
-          membershipStatus: 'free',
+          membershipStatus: 'contributor',
         });
       }
       

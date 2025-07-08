@@ -60,7 +60,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         const userRef = db.collection('userProfiles').doc(userId);
         await userRef.update({
           subscriptionStatus: subscription.status,
-          membershipStatus: subscription.status === 'active' ? 'premium' : 'free',
+          membershipStatus: subscription.status === 'active' ? 'premium' : 'contributor',
           subscriptionPeriodEnd: new Date(subscription.current_period_end * 1000),
           updatedAt: new Date(),
         });
@@ -87,7 +87,7 @@ export async function handleStripeWebhook(event: Stripe.Event) {
         const userRef = db.collection('userProfiles').doc(userId);
         await userRef.update({
           subscriptionStatus: 'canceled',
-          membershipStatus: 'free',
+          membershipStatus: 'contributor',
           updatedAt: new Date(),
         });
 

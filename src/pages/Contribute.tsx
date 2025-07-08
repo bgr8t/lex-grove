@@ -39,7 +39,7 @@ export default function Contribute() {
               uid: currentUser.uid,
               email: currentUser.email || '',
               displayName: currentUser.displayName || '',
-              membershipStatus: null,
+              membershipStatus: 'contributor',
               contributions: {
                 count: 0,
                 target: 3,
