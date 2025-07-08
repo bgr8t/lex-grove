@@ -244,6 +244,19 @@ export const Header = () => {
             </Link>
             
             <Link 
+              to="/compose" 
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname === "/compose" 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              Compose
+            </Link>
+            
+            <Link 
               to="/about" 
               className={cn(
                 "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
@@ -373,6 +386,16 @@ export const Header = () => {
                         onMouseEnter={() => preloadComponent(preloadRoutes.researchGrove, 'researchGrove')}
                       >
                         Research
+                      </Link>
+                      <Link 
+                        to="/compose" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname === "/compose" ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Compose
                       </Link>
                       <Link 
                         to="/about" 

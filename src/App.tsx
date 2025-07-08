@@ -44,6 +44,7 @@ const Blog = lazy(() => import('@/pages/Blog'));
 const MyLibrary = lazy(() => import('@/pages/MyLibrary'));
 const ResearchGrove = lazy(() => import('@/pages/ResearchGrove'));
 const Agora = lazy(() => import('@/pages/Agora'));
+const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
 
 function App() {
   // Enable idle-time preloading for better UX
@@ -63,6 +64,16 @@ function App() {
                 <Route path="/research-grove/:mandateId" element={<ResearchGrove />} />
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
+                
+                {/* Email Suite Route */}
+                <Route 
+                  path="/compose" 
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailSuite />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Agora routes - mix of public and protected */}
                 <Route path="/agora/*" element={<Agora />} />
