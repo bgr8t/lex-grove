@@ -120,6 +120,39 @@ service cloud.firestore {
         && request.auth.uid == request.resource.data.userId
         && hasValidMembership();
     }
+
+    // Agora Articles - Legal Commentary Platform
+    match /agoraArticles/{articleId} {
+      // Anyone can read published articles
+      allow read: if resource.data.status == 'published';
+      
+      // Authors can read their own articles (including drafts)
+      allow read: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+      
+      // Admins can read all articles
+      allow read: if isAdmin();
+      
+      // Only contributors and premium users can create articles
+      allow create: if isAuthenticated() && 
+                     hasValidMembership() && 
+                     request.resource.data.authorId == request.auth.uid;
+      
+      // Authors can update their own articles, admins can update any
+      allow update: if isAuthenticated() && (
+                       resource.data.authorId == request.auth.uid ||
+                       isAdmin()
+                     );
+      
+      // Allow view count increments by anyone
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'updatedAt']) &&
+                     request.resource.data.viewCount == resource.data.viewCount + 1;
+      
+      // Authors can delete their own articles, admins can delete any
+      allow delete: if isAuthenticated() && (
+                       resource.data.authorId == request.auth.uid ||
+                       isAdmin()
+                     );
+    }
     
   }
 } 

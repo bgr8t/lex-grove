@@ -5,6 +5,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useIdlePreload } from '@/hooks/use-idle-preload';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,10 +28,11 @@ const queryClient = new QueryClient({
   },
 });
 
+// Lazy load ALL components to enable proper code splitting
 const Index = lazy(() => import('@/pages/Index'));
-const CaseBrief = lazy(() => import('@/pages/case-brief'));
 const Library = lazy(() => import('@/pages/Library'));
 const About = lazy(() => import('@/pages/About'));
+const CaseBrief = lazy(() => import('@/pages/case-brief'));
 const Login = lazy(() => import('@/pages/Login'));
 const Register = lazy(() => import('@/pages/Register'));
 const Contribute = lazy(() => import('@/pages/Contribute'));
@@ -41,14 +43,18 @@ const FlashDeck = lazy(() => import('@/pages/FlashDeck'));
 const Blog = lazy(() => import('@/pages/Blog'));
 const MyLibrary = lazy(() => import('@/pages/MyLibrary'));
 const ResearchGrove = lazy(() => import('@/pages/ResearchGrove'));
+const Agora = lazy(() => import('@/pages/Agora'));
 
 function App() {
+  // Enable idle-time preloading for better UX
+  useIdlePreload();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
           <Router>
-            <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><span className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent"></span></div>}>
+            <Suspense fallback={null}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
@@ -57,6 +63,9 @@ function App() {
                 <Route path="/research-grove/:mandateId" element={<ResearchGrove />} />
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
+                
+                {/* Agora routes - mix of public and protected */}
+                <Route path="/agora/*" element={<Agora />} />
                 
                 {/* Auth routes - redirect to home if already logged in */}
                 <Route 

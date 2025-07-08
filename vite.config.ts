@@ -48,54 +48,94 @@ export default defineConfig(({ command, mode }) => {
       },
       rollupOptions: {
         output: {
-          manualChunks: {
-            // Core React bundle
-            vendor: ['react', 'react-dom', 'react-router-dom'],
+          manualChunks: (id) => {
+            // Dynamic chunking for better optimization
+            if (id.includes('node_modules')) {
+              // Core React ecosystem
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-react';
+              }
+              
+              // Firebase - split into separate chunk
+              if (id.includes('firebase')) {
+                return 'vendor-firebase';
+              }
+              
+              // Heavy AI/ML dependencies
+              if (id.includes('openai') || id.includes('pinecone')) {
+                return 'vendor-ai';
+              }
+              
+              // UI component libraries
+              if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+                return 'vendor-ui';
+              }
+              
+              // Form libraries
+              if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
+                return 'vendor-forms';
+              }
+              
+              // Icons
+              if (id.includes('@heroicons') || id.includes('lucide')) {
+                return 'vendor-icons';
+              }
+              
+              // Animation libraries
+              if (id.includes('framer-motion')) {
+                return 'vendor-animation';
+              }
+              
+              // Charts and visualization
+              if (id.includes('recharts') || id.includes('embla-carousel')) {
+                return 'vendor-charts';
+              }
+              
+              // Other utilities
+              if (id.includes('clsx') || id.includes('tailwind') || id.includes('date-fns')) {
+                return 'vendor-utils';
+              }
+              
+              // Stripe and payment related
+              if (id.includes('stripe')) {
+                return 'vendor-payments';
+              }
+              
+              // Remaining vendor dependencies
+              return 'vendor-misc';
+            }
             
-            // Firebase services
-            firebase: [
-              'firebase/app', 
-              'firebase/auth', 
-              'firebase/firestore'
-            ],
+            // App code chunking
+            if (id.includes('/pages/')) {
+              // Each page gets its own chunk
+              const pageName = id.split('/pages/')[1]?.split('.')[0];
+              return `page-${pageName}`;
+            }
             
-            // UI components library
-            ui: [
-              '@radix-ui/react-dialog',
-              '@radix-ui/react-dropdown-menu',
-              '@radix-ui/react-accordion',
-              '@radix-ui/react-tabs',
-              '@radix-ui/react-select',
-              '@radix-ui/react-toast'
-            ],
+            if (id.includes('/components/')) {
+              // Group components by feature
+              if (id.includes('/components/ui/')) {
+                return 'components-ui';
+              }
+              if (id.includes('/components/auth/')) {
+                return 'components-auth';
+              }
+              if (id.includes('/components/agora/')) {
+                return 'components-agora';
+              }
+              if (id.includes('/components/research-grove/')) {
+                return 'components-research';
+              }
+              return 'components-common';
+            }
             
-            // Form handling
-            forms: [
-              'react-hook-form',
-              '@hookform/resolvers',
-              'zod'
-            ],
+            if (id.includes('/lib/services/')) {
+              return 'services';
+            }
             
-            // Icons
-            icons: ['@heroicons/react/24/outline', '@heroicons/react/24/solid'],
-            
-            // Utilities
-            utils: [
-              'clsx',
-              'tailwind-merge',
-              'class-variance-authority',
-              'date-fns'
-            ],
-            
-            // Data fetching
-            query: ['@tanstack/react-query'],
-            
-            // Heavy third-party libs
-            external: [
-              'framer-motion',
-              'embla-carousel-react',
-              'recharts'
-            ]
+            if (id.includes('/contexts/')) {
+              return 'contexts';
+            }
           },
           // Optimize chunk file names
           chunkFileNames: (chunkInfo) => {

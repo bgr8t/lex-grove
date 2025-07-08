@@ -15,6 +15,7 @@ import {
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import * as React from "react";
 import { userProfileService } from '@/lib/services/userProfileService';
+import { usePreload, preloadRoutes } from '@/hooks/use-preload';
 
 // Create a custom SheetContent that doesn't include the automatic close button
 const CustomSheetContent = React.forwardRef<
@@ -51,6 +52,7 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
   const { currentUser, checkMembershipStatus, membershipStatus } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { preloadComponent } = usePreload();
 
   const handleLibraryClick = async (e) => {
     e.preventDefault();
@@ -80,6 +82,7 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
   return (
     <button
       onClick={handleLibraryClick}
+      onMouseEnter={() => preloadComponent(preloadRoutes.library, 'library')}
       className={cn(
         isMobile ? 
           "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left" :
@@ -112,6 +115,7 @@ export const Header = () => {
   });
   const location = useLocation();
   const navigate = useNavigate();
+  const { preloadComponent } = usePreload();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -199,6 +203,20 @@ export const Header = () => {
             <HeaderLibraryLink />
             
             <Link 
+              to="/agora" 
+              className={cn(
+                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
+                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                location.pathname.startsWith("/agora") 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+              onMouseEnter={() => preloadComponent(preloadRoutes.agora, 'agora')}
+            >
+              Agora
+            </Link>
+            
+            <Link 
               to="/flash-deck" 
               className={cn(
                 "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
@@ -208,7 +226,7 @@ export const Header = () => {
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
               )}
             >
-              Flash Deck
+              Flashdeck
             </Link>
             
             <Link 
@@ -220,8 +238,9 @@ export const Header = () => {
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
               )}
+              onMouseEnter={() => preloadComponent(preloadRoutes.researchGrove, 'researchGrove')}
             >
-              {t('nav.research_grove')}
+              Research
             </Link>
             
             <Link 
@@ -324,6 +343,17 @@ export const Header = () => {
                         <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
                       </div>
                       <Link 
+                        to="/agora" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname.startsWith("/agora") ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        onMouseEnter={() => preloadComponent(preloadRoutes.agora, 'agora')}
+                      >
+                        Agora
+                      </Link>
+                      <Link 
                         to="/flash-deck" 
                         className={cn(
                           "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
@@ -331,7 +361,7 @@ export const Header = () => {
                         )}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        Flash Deck
+                        Flashdeck
                       </Link>
                       <Link 
                         to="/research-grove" 
@@ -340,8 +370,9 @@ export const Header = () => {
                           location.pathname === "/research-grove" ? "text-primary" : "text-foreground/70"
                         )}
                         onClick={() => setIsMobileMenuOpen(false)}
+                        onMouseEnter={() => preloadComponent(preloadRoutes.researchGrove, 'researchGrove')}
                       >
-                        {t('nav.research_grove')}
+                        Research
                       </Link>
                       <Link 
                         to="/about" 
