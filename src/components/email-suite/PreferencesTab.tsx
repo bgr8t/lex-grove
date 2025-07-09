@@ -43,42 +43,6 @@ export default function PreferencesTab() {
               </Select>
             </div>
           </div>
-          <div className="mt-4 divide-y">
-            <SettingRow title="Auto-save drafts" description="Automatically save your work as you type" control={<Switch defaultChecked />} />
-            <SettingRow title="Save email history" description="Keep a history of generated emails for reference" control={<Switch defaultChecked />} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Interface Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Interface Preferences</CardTitle>
-          <CardDescription>Customize the appearance and behavior of the application</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-x-6">
-          <div>
-            <label className="text-sm font-medium">Theme</label>
-            <Select defaultValue="system"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="light">Light</SelectItem><SelectItem value="dark">Dark</SelectItem><SelectItem value="system">System</SelectItem></SelectContent></Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Font Size</label>
-            <Select defaultValue="medium"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="small">Small</SelectItem><SelectItem value="medium">Medium</SelectItem><SelectItem value="large">Large</SelectItem></SelectContent></Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium">Language</label>
-            <Select defaultValue="english"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="english">English</SelectItem></SelectContent></Select>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Writing Assistant */}
-      <Card>
-        <CardHeader><CardTitle>Writing Assistant</CardTitle><CardDescription>Advanced features to improve your writing experience</CardDescription></CardHeader>
-        <CardContent className="divide-y">
-          <SettingRow title="Enable spell check" description="Highlight spelling errors in your text" control={<Switch defaultChecked />} />
-          <SettingRow title="Show word count" description="Display live word count while typing" control={<Switch />} />
-          <SettingRow title="Grammar suggestions" description="Get AI-powered grammar improvement suggestions" control={<Switch defaultChecked />} />
         </CardContent>
       </Card>
 
@@ -104,15 +68,6 @@ export default function PreferencesTab() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">This signature will be suggested for your emails unless privacy settings override it.</p>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Notifications */}
-      <Card>
-        <CardHeader><CardTitle>Notifications</CardTitle><CardDescription>Manage how and when you receive notifications</CardDescription></CardHeader>
-        <CardContent className="divide-y">
-          <SettingRow title="Enable notifications" description="Receive browser notifications for important updates" control={<Switch defaultChecked />} />
-          <SettingRow title="Email reminders" description="Get reminders about pending emails or follow-ups" control={<Switch />} />
         </CardContent>
       </Card>
     </div>

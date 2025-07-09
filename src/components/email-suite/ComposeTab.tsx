@@ -6,23 +6,21 @@ import { SparklesIcon } from '@heroicons/react/24/outline';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/components/ui/use-toast";
-import { Draft } from '@/lib/models/draft'; // Assuming we create this model file
+import { Draft } from '@/lib/models/draft';
 
 interface ComposeTabProps {
   selectedDraft: Draft | null;
-  onGenerateDraft: (data: { recipient: string; context: string; instructions: string; }) => void;
+  onGenerateDraft: (data: { context: string; instructions: string; }) => void;
   isLoading: boolean;
   error: string | null;
 }
 
 export default function ComposeTab({ selectedDraft, onGenerateDraft, isLoading, error }: ComposeTabProps) {
-  // Form State remains local to the component
-  const [recipient, setRecipient] = useState('');
   const [context, setContext] = useState('');
   const [instructions, setInstructions] = useState('');
 
   const handleGenerateClick = () => {
-    onGenerateDraft({ recipient, context, instructions });
+    onGenerateDraft({ context, instructions });
   };
 
   return (
@@ -36,12 +34,7 @@ export default function ComposeTab({ selectedDraft, onGenerateDraft, isLoading, 
               <p className="text-sm text-muted-foreground">Fill in the details below to generate a new draft.</p>
             </div>
             
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="recipient" className="text-sm font-medium">Recipient</label>
-                <Input id="recipient" placeholder="e.g., John Doe" className="mt-1" value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-              </div>
-              
+            <div className="space-y-3">              
               <div>
                 <label htmlFor="context" className="text-sm font-medium">Email Context</label>
                 <Textarea id="context" placeholder="e.g., Follow up on our last meeting..." className="mt-1 min-h-[100px]" value={context} onChange={(e) => setContext(e.target.value)} />

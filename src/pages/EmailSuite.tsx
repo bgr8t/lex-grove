@@ -20,7 +20,7 @@ export default function EmailSuite() {
   const [activeTab, setActiveTab] = useState('compose');
   const { toast } = useToast();
 
-  const handleGenerateDraft = async (formData: { recipient: string; context: string; instructions: string; }) => {
+  const handleGenerateDraft = async (formData: { context: string; instructions: string; }) => {
     if (!formData.context.trim()) {
       setError("Email Context is required to generate a draft.");
       return;
@@ -36,7 +36,6 @@ export default function EmailSuite() {
 
       const prompt = `
         You are an expert email assistant. Generate a professional email draft based on the following details:
-        **Recipient:** ${formData.recipient || 'recipient'}
         **Context:** ${formData.context}
         **Instructions:** ${formData.instructions}
         ---
@@ -65,7 +64,7 @@ export default function EmailSuite() {
         const newDraft: Draft = {
           id: `draft_${Date.now()}`,
           content: generatedContent,
-          recipient: formData.recipient || "No Recipient",
+          recipient: "No Recipient",
           timestamp: new Date(),
         };
         setDrafts(prev => [newDraft, ...prev]);
