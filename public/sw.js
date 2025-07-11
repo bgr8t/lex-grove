@@ -26,9 +26,15 @@ const NETWORK_FIRST_PATTERNS = [
 
 // Cache-first patterns (for static assets)
 const CACHE_FIRST_PATTERNS = [
-  /\.(?:js|css|woff2?|png|jpg|jpeg|svg|gif|webp)$/,
+  /\.(?:css|woff2?|png|jpg|jpeg|svg|gif|webp)$/,
   /^https:\/\/fonts\./,
 ];
+
+// Stale-while-revalidate for JS
+const STALE_WHILE_REVALIDATE_JS_PATTERNS = [
+    /\.js$/,
+];
+
 
 // Install event - cache static assets
 self.addEventListener('install', event => {
@@ -94,6 +100,12 @@ self.addEventListener('fetch', event => {
   // Network-first strategy for API calls
   if (NETWORK_FIRST_PATTERNS.some(pattern => pattern.test(request.url))) {
     event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // Stale-while-revalidate for JavaScript
+  if (STALE_WHILE_REVALIDATE_JS_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(staleWhileRevalidate(request));
     return;
   }
 
