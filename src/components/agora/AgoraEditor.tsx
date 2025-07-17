@@ -169,31 +169,33 @@ export default function AgoraEditor() {
 
     setIsPublishing(true);
     try {
-      // First save if it's a new article
-      if (!article?.id) {
-        await handleSave();
-        // Wait a moment for the save to complete and article to be set
-        setTimeout(async () => {
-          if (article?.id) {
-            await agoraArticleService.publishArticle(article.id);
-            toast({
-              title: "Article published!",
-              description: "Your article is now live and available to readers."
-            });
-            navigate('/agora');
-          }
-        }, 500);
-        return;
+      let articleToPublish = article;
+
+      // If the article is new (has no ID), save it as a draft first.
+      if (!articleToPublish?.id) {
+        const savedArticle = await agoraArticleService.createArticle({
+          title: title.trim(),
+          content,
+          excerpt: excerpt.trim(),
+          isPremium,
+          status: 'draft'
+        });
+        setArticle(savedArticle);
+        articleToPublish = savedArticle;
       }
 
-      // Publish existing article
-      await agoraArticleService.publishArticle(article.id);
-      
-      toast({
-        title: "Article published!",
-        description: "Your article is now live and available to readers."
-      });
-      navigate('/agora');
+      // Now, publish the article.
+      if (articleToPublish?.id) {
+        await agoraArticleService.publishArticle(articleToPublish.id);
+        
+        toast({
+          title: "Article published!",
+          description: "Your article is now live and available to readers."
+        });
+        navigate('/agora');
+      } else {
+        throw new Error("Failed to create or find article to publish.");
+      }
     } catch (error) {
       console.error('Error publishing article:', error);
       toast({

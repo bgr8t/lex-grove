@@ -33,7 +33,6 @@ class AgoraArticleService extends FirestoreService<AgoraArticle> {
       ...articleData,
       authorId: user.uid,
       authorName: user.displayName || 'Anonymous',
-      authorAvatar: user.photoURL || undefined,
       slug,
       viewCount: 0,
       likeCount: 0,
@@ -41,6 +40,10 @@ class AgoraArticleService extends FirestoreService<AgoraArticle> {
       createdAt: now,
       updatedAt: now,
     };
+
+    if (user.photoURL) {
+      article.authorAvatar = user.photoURL;
+    }
 
     return await this.create(article);
   }
@@ -85,7 +88,12 @@ class AgoraArticleService extends FirestoreService<AgoraArticle> {
   // Get article by slug
   async getArticleBySlug(slug: string): Promise<AgoraArticle | null> {
     const articlesRef = collection(db, 'agoraArticles');
-    const q = query(articlesRef, where('slug', '==', slug), limit(1));
+    const q = query(
+      articlesRef,
+      where('slug', '==', slug),
+      where('status', '==', 'published'),
+      limit(1)
+    );
     
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
