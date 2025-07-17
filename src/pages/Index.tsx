@@ -7,6 +7,7 @@ import HowItWorks from '@/components/HowItWorks';
 import PricingSection from '@/components/PricingSection';
 import SearchResults from '@/components/SearchResults';
 import TopBriefs from '@/components/TopBriefs';
+import EmpoweringStudents from '@/components/EmpoweringStudents';
 import Footer from '@/components/Footer';
 import { Brief } from '@/components/BriefCard';
 import { useToast } from '@/components/ui/use-toast';
@@ -49,6 +50,7 @@ const Index = () => {
         <>
           <Hero onSearch={handleSearch} />
           <Features />
+          <EmpoweringStudents />
           <TopBriefs />
           <HowItWorks />
           {!currentUser && <PricingSection />}

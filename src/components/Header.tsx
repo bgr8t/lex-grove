@@ -86,7 +86,7 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
       className={cn(
         isMobile ? 
           "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left" :
-          "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out hover:text-primary hover:scale-105 hover:shadow-sm",
+          "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
         (location.pathname === "/library" || location.pathname === "/library/pro") 
           ? (isMobile ? "text-primary" : "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm")
           : (isMobile ? "text-foreground/70" : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground")
@@ -164,7 +164,7 @@ export const Header = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 px-4 py-3 md:px-6 md:py-4">
       <div className={cn(
-        "max-w-4xl mx-auto flex items-center justify-between",
+        "max-w-7xl mx-auto flex items-center justify-between",
         "relative bg-white/20 dark:bg-black/20 backdrop-blur-xl rounded-full",
         "border border-white/30 dark:border-white/10",
         "px-6 py-3 transition-all duration-500 ease-out",
@@ -178,20 +178,20 @@ export const Header = () => {
       )}>
         
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2 text-primary transition-all duration-200 hover:scale-105 relative z-10">
+        <Link to="/" className="flex items-center space-x-2 text-primary transition-all duration-200 hover:scale-105 relative z-10 shrink-0">
           <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             {t('app.title')}
           </span>
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center relative z-10">
-          <div className="flex items-center space-x-1 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20 dark:border-white/5">
+        <nav className="hidden md:flex items-center justify-center flex-1 mx-4 relative z-10">
+          <div className="flex items-center justify-center space-x-2 bg-black/10 dark:bg-white/10 backdrop-blur-sm rounded-full p-1.5 border border-white/20 dark:border-white/5 w-full max-w-3xl">
             <Link 
               to="/"
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname === "/" 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -205,8 +205,8 @@ export const Header = () => {
             <Link 
               to="/agora" 
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname.startsWith("/agora") 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -219,8 +219,8 @@ export const Header = () => {
             <Link 
               to="/flash-deck" 
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname === "/flash-deck" 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -232,8 +232,8 @@ export const Header = () => {
             <Link 
               to="/research-grove" 
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname === "/research-grove" 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -246,8 +246,8 @@ export const Header = () => {
             <Link 
               to="/compose" 
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname === "/compose" 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -259,8 +259,8 @@ export const Header = () => {
             <Link 
               to="/about" 
               className={cn(
-                "relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out",
-                "hover:text-primary hover:scale-105 hover:shadow-sm",
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
                 location.pathname === "/about" 
                   ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
                   : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
@@ -272,7 +272,7 @@ export const Header = () => {
         </nav>
         
         {/* Right Side Actions */}
-        <div className="flex items-center space-x-2 relative z-10">
+        <div className="flex items-center space-x-2 relative z-10 shrink-0">
           <Button 
             variant="ghost" 
             size="icon"
