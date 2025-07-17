@@ -280,7 +280,7 @@ export default function AgoraArticleReader() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg">{article.authorName}</h3>
               <p className="text-muted-foreground">
-                Contributing legal practitioner and commentary author
+                Contributing legal practitioner or law student and commentary author
               </p>
             </div>
           </div>

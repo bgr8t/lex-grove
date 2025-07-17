@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -6,17 +7,31 @@ import { Brief, BriefCard } from '@/components/BriefCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { userProfileService } from '@/lib/services/userProfileService';
+import { agoraArticleService } from '@/lib/services/agoraService'; // Import the service
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collection } from '@/lib/models/userProfile';
 import { caseBriefToBrief, caseBriefsToBriefs } from '@/lib/utils';
 import { CollectionDetail } from '@/components/CollectionDetail';
-import { FolderIcon, BookmarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { FolderIcon, BookmarkIcon, DocumentTextIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { DraftCard } from '@/components/DraftCard'; // Import DraftCard
+
+// Define the Draft type based on what you expect from Firestore
+interface Draft {
+  id: string;
+  authorId: string;
+  title: string;
+  content: string; // Or whatever structure your drafts have
+  lastSaved: number; // Changed to number for timestamp
+  excerpt: string;
+}
 
 const MyLibrary = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
   const [bookmarkedBriefs, setBookmarkedBriefs] = useState<Brief[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [savedDrafts, setSavedDrafts] = useState<Draft[]>([]); // New state for drafts
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('my-briefs');
@@ -47,7 +62,18 @@ const MyLibrary = () => {
         // Fetch collections
         const userCollections = await userProfileService.getUserCollections();
         setCollections(userCollections || []);
+        // Fetch saved drafts
+        const drafts = await agoraArticleService.getDraftsByAuthor(currentUser.uid);
+        setSavedDrafts(drafts.map(d => ({
+          id: d.id,
+          authorId: d.authorId,
+          title: d.title,
+          content: d.content,
+          lastSaved: d.updatedAt,
+          excerpt: d.excerpt,
+        })));
       } catch (err: any) {
+        console.error("Failed to load library data:", err); // Log the actual error
         setError('Failed to load your library. Please try again.');
       } finally {
         setLoading(false);
@@ -65,6 +91,26 @@ const MyLibrary = () => {
   // Handler for opening a brief (navigates to full page)
   const handleOpenBrief = (brief: Brief) => {
     window.location.href = `/case-brief/${brief.id}`;
+  };
+
+  const handleEditDraft = (draftId: string) => {
+    navigate(`/agora/edit/${draftId}`);
+  };
+
+  const handleDeleteDraft = async (draftId: string) => {
+    if (!currentUser) return;
+
+    // Optimistic UI update
+    setSavedDrafts(prevDrafts => prevDrafts.filter(d => d.id !== draftId));
+
+    try {
+      await agoraArticleService.delete(draftId);
+    } catch (err) {
+      console.error('Failed to delete draft:', err);
+      // Revert if deletion fails (optional, depends on UX choice)
+      // For now, we just log the error. You might want to show a toast message.
+      setError('Failed to delete the draft. Please refresh and try again.');
+    }
   };
 
   return (
@@ -104,6 +150,15 @@ const MyLibrary = () => {
                 >
                   <BookmarkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   Bookmarks
+                </TabsTrigger>
+                <span className="mx-1 text-muted-foreground/40 select-none">·</span>
+                <TabsTrigger
+                  value="saved-drafts"
+                  className="flex-1 min-w-0 flex items-center justify-center gap-1 sm:gap-2 rounded-full text-sm sm:text-base font-medium h-10 sm:h-12 transition-all duration-200 focus:outline-none data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:scale-105 data-[state=active]:ring-2 data-[state=active]:ring-primary/10"
+                  aria-label="Saved Drafts"
+                >
+                  <PencilSquareIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Saved Drafts
                 </TabsTrigger>
                 <span className="mx-1 text-muted-foreground/40 select-none">·</span>
                 <TabsTrigger
@@ -151,6 +206,26 @@ const MyLibrary = () => {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">No bookmarked briefs yet</p>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="saved-drafts" className="space-y-6 mt-2">
+              {savedDrafts.length > 0 ? (
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {savedDrafts.map((draft) => (
+                    <DraftCard
+                      key={draft.id}
+                      draft={draft}
+                      currentUserId={currentUser!.uid}
+                      onEdit={handleEditDraft}
+                      onDelete={handleDeleteDraft}
+                      className="min-h-[180px]"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No saved drafts yet</p>
                 </div>
               )}
             </TabsContent>

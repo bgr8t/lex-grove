@@ -108,33 +108,30 @@ export default function AgoraEditor() {
 
     setIsSaving(true);
     try {
-             if (article?.id) {
-         // Update existing article
-         await agoraArticleService.update(article.id, {
-           title: title.trim(),
-           content,
-           excerpt: excerpt.trim(),
-           isPremium,
-           updatedAt: Date.now()
-         });
-         // Update local state
-         setArticle({
-           ...article,
-           title: title.trim(),
-           content,
-           excerpt: excerpt.trim(),
-           isPremium,
-           updatedAt: Date.now()
-         });
+      const articleData: {
+        title: string;
+        content: string;
+        excerpt: string;
+        isPremium: boolean;
+        status: 'draft' | 'published';
+        updatedAt: number;
+      } = {
+        title: title.trim(),
+        content,
+        excerpt: excerpt.trim(),
+        isPremium,
+        status: 'draft',
+        updatedAt: Date.now(),
+      };
+
+      if (article?.id) {
+        // Update existing article
+        await agoraArticleService.update(article.id, articleData);
+        // Update local state
+        setArticle(prev => (prev ? { ...prev, ...articleData } : null));
       } else {
         // Create new article
-        const savedArticle = await agoraArticleService.createArticle({
-          title: title.trim(),
-          content,
-          excerpt: excerpt.trim(),
-          isPremium,
-          status: 'draft'
-        });
+        const savedArticle = await agoraArticleService.createArticle(articleData);
         setArticle(savedArticle);
         // Update URL to edit mode
         navigate(`/agora/edit/${savedArticle.id}`, { replace: true });
@@ -169,33 +166,44 @@ export default function AgoraEditor() {
 
     setIsPublishing(true);
     try {
-      let articleToPublish = article;
+      const articleData: {
+        title: string;
+        content: string;
+        excerpt: string;
+        isPremium: boolean;
+        status: 'draft'; // Explicitly set to 'draft' before publishing
+        updatedAt: number;
+      } = {
+        title: title.trim(),
+        content,
+        excerpt: excerpt.trim(),
+        isPremium,
+        status: 'draft',
+        updatedAt: Date.now(),
+      };
 
-      // If the article is new (has no ID), save it as a draft first.
-      if (!articleToPublish?.id) {
-        const savedArticle = await agoraArticleService.createArticle({
-          title: title.trim(),
-          content,
-          excerpt: excerpt.trim(),
-          isPremium,
-          status: 'draft'
-        });
-        setArticle(savedArticle);
-        articleToPublish = savedArticle;
-      }
+      let articleIdToPublish: string;
 
-      // Now, publish the article.
-      if (articleToPublish?.id) {
-        await agoraArticleService.publishArticle(articleToPublish.id);
-        
-        toast({
-          title: "Article published!",
-          description: "Your article is now live and available to readers."
-        });
-        navigate('/agora');
+      // If editing an existing article, update it first.
+      // Otherwise, create a new one.
+      if (article?.id) {
+        await agoraArticleService.update(article.id, articleData);
+        articleIdToPublish = article.id;
       } else {
-        throw new Error("Failed to create or find article to publish.");
+        const savedArticle = await agoraArticleService.createArticle(articleData);
+        setArticle(savedArticle); // Update local state with the new article
+        articleIdToPublish = savedArticle.id;
       }
+      
+      // Now, publish the article.
+      await agoraArticleService.publishArticle(articleIdToPublish);
+      
+      toast({
+        title: "Article published!",
+        description: "Your article is now live and available to readers."
+      });
+      navigate('/agora');
+
     } catch (error) {
       console.error('Error publishing article:', error);
       toast({

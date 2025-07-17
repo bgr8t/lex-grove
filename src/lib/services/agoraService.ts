@@ -85,6 +85,20 @@ class AgoraArticleService extends FirestoreService<AgoraArticle> {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as AgoraArticle);
   }
 
+  // Get draft articles by author
+  async getDraftsByAuthor(authorId: string): Promise<AgoraArticle[]> {
+    const articlesRef = collection(db, 'agoraArticles');
+    const q = query(
+      articlesRef,
+      where('authorId', '==', authorId),
+      where('status', '==', 'draft'),
+      orderBy('updatedAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as AgoraArticle);
+  }
+
   // Get article by slug
   async getArticleBySlug(slug: string): Promise<AgoraArticle | null> {
     const articlesRef = collection(db, 'agoraArticles');

@@ -97,7 +97,7 @@ export default function AgoraBrowse() {
         <div>
           <h1 className="text-3xl font-bold">Agora</h1>
           <p className="text-muted-foreground">
-            Legal commentary and analysis from practicing attorneys
+            Legal commentary and analysis from legal practitioners and law students
           </p>
         </div>
         {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
