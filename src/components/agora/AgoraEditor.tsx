@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { agoraArticleService } from '@/lib/services/agoraService';
 import { AgoraArticle } from '@/lib/models/agoraArticle';
 import ReactMarkdown from 'react-markdown';
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor'; // Import the new editor
 import {
   Save,
   Send,
@@ -291,11 +292,10 @@ export default function AgoraEditor() {
                 </div>
                 
                 <TabsContent value="write" className="space-y-4">
-                  <Textarea
-                    placeholder="Start writing your article... Use Markdown for formatting."
+                  <MarkdownEditor
                     value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    className="min-h-[500px] font-mono text-sm"
+                    onChange={setContent}
+                    placeholder="Start writing your article... Use Markdown for formatting."
                   />
                   <div className="text-sm text-muted-foreground">
                     Tip: You can use Markdown formatting like **bold**, *italic*, # headings, and [links](url)
