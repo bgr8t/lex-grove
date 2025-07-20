@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
+import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
 
 const BlogPost = ({ post }) => {
   if (!post) return <div className="p-8 text-center">Blog post not found.</div>;
@@ -23,7 +23,7 @@ const BlogPost = ({ post }) => {
         loading="lazy"
       />
       <div className="prose max-w-none text-gray-800">
-        <ReactMarkdown>{post.content}</ReactMarkdown>
+        <SecureMarkdown contentType="article">{post.content}</SecureMarkdown>
       </div>
     </article>
   );

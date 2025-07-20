@@ -3,7 +3,7 @@ import { Pinecone } from '@pinecone-database/pinecone';
 
 // Initialize Pinecone client
 const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY || '***REDACTED_PINECONE_API_KEY***'
+  apiKey: process.env.PINECONE_API_KEY as string,
 });
 
 // Constants

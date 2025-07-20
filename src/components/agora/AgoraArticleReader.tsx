@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { agoraArticleService } from '@/lib/services/agoraService';
 import { AgoraArticle } from '@/lib/models/agoraArticle';
-import ReactMarkdown from 'react-markdown';
+import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
 import {
   Calendar,
   Clock,
@@ -219,22 +219,23 @@ export default function AgoraArticleReader() {
             <Eye className="w-4 h-4" />
             <span>{article.viewCount} views</span>
           </div>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 className="w-4 h-4 mr-1" />
+              Share
+            </Button>
+          </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleShare}>
-            <Share2 className="w-4 h-4 mr-1" />
-            Share
-          </Button>
-        </div>
+        
       </div>
 
       {/* Article Content */}
       <Card>
         <CardContent className="p-6 md:p-8">
           <div className="prose prose-lg max-w-none">
-            <ReactMarkdown>{getDisplayContent()}</ReactMarkdown>
+            <SecureMarkdown contentType="article">{getDisplayContent()}</SecureMarkdown>
           </div>
 
           {/* Premium paywall */}
@@ -267,25 +268,41 @@ export default function AgoraArticleReader() {
         </CardContent>
       </Card>
 
+      {/* Sources */}
+      {article.sources && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Sources</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              <SecureMarkdown contentType="article">{article.sources}</SecureMarkdown>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Author info */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-10 w-10">
               <AvatarImage src={article.authorAvatar} />
-              <AvatarFallback className="text-lg">
+              <AvatarFallback>
                 {article.authorName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{article.authorName}</h3>
-              <p className="text-muted-foreground">
-                Contributing legal practitioner or law student and commentary author
+            <div>
+              <h3 className="font-semibold">{article.authorName}</h3>
+              <p className="text-sm text-muted-foreground">
+                {article.authorBio}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
+
     </div>
   );
 } 

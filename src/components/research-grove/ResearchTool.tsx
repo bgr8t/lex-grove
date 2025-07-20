@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import ReactMarkdown from 'react-markdown';
+import { SecureMarkdownLegal } from '@/components/ui/SecureMarkdown';
 import html2pdf from 'html2pdf.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -872,7 +872,8 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
                       {/* Document Body with Word-like typography */}
                       <div className="px-16 py-8">
                         <div className="prose prose-lg prose-gray max-w-none leading-relaxed">
-                          <ReactMarkdown
+                          <SecureMarkdownLegal 
+                            className="prose-lg prose-gray max-w-none leading-relaxed"
                             components={{
                               h1: ({children}) => (
                                 <h1 className="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">
@@ -925,7 +926,7 @@ export const ResearchTool: React.FC<ResearchToolProps> = ({ mandate, onBack }) =
                             }}
                           >
                             {generateMarkdownPreview()}
-                          </ReactMarkdown>
+                          </SecureMarkdownLegal>
                         </div>
                       </div>
                       

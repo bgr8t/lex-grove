@@ -81,9 +81,9 @@ export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction)
     const secret = req.session?.csrfSecret;
     const expiry = req.session?.csrfTokenExpiry;
     
-    // Skip CSRF verification in development environment if configured to do so
-    if (process.env.NODE_ENV === 'development' && process.env.BYPASS_CSRF === 'true') {
-      console.warn('WARNING: CSRF verification bypassed in development mode');
+    // Skip CSRF verification in non-production environments if configured to do so
+    if (process.env.NODE_ENV !== 'production' && process.env.BYPASS_CSRF === 'true') {
+      console.warn('WARNING: CSRF verification is being bypassed for development/testing.');
       return next();
     }
     

@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { agoraArticleService } from '@/lib/services/agoraService';
 import { AgoraArticle } from '@/lib/models/agoraArticle';
-import ReactMarkdown from 'react-markdown';
+import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor'; // Import the new editor
 import {
   Save,
@@ -32,6 +32,7 @@ export default function AgoraEditor() {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [isPremium, setIsPremium] = useState(false);
+  const [sources, setSources] = useState('');
 
   // Editor state
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
@@ -74,6 +75,7 @@ export default function AgoraEditor() {
         setContent(fetchedArticle.content);
         setExcerpt(fetchedArticle.excerpt);
         setIsPremium(fetchedArticle.isPremium);
+        setSources(fetchedArticle.sources || '');
       }
     } catch (error) {
       console.error('Error loading article:', error);
@@ -113,6 +115,7 @@ export default function AgoraEditor() {
         content: string;
         excerpt: string;
         isPremium: boolean;
+        sources: string;
         status: 'draft' | 'published';
         updatedAt: number;
       } = {
@@ -120,6 +123,7 @@ export default function AgoraEditor() {
         content,
         excerpt: excerpt.trim(),
         isPremium,
+        sources: sources.trim(),
         status: 'draft',
         updatedAt: Date.now(),
       };
@@ -171,6 +175,7 @@ export default function AgoraEditor() {
         content: string;
         excerpt: string;
         isPremium: boolean;
+        sources: string;
         status: 'draft'; // Explicitly set to 'draft' before publishing
         updatedAt: number;
       } = {
@@ -178,6 +183,7 @@ export default function AgoraEditor() {
         content,
         excerpt: excerpt.trim(),
         isPremium,
+        sources: sources.trim(),
         status: 'draft',
         updatedAt: Date.now(),
       };
@@ -317,11 +323,30 @@ export default function AgoraEditor() {
                     <h1 className="text-2xl font-bold mb-2">{title || 'Article Title'}</h1>
                     <p className="text-xl text-muted-foreground mb-4">{excerpt}</p>
                     <div className="prose-content">
-                      <ReactMarkdown>{content || 'Start writing to see preview...'}</ReactMarkdown>
+                      <SecureMarkdown contentType="article">{content || 'Start writing to see preview...'}</SecureMarkdown>
                     </div>
                   </div>
                 </TabsContent>
               </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Sources */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Sources</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                id="sources"
+                placeholder="List your sources here, one per line..."
+                value={sources}
+                onChange={(e) => setSources(e.target.value)}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                You can use Markdown for links, e.g., [Source Name](https://example.com)
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -356,9 +381,9 @@ export default function AgoraEditor() {
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <p>• Focus on practical legal insights</p>
               <p>• Use clear, accessible language</p>
-              <p>• Include relevant case references</p>
-              <p>• Maintain professional tone</p>
-              <p>• Provide actionable takeaways</p>
+              <p>• Include relevant case references and links to the source</p>
+              <p>• Have fun!</p>  
+              <p>• Be concise and to the point</p>
             </CardContent>
           </Card>
         </div>

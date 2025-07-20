@@ -11,6 +11,7 @@ export interface AgoraArticle extends DocumentData {
   authorId: string;          // Firebase Auth user ID
   authorName: string;        // Display name
   authorAvatar?: string;     // Author photo URL
+  sources?: string;
   
   // Publishing metadata
   status: 'draft' | 'published';

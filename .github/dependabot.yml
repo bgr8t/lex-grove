@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "fix"
+      prefix-development: "chore"
+      include: "scope"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "bgr8t"
+    assignees:
+      - "bgr8t"
+    labels:
+      - "dependencies"
+      - "dependabot"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "bgr8t"
+    assignees:
+      - "bgr8t"
+    labels:
+      - "dependencies"
+      - "dependabot"
+      - "github-actions" 

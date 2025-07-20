@@ -99,6 +99,18 @@ export default function AgoraBrowse() {
           <p className="text-muted-foreground">
             Legal commentary and analysis from legal practitioners and law students
           </p>
+          <div className="text-sm text-muted-foreground mt-2 bg-primary/5 rounded-lg p-3 border border-primary/10">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📚</span>
+              <div>
+                <p className="font-medium text-primary">Welcome to the Knowledge Zone!</p>
+                <p className="mt-1">
+                  While our brilliant authors share amazing legal insights, remember this is like a really good study group – 
+                  perfect for learning, but not a substitute for professional legal counsel. Enjoy the wisdom! ✨
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
           <Link to="/agora/new">
@@ -187,74 +199,74 @@ function ArticleCard({ article, canAccessPremium }: ArticleCardProps) {
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 overflow-hidden">
-      <CardContent className="p-4 space-y-3">
-        {/* Premium badge */}
-        {article.isPremium && (
-          <div className="flex justify-end">
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-              <Crown className="w-3 h-3 mr-1" />
-              Premium
-            </Badge>
-          </div>
-        )}
+    <Link 
+      to={`/agora/article/${article.slug}`}
+      className="block group"
+    >
+      <Card className="h-full hover:shadow-lg transition-all duration-200 overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          {/* Premium badge */}
+          {article.isPremium && (
+            <div className="flex justify-end">
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                <Crown className="w-3 h-3 mr-1" />
+                Premium
+              </Badge>
+            </div>
+          )}
 
-        {/* Title and Link */}
-        <div>
-          <Link 
-            to={`/agora/article/${article.slug}`} 
-            className="block group-hover:text-primary transition-colors"
-          >
-            <h3 className="font-semibold text-lg line-clamp-2 leading-tight">
+          {/* Title */}
+          <div>
+            <h3 className="font-semibold text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
               {article.title}
             </h3>
-          </Link>
-        </div>
+          </div>
 
-        {/* Excerpt */}
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {article.excerpt}
-        </p>
+          {/* Excerpt */}
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {article.excerpt}
+          </p>
 
-        {/* Author and metadata */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Avatar className="h-4 w-4">
-                <AvatarImage src={article.authorAvatar} />
-                <AvatarFallback className="text-xs">
-                  {article.authorName.substring(0, 1).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span>{article.authorName}</span>
+          {/* Author and metadata */}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={article.authorAvatar} />
+                  <AvatarFallback className="text-xs">
+                    {article.authorName.substring(0, 1).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{article.authorName}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(article.publishedAt || article.createdAt)}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              <span>{formatDate(article.publishedAt || article.createdAt)}</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>{getReadingTime(article.content)} min</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                <span>{article.viewCount}</span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              <span>{getReadingTime(article.content)} min</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              <span>{article.viewCount}</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Access indicator */}
-        {article.isPremium && !canAccessPremium && (
-          <div className="pt-2 border-t">
-            <p className="text-xs text-muted-foreground">
-              <Crown className="w-3 h-3 inline mr-1" />
-              Requires premium subscription to read full article
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {/* Access indicator */}
+          {article.isPremium && !canAccessPremium && (
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                <Crown className="w-3 h-3 inline mr-1" />
+                Requires premium subscription to read full article
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 } 
