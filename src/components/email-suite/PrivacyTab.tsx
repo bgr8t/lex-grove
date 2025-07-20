@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { PrivacyPreferences } from '@/pages/EmailSuite';
 
 const featureKeys = [
   'removeMetadata',
@@ -34,6 +35,11 @@ const SettingRow = ({ title, description, control }) => (
   </div>
 );
 
+interface PrivacyTabProps {
+  privacyPreferences: PrivacyPreferences;
+  onPrivacyPreferencesChange: (preferences: PrivacyPreferences) => void;
+}
+
 const PrivacyModeCard = ({ title, description, active, onClick, badge }) => (
   <Card 
     className={cn(
@@ -57,16 +63,24 @@ const PrivacyModeCard = ({ title, description, active, onClick, badge }) => (
   </Card>
 );
 
-export default function PrivacyTab() {
-  const [activeMode, setActiveMode] = useState<'standard' | 'privacy'>('standard');
-  const [features, setFeatures] = useState<Record<FeatureKey, boolean>>(getFeaturePreset(activeMode));
+export default function PrivacyTab({ privacyPreferences, onPrivacyPreferencesChange }: PrivacyTabProps) {
 
-  useEffect(() => {
-    setFeatures(getFeaturePreset(activeMode));
-  }, [activeMode]);
+  const setActiveMode = (mode: 'standard' | 'privacy') => {
+    const features = getFeaturePreset(mode);
+    onPrivacyPreferencesChange({
+      mode,
+      removeMetadata: features.removeMetadata,
+      neutralLanguage: features.neutralLanguage,
+      avoidLocation: features.avoidLocation,
+      attorneyClient: features.attorneyClient,
+    });
+  };
 
   const toggleFeature = (key: FeatureKey) => {
-    setFeatures(prev => ({ ...prev, [key]: !prev[key] }));
+    onPrivacyPreferencesChange({
+      ...privacyPreferences,
+      [key]: !privacyPreferences[key]
+    });
   };
   
   return (
@@ -83,16 +97,16 @@ export default function PrivacyTab() {
           <PrivacyModeCard 
             title="Privacy-First Mode"
             description="Enables all privacy features by default for maximum security."
-            active={activeMode === 'privacy'}
+            active={privacyPreferences.mode === 'privacy'}
             onClick={() => setActiveMode('privacy')}
-            badge={activeMode === 'privacy' ? 'Active' : 'Inactive'}
+            badge={privacyPreferences.mode === 'privacy' ? 'Active' : 'Inactive'}
           />
           <PrivacyModeCard 
             title="Standard Mode"
             description="Standard email practices with privacy features disabled by default."
-            active={activeMode === 'standard'}
+            active={privacyPreferences.mode === 'standard'}
             onClick={() => setActiveMode('standard')}
-            badge={activeMode === 'standard' ? 'Active' : 'Inactive'}
+            badge={privacyPreferences.mode === 'standard' ? 'Active' : 'Inactive'}
           />
         </CardContent>
       </Card>
@@ -106,22 +120,22 @@ export default function PrivacyTab() {
           <SettingRow 
             title="Remove identifying metadata from content" 
             description="Automatically removes names, addresses, and other identifying information" 
-            control={<Switch checked={features.removeMetadata} onCheckedChange={() => toggleFeature('removeMetadata')} />} 
+            control={<Switch checked={privacyPreferences.removeMetadata} onCheckedChange={() => toggleFeature('removeMetadata')} />} 
           />
           <SettingRow 
             title="Prefer neutral, non-identifying language" 
             description="Use language that doesn't reveal personal characteristics" 
-            control={<Switch checked={features.neutralLanguage} onCheckedChange={() => toggleFeature('neutralLanguage')} />} 
+            control={<Switch checked={privacyPreferences.neutralLanguage} onCheckedChange={() => toggleFeature('neutralLanguage')} />} 
           />
           <SettingRow 
             title="Avoid location-specific references" 
             description="Remove geographical identifiers and time zone references" 
-            control={<Switch checked={features.avoidLocation} onCheckedChange={() => toggleFeature('avoidLocation')} />} 
+            control={<Switch checked={privacyPreferences.avoidLocation} onCheckedChange={() => toggleFeature('avoidLocation')} />} 
           />
           <SettingRow 
             title="Maintain attorney-client privilege awareness" 
             description="Ensure legal communications maintain confidentiality standards" 
-            control={<Switch checked={features.attorneyClient} onCheckedChange={() => toggleFeature('attorneyClient')} />} 
+            control={<Switch checked={privacyPreferences.attorneyClient} onCheckedChange={() => toggleFeature('attorneyClient')} />} 
           />
         </CardContent>
       </Card>
