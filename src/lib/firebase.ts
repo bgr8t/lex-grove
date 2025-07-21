@@ -1,9 +1,10 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getAnalytics } from "firebase/analytics";
 import { requireEnvVar } from '../utils/security';
 
 // Your web app's Firebase configuration
@@ -35,6 +36,20 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 export const functions = getFunctions(app);
+
+// Initialize Analytics with error handling
+export let analytics: ReturnType<typeof getAnalytics> | null = null;
+try {
+  analytics = getAnalytics(app);
+} catch (error) {
+  console.warn('Analytics initialization failed:', error);
+}
+
+// Initialize Google Auth Provider
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // Connect to emulators in development
 if (import.meta.env.MODE === 'development') {

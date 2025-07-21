@@ -21,6 +21,12 @@ import {
   BookOpen,
   User
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function AgoraArticleReader() {
   const { slug } = useParams<{ slug: string }>();
@@ -176,7 +182,7 @@ export default function AgoraArticleReader() {
 
       {/* Article Header */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {article.isPremium && (
             <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
               <Crown className="w-3 h-3 mr-1" />
@@ -185,13 +191,58 @@ export default function AgoraArticleReader() {
           )}
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-          {article.title}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+            {article.title}
+          </h1>
+          {article.difficulty && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div 
+                    className={`w-3 h-3 rounded-full shadow-sm ${
+                      article.difficulty === 'beginner' ? 'bg-green-400' :
+                      article.difficulty === 'intermediate' ? 'bg-yellow-400' :
+                      'bg-red-400'
+                    }`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{article.difficulty.charAt(0).toUpperCase() + article.difficulty.slice(1)} Level</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
 
-        <p className="text-xl text-muted-foreground">
-          {article.excerpt}
-        </p>
+        {/* Tags and Categories */}
+        <div className="space-y-4">
+          {/* All Tags Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Legal Area Tag */}
+            {article.legalArea && (
+              <Badge 
+                variant="outline" 
+                className="text-sm px-3 py-1 bg-slate-50/50 shadow-sm hover:bg-slate-100/50 transition-colors"
+              >
+                {article.legalArea}
+              </Badge>
+            )}
+            
+            {/* Regular Tags */}
+            {article.tags && article.tags.length > 0 && (
+              article.tags.map((tag) => (
+                <Badge 
+                  key={tag} 
+                  variant="outline" 
+                  className="text-sm px-3 py-1 bg-slate-50/50 shadow-sm hover:bg-slate-100/50 transition-colors"
+                >
+                  {tag}
+                </Badge>
+              ))
+            )}
+          </div>
+        </div>
 
         {/* Article metadata */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -227,6 +278,10 @@ export default function AgoraArticleReader() {
             </Button>
           </div>
         </div>
+
+        <p className="text-xl text-muted-foreground">
+          {article.excerpt}
+        </p>
 
         
       </div>
@@ -281,27 +336,6 @@ export default function AgoraArticleReader() {
           </CardContent>
         </Card>
       )}
-
-      {/* Author info */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={article.authorAvatar} />
-              <AvatarFallback>
-                {article.authorName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className="font-semibold">{article.authorName}</h3>
-              <p className="text-sm text-muted-foreground">
-                {article.authorBio}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
 
     </div>
   );

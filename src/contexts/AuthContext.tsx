@@ -9,9 +9,10 @@ import {
   updateProfile,
   UserCredential,
   Auth,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  signInWithPopup
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, googleProvider } from '@/lib/firebase';
 import { userProfileService } from '@/lib/services/userProfileService';
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ interface AuthContextType {
   updateUserProfile: (displayName: string) => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
   checkMembershipStatus: () => Promise<'contributor' | 'premium' | null>;
+  signInWithGoogle: () => Promise<UserCredential>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -80,6 +82,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login function
   async function login(email: string, password: string) {
     return signInWithEmailAndPassword(auth, email, password);
+  }
+
+  // Google Sign-in function
+  async function signInWithGoogle() {
+    setLoading(true);
+    try {
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      const user = userCredential.user;
+
+      // Check if user profile exists
+      const profile = await userProfileService.getUserProfileByUid(user.uid);
+      
+      // If no profile exists, create one
+      if (!profile) {
+        await userProfileService.createUserProfile({
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || '',
+          membershipStatus: 'contributor',
+          contributions: {
+            count: 0,
+            target: 3,
+            completed: false,
+            briefIds: []
+          }
+        });
+        console.log("Created profile for Google user");
+      }
+      
+      return userCredential;
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Logout function
@@ -198,7 +236,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetPassword,
     updateUserProfile,
     checkEmailExists,
-    checkMembershipStatus
+    checkMembershipStatus,
+    signInWithGoogle
   };
 
   return (

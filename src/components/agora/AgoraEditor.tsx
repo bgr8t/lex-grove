@@ -7,19 +7,52 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { agoraArticleService } from '@/lib/services/agoraService';
 import { AgoraArticle } from '@/lib/models/agoraArticle';
 import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
-import { MarkdownEditor } from '@/components/ui/MarkdownEditor'; // Import the new editor
+import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
+import { TagInput } from '@/components/ui/tag-input';
 import {
   Save,
   Send,
   X,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  Tag
 } from 'lucide-react';
+
+// Predefined tag suggestions and legal areas
+const COMMON_TAGS = [
+  'constitutional-law', 'contract-law', 'tort-law', 'criminal-law', 'property-law',
+  'family-law', 'administrative-law', 'employment-law', 'corporate-law', 'tax-law',
+  'intellectual-property', 'environmental-law', 'human-rights', 'civil-procedure',
+  'evidence', 'legal-research', 'case-analysis', 'statutory-interpretation',
+  'precedent', 'jurisdiction', 'remedies', 'legislation', 'judicial-review',
+  'charter-rights', 'privacy-law', 'technology-law', 'international-law'
+];
+
+const LEGAL_AREAS = [
+  'Constitutional Law',
+  'Contract Law', 
+  'Tort Law',
+  'Criminal Law',
+  'Property Law',
+  'Family Law',
+  'Administrative Law',
+  'Employment Law',
+  'Corporate Law',
+  'Tax Law',
+  'Intellectual Property',
+  'Environmental Law',
+  'Human Rights',
+  'Civil Procedure',
+  'Evidence',
+  'International Law',
+  'Other'
+];
 
 export default function AgoraEditor() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +66,9 @@ export default function AgoraEditor() {
   const [excerpt, setExcerpt] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [sources, setSources] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [legalArea, setLegalArea] = useState<string>('');
+  const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
   // Editor state
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
@@ -76,6 +112,9 @@ export default function AgoraEditor() {
         setExcerpt(fetchedArticle.excerpt);
         setIsPremium(fetchedArticle.isPremium);
         setSources(fetchedArticle.sources || '');
+        setTags(fetchedArticle.tags || []);
+        setLegalArea(fetchedArticle.legalArea || '');
+        setDifficulty(fetchedArticle.difficulty || 'beginner');
       }
     } catch (error) {
       console.error('Error loading article:', error);
@@ -110,21 +149,16 @@ export default function AgoraEditor() {
 
     setIsSaving(true);
     try {
-      const articleData: {
-        title: string;
-        content: string;
-        excerpt: string;
-        isPremium: boolean;
-        sources: string;
-        status: 'draft' | 'published';
-        updatedAt: number;
-      } = {
+      const articleData = {
         title: title.trim(),
         content,
         excerpt: excerpt.trim(),
         isPremium,
         sources: sources.trim(),
-        status: 'draft',
+        tags,
+        legalArea: legalArea && legalArea !== 'none' ? legalArea : undefined,
+        difficulty,
+        status: 'draft' as const,
         updatedAt: Date.now(),
       };
 
@@ -170,21 +204,16 @@ export default function AgoraEditor() {
 
     setIsPublishing(true);
     try {
-      const articleData: {
-        title: string;
-        content: string;
-        excerpt: string;
-        isPremium: boolean;
-        sources: string;
-        status: 'draft'; // Explicitly set to 'draft' before publishing
-        updatedAt: number;
-      } = {
+      const articleData = {
         title: title.trim(),
         content,
         excerpt: excerpt.trim(),
         isPremium,
         sources: sources.trim(),
-        status: 'draft',
+        tags,
+        legalArea: legalArea && legalArea !== 'none' ? legalArea : undefined,
+        difficulty,
+        status: 'draft' as const,
         updatedAt: Date.now(),
       };
 
@@ -353,6 +382,59 @@ export default function AgoraEditor() {
 
         {/* Sidebar Settings */}
         <div className="space-y-4">
+          {/* Content Classification */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <Tag className="w-4 h-4 mr-2 inline" />
+                Classification
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="tags">Tags</Label>
+                <TagInput
+                  tags={tags}
+                  onTagsChange={setTags}
+                  suggestions={COMMON_TAGS}
+                  placeholder="Add relevant tags..."
+                  maxTags={8}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="legalArea">Legal Area (Optional)</Label>
+                <Select value={legalArea || undefined} onValueChange={(value) => setLegalArea(value || '')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select legal area..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific area</SelectItem>
+                    {LEGAL_AREAS.map((area) => (
+                      <SelectItem key={area} value={area}>
+                        {area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="difficulty">Difficulty Level</Label>
+                <Select value={difficulty} onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => setDifficulty(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Publication Settings */}
           <Card>
             <CardHeader>

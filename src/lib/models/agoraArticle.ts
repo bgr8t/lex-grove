@@ -18,6 +18,11 @@ export interface AgoraArticle extends DocumentData {
   publishedAt?: number;      // Timestamp when published
   slug: string;              // URL-friendly identifier
   
+  // Content categorization
+  tags: string[];            // Topic tags for classification and search
+  legalArea?: string;        // Legal practice area (optional)
+  difficulty?: 'beginner' | 'intermediate' | 'advanced'; // Content difficulty level
+  
   // Engagement metrics
   viewCount: number;
   likeCount: number;
@@ -36,5 +41,8 @@ export interface CreateAgoraArticle {
   content: string;
   excerpt: string;
   isPremium: boolean;
+  tags?: string[];           // Optional tags for new articles
+  legalArea?: string;        // Optional legal practice area
+  difficulty?: 'beginner' | 'intermediate' | 'advanced'; // Optional difficulty level
   status?: 'draft' | 'published';
 } 
