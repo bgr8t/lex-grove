@@ -122,6 +122,15 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
                   My Library
                 </Button>
               </Link>
+              <Link to="/agora/dashboard">
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  className="min-w-[48px]"
+                >
+                  Dashboard
+                </Button>
+              </Link>
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -217,6 +226,11 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
           <Link to="/my-library">
             <DropdownMenuItem>
               My Library
+            </DropdownMenuItem>
+          </Link>
+          <Link to="/agora/dashboard">
+            <DropdownMenuItem>
+              Dashboard
             </DropdownMenuItem>
           </Link>
           <DropdownMenuSeparator />

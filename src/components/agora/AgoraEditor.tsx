@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { agoraArticleService } from '@/lib/services/agoraService';
-import { AgoraArticle } from '@/lib/models/agoraArticle';
+import { AgoraArticle, CreateAgoraArticle } from '@/lib/models/agoraArticle';
 import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor';
 import { TagInput } from '@/components/ui/tag-input';
@@ -149,29 +149,48 @@ export default function AgoraEditor() {
 
     setIsSaving(true);
     try {
-      const articleData = {
-        title: title.trim(),
-        content,
-        excerpt: excerpt.trim(),
-        isPremium,
-        sources: sources.trim(),
-        tags,
-        legalArea: legalArea && legalArea !== 'none' ? legalArea : undefined,
-        difficulty,
-        status: 'draft' as const,
-        updatedAt: Date.now(),
-      };
-
       if (article?.id) {
-        // Update existing article
+        // Update existing draft
+        const articleData: Partial<AgoraArticle> = {
+          title: title.trim(),
+          content,
+          excerpt: excerpt.trim(),
+          isPremium,
+          sources: sources.trim(),
+          tags,
+          difficulty,
+          status: 'draft',
+          updatedAt: Date.now(),
+        };
+
+        if (legalArea && legalArea !== 'none') {
+          articleData.legalArea = legalArea;
+        } else {
+          articleData.legalArea = ''; // Explicitly clear if not set
+        }
+
         await agoraArticleService.update(article.id, articleData);
-        // Update local state
-        setArticle(prev => (prev ? { ...prev, ...articleData } : null));
+        setArticle(prev => (prev ? { ...prev, ...articleData, id: prev.id, authorId: prev.authorId, slug: prev.slug, createdAt: prev.createdAt } as AgoraArticle : null));
+      
       } else {
-        // Create new article
+        // Create new draft
+        const articleData: CreateAgoraArticle = {
+          title: title.trim(),
+          content,
+          excerpt: excerpt.trim(),
+          isPremium,
+          sources: sources.trim(),
+          tags,
+          difficulty,
+          status: 'draft',
+        };
+
+        if (legalArea && legalArea !== 'none') {
+          articleData.legalArea = legalArea;
+        }
+
         const savedArticle = await agoraArticleService.createArticle(articleData);
         setArticle(savedArticle);
-        // Update URL to edit mode
         navigate(`/agora/edit/${savedArticle.id}`, { replace: true });
       }
 
@@ -204,29 +223,45 @@ export default function AgoraEditor() {
 
     setIsPublishing(true);
     try {
-      const articleData = {
+      const articleData: Partial<AgoraArticle> & { title: string; content: string; excerpt: string } = {
         title: title.trim(),
         content,
         excerpt: excerpt.trim(),
         isPremium,
         sources: sources.trim(),
         tags,
-        legalArea: legalArea && legalArea !== 'none' ? legalArea : undefined,
         difficulty,
-        status: 'draft' as const,
+        status: 'draft', // The backend service handles the transition to 'published'
         updatedAt: Date.now(),
       };
 
+      if (legalArea && legalArea !== 'none') {
+        articleData.legalArea = legalArea;
+      } else {
+        articleData.legalArea = ''; // Explicitly clear if not set
+      }
+
       let articleIdToPublish: string;
 
-      // If editing an existing article, update it first.
-      // Otherwise, create a new one.
       if (article?.id) {
         await agoraArticleService.update(article.id, articleData);
         articleIdToPublish = article.id;
       } else {
-        const savedArticle = await agoraArticleService.createArticle(articleData);
-        setArticle(savedArticle); // Update local state with the new article
+        const newArticleData: CreateAgoraArticle = {
+          title: title.trim(),
+          content,
+          excerpt: excerpt.trim(),
+          isPremium,
+          sources: sources.trim(),
+          tags,
+          difficulty,
+          status: 'draft',
+        };
+        if (legalArea && legalArea !== 'none') {
+            newArticleData.legalArea = legalArea;
+        }
+        const savedArticle = await agoraArticleService.createArticle(newArticleData);
+        setArticle(savedArticle);
         articleIdToPublish = savedArticle.id;
       }
       
@@ -403,8 +438,8 @@ export default function AgoraEditor() {
               </div>
 
               <div>
-                <Label htmlFor="legalArea">Legal Area (Optional)</Label>
-                <Select value={legalArea || undefined} onValueChange={(value) => setLegalArea(value || '')}>
+                <Label htmlFor="legalArea">Legal Area</Label>
+                <Select value={legalArea} onValueChange={(value) => setLegalArea(value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select legal area..." />
                   </SelectTrigger>

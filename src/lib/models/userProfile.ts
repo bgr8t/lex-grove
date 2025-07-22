@@ -15,6 +15,30 @@ export interface UserProfile extends DocumentData {
   displayName?: string;
   email: string;
   photoURL?: string;
+  
+  // Public profile information
+  bio?: string;             // Author bio/description
+  location?: string;        // Author location
+  website?: string;         // Personal website URL
+  socialLinks?: {          // Social media links
+    twitter?: string;
+    linkedin?: string;
+    github?: string;
+  };
+  
+  // Following system
+  followers?: string[];     // Array of user IDs who follow this user
+  following?: string[];     // Array of user IDs this user follows
+  followerCount?: number;   // Cached count for performance
+  followingCount?: number;  // Cached count for performance
+  
+  // Profile settings
+  isPublicProfile?: boolean; // Whether profile is publicly visible
+  
+  // Stats for public display
+  articleCount?: number;    // Total published articles
+  totalViews?: number;      // Total views across all articles
+  
   contributions: {
     count: number;          // Current week's contributions
     target: number;         // Target contributions needed (default: 3)

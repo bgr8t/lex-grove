@@ -23,7 +23,11 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
-        resource.data.uid == request.auth.uid || isAdmin()
+        (resource.data.uid == request.auth.uid || isAdmin()) ||
+        // Allow updating follower/following counts via increment operations only
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'updatedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount', 'updatedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'followingCount', 'updatedAt']))
       );
       allow delete: if isAdmin();
     }

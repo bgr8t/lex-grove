@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -246,7 +246,10 @@ export default function AgoraArticleReader() {
 
         {/* Article metadata */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
+          <Link
+            to={`/agora/user/${article.authorId}`}
+            className="flex items-center gap-2 hover:text-primary transition-colors"
+          >
             <Avatar className="h-8 w-8">
               <AvatarImage src={article.authorAvatar} />
               <AvatarFallback>
@@ -254,7 +257,7 @@ export default function AgoraArticleReader() {
               </AvatarFallback>
             </Avatar>
             <span className="font-medium">{article.authorName}</span>
-          </div>
+          </Link>
           
           <div className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />

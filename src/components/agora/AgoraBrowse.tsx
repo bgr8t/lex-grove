@@ -361,36 +361,36 @@ function ArticleCard({ article, canAccessPremium }: ArticleCardProps) {
   };
 
   return (
-    <Link 
-      to={`/agora/article/${article.slug}`}
-      className="block group"
-    >
-      <Card className="h-full hover:shadow-lg transition-all duration-200 overflow-hidden">
-        <CardContent className="p-4 space-y-3">
-          {/* Premium badge */}
-          {article.isPremium && (
-            <div className="flex justify-end">
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                <Crown className="w-3 h-3 mr-1" />
-                Premium
-              </Badge>
-            </div>
-          )}
+    <Card className="h-full group hover:shadow-lg transition-all duration-200 overflow-hidden">
+      <CardContent className="p-4 space-y-3">
+        {/* Premium badge */}
+        {article.isPremium && (
+          <div className="flex justify-end">
+            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+              <Crown className="w-3 h-3 mr-1" />
+              Premium
+            </Badge>
+          </div>
+        )}
 
-          {/* Title */}
-          <div>
+        {/* Title */}
+        <div>
+          <Link to={`/agora/article/${article.slug}`} className="block">
             <h3 className="font-semibold text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
               {article.title}
             </h3>
-          </div>
+          </Link>
+        </div>
 
-          {/* Excerpt */}
+        {/* Excerpt */}
+        <Link to={`/agora/article/${article.slug}`} className="block">
           <p className="text-sm text-muted-foreground line-clamp-3">
             {article.excerpt}
           </p>
+        </Link>
 
-          {/* Tags */}
-          {article.tags && article.tags.length > 0 && (
+        {/* Tags */}
+        {article.tags && article.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {article.tags.slice(0, 3).map((tag) => (
                 <Badge key={tag} variant="outline" className="text-xs">
@@ -431,7 +431,11 @@ function ArticleCard({ article, canAccessPremium }: ArticleCardProps) {
           {/* Author and metadata */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+              <Link
+                to={`/agora/user/${article.authorId}`}
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Avatar className="h-4 w-4">
                   <AvatarImage src={article.authorAvatar} />
                   <AvatarFallback className="text-xs">
@@ -439,7 +443,7 @@ function ArticleCard({ article, canAccessPremium }: ArticleCardProps) {
                   </AvatarFallback>
                 </Avatar>
                 <span>{article.authorName}</span>
-              </div>
+              </Link>
               <div className="flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
                 <span>{formatDate(article.publishedAt || article.createdAt)}</span>
@@ -468,6 +472,5 @@ function ArticleCard({ article, canAccessPremium }: ArticleCardProps) {
           )}
         </CardContent>
       </Card>
-    </Link>
   );
 } 

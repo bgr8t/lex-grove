@@ -41,6 +41,7 @@ export interface CreateAgoraArticle {
   content: string;
   excerpt: string;
   isPremium: boolean;
+  sources?: string;
   tags?: string[];           // Optional tags for new articles
   legalArea?: string;        // Optional legal practice area
   difficulty?: 'beginner' | 'intermediate' | 'advanced'; // Optional difficulty level

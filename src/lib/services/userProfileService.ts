@@ -1,7 +1,7 @@
 import { FirestoreService } from '../firestore';
 import { Collection, UserProfile } from '../models/userProfile';
 import { auth } from '../firebase';
-import { doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, getDoc, writeBatch, arrayUnion, arrayRemove, increment, collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // Create UserProfile service that extends FirestoreService
@@ -429,6 +429,181 @@ class UserProfileService extends FirestoreService<UserProfile> {
     });
     
     return newBookmarkedBriefs;
+  }
+
+  // Follow/Unfollow functionality
+  async followUser(followerId: string, targetUserId: string): Promise<void> {
+    if (followerId === targetUserId) {
+      throw new Error('Cannot follow yourself');
+    }
+
+    const batch = writeBatch(db);
+    
+    // Add to target user's followers subcollection
+    const followerDocRef = doc(db, 'userProfiles', targetUserId, 'followers', followerId);
+    batch.set(followerDocRef, {
+      followedAt: new Date()
+    });
+
+    // Add to follower's following subcollection
+    const followingDocRef = doc(db, 'userProfiles', followerId, 'following', targetUserId);
+    batch.set(followingDocRef, {
+      followedAt: new Date()
+    });
+
+    // Update follower count for target user
+    const targetUserRef = doc(db, 'userProfiles', targetUserId);
+    batch.update(targetUserRef, {
+      followerCount: increment(1),
+      updatedAt: Date.now()
+    });
+
+    // Update following count for follower
+    const followerUserRef = doc(db, 'userProfiles', followerId);
+    batch.update(followerUserRef, {
+      followingCount: increment(1),
+      updatedAt: Date.now()
+    });
+
+    await batch.commit();
+  }
+
+  async unfollowUser(followerId: string, targetUserId: string): Promise<void> {
+    const batch = writeBatch(db);
+    
+    // Remove from target user's followers subcollection
+    const followerDocRef = doc(db, 'userProfiles', targetUserId, 'followers', followerId);
+    batch.delete(followerDocRef);
+
+    // Remove from follower's following subcollection
+    const followingDocRef = doc(db, 'userProfiles', followerId, 'following', targetUserId);
+    batch.delete(followingDocRef);
+
+    // Update follower count for target user
+    const targetUserRef = doc(db, 'userProfiles', targetUserId);
+    batch.update(targetUserRef, {
+      followerCount: increment(-1),
+      updatedAt: Date.now()
+    });
+
+    // Update following count for follower
+    const followerUserRef = doc(db, 'userProfiles', followerId);
+    batch.update(followerUserRef, {
+      followingCount: increment(-1),
+      updatedAt: Date.now()
+    });
+
+    await batch.commit();
+  }
+
+  // Helper method to sync follower counts (useful for data consistency)
+  async syncFollowerCounts(userId: string): Promise<void> {
+    try {
+      // Count followers
+      const followersRef = collection(db, 'userProfiles', userId, 'followers');
+      const followersQuery = query(followersRef);
+      const followersSnapshot = await getDocs(followersQuery);
+      const followerCount = followersSnapshot.size;
+
+      // Count following
+      const followingRef = collection(db, 'userProfiles', userId, 'following');
+      const followingQuery = query(followingRef);
+      const followingSnapshot = await getDocs(followingQuery);
+      const followingCount = followingSnapshot.size;
+
+      // Update user profile with accurate counts
+      await this.updateUserProfile(userId, {
+        followerCount,
+        followingCount,
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error('Error syncing follower counts:', error);
+    }
+  }
+
+  async isFollowing(followerId: string, targetUserId: string): Promise<boolean> {
+    try {
+      const followingDocRef = doc(db, 'userProfiles', followerId, 'following', targetUserId);
+      const followingSnap = await getDoc(followingDocRef);
+      return followingSnap.exists();
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return false;
+    }
+  }
+
+  async getFollowers(userId: string): Promise<UserProfile[]> {
+    try {
+      const followersRef = collection(db, 'userProfiles', userId, 'followers');
+      const followersQuery = query(followersRef);
+      const followersSnapshot = await getDocs(followersQuery);
+      
+      const followerIds = followersSnapshot.docs.map(doc => doc.id);
+      const followerProfiles = await Promise.all(
+        followerIds.map(followerId => this.getUserProfileByUid(followerId))
+      );
+
+      return followerProfiles.filter(profile => profile !== null) as UserProfile[];
+    } catch (error) {
+      console.error('Error getting followers:', error);
+      return [];
+    }
+  }
+
+  async getFollowing(userId: string): Promise<UserProfile[]> {
+    try {
+      const followingRef = collection(db, 'userProfiles', userId, 'following');
+      const followingQuery = query(followingRef);
+      const followingSnapshot = await getDocs(followingQuery);
+      
+      const followingIds = followingSnapshot.docs.map(doc => doc.id);
+      const followingProfiles = await Promise.all(
+        followingIds.map(followingId => this.getUserProfileByUid(followingId))
+      );
+
+      return followingProfiles.filter(profile => profile !== null) as UserProfile[];
+    } catch (error) {
+      console.error('Error getting following:', error);
+      return [];
+    }
+  }
+
+  // Public profile methods
+  async updatePublicProfile(userId: string, profileData: {
+    bio?: string;
+    location?: string;
+    website?: string;
+    socialLinks?: {
+      twitter?: string;
+      linkedin?: string;
+      github?: string;
+    };
+    isPublicProfile?: boolean;
+  }): Promise<void> {
+    await this.updateUserProfile(userId, {
+      ...profileData,
+      updatedAt: Date.now()
+    });
+  }
+
+  async updateArticleStats(authorId: string): Promise<void> {
+    try {
+      // Import agoraArticleService to avoid circular dependency
+      const { agoraArticleService } = await import('./agoraService');
+      
+      const articles = await agoraArticleService.getArticlesByAuthor(authorId);
+      const publishedArticles = articles.filter(article => article.status === 'published');
+      const totalViews = publishedArticles.reduce((sum, article) => sum + (article.viewCount || 0), 0);
+
+      await this.updateUserProfile(authorId, {
+        articleCount: publishedArticles.length,
+        totalViews,
+        updatedAt: Date.now()
+      });
+    } catch (error) {
+      console.error('Error updating article stats:', error);
+    }
   }
 }
 
