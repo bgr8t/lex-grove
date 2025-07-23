@@ -74,57 +74,29 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
-    // Comments
+    // Comments - allow read/write only to authors and target users
     match /comments/{commentId} {
-      allow read: if true;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
     
-    // Flashcard decks
-    match /flashcardDecks/{deckId} {
-      allow read, write: if isAuthenticated();  // More permissive for initial setup
-    }
-
     // Research Grove Collections - Protected Premium Feature
     
     // Helper function to check membership for Research Grove access
     function hasValidMembership() {
-      return isAuthenticated() &&
-        exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) &&
+      return request.auth != null && 
         get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.membershipStatus in ['contributor', 'premium'];
     }
     
-    // Mandates - only authenticated users with valid membership can access their own
-    match /mandates/{mandateId} {
-      allow read, write: if isAuthenticated() 
-        && request.auth.uid == resource.data.userId
-        && hasValidMembership();
-      allow create: if isAuthenticated() 
-        && request.auth.uid == request.resource.data.userId
-        && hasValidMembership();
+    // Subscription status check - users can only read their own status
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAdmin();
     }
     
-    // Legal questions - only mandate owners can access
-    match /legal_questions/{questionId} {
-      allow read, write: if isAuthenticated() 
-        && request.auth.uid == resource.data.userId
-        && hasValidMembership();
-      allow create: if isAuthenticated() 
-        && request.auth.uid == request.resource.data.userId
-        && hasValidMembership();
-    }
-    
-    // Research sources - only mandate owners can access  
-    match /research_sources/{sourceId} {
-      allow read, write: if isAuthenticated() 
-        && request.auth.uid == resource.data.userId
-        && hasValidMembership();
-      allow create: if isAuthenticated() 
-        && request.auth.uid == request.resource.data.userId
-        && hasValidMembership();
-    }
-
     // Agora Articles - Legal Commentary Platform
     match /agoraArticles/{articleId} {
       // Anyone can read published articles

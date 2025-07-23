@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
+import SocialProof from '@/components/SocialProof';
 import Features from '@/components/Features';
+import AgoraSpotlight from '@/components/AgoraSpotlight';
+import ComposeSpotlight from '@/components/ComposeSpotlight';
+import FAQ from '@/components/FAQ';
 import HowItWorks from '@/components/HowItWorks';
 import PricingSection from '@/components/PricingSection';
 import SearchResults from '@/components/SearchResults';
 import TopBriefs from '@/components/TopBriefs';
-import EmpoweringStudents from '@/components/EmpoweringStudents';
 import Footer from '@/components/Footer';
 import { Brief } from '@/components/BriefCard';
 import { useToast } from '@/components/ui/use-toast';
@@ -49,10 +52,12 @@ const Index = () => {
       {!searchQuery && (
         <>
           <Hero onSearch={handleSearch} />
+          <SocialProof />
           <Features />
-          <EmpoweringStudents />
+          <AgoraSpotlight />
+          <ComposeSpotlight />
           <TopBriefs />
-          <HowItWorks />
+          <FAQ />
           {!currentUser && <PricingSection />}
         </>
       )}

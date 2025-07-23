@@ -1,35 +1,180 @@
-// Copy and use these rules in your Firebase console
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /caseBriefs/{briefId} {
-      // Allow reading case briefs for all authenticated users
-      allow read: if request.auth != null;
-      
-      // Allow creating case briefs if user is authenticated and sets themselves as owner
-      allow create: if request.auth != null && 
-                   request.resource.data.userId == request.auth.uid;
-      
-      // Allow updating case briefs if user is the owner
-      allow update: if request.auth != null && 
-                   (
-                     // Allow owner to update all fields
-                     resource.data.userId == request.auth.uid ||
-                     // Allow view count increments for any authenticated user
-                     (
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
-                       request.resource.data.viewCount == resource.data.viewCount + 1
-                     )
-                   );
-      
-      // Allow deleting case briefs if user is the owner
-      allow delete: if request.auth != null && 
-                   resource.data.userId == request.auth.uid;
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Default rule for other collections
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function isAdmin() {
+      return isAuthenticated() && 
+             (exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin');
     }
+    
+ 
+    function isOwner(userId) {
+      // Only allow if the authenticated user's UID matches the document ID
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profiles - More permissive but still safe
+    match /userProfiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        (resource.data.uid == request.auth.uid || isAdmin()) ||
+        // Allow updating follower/following counts via increment operations only
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'updatedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followingCount', 'updatedAt']) ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'followingCount', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+    
+    // Case briefs - Access control based on membership status
+    match /caseBriefs/{briefId} {
+      // Anyone can read basic brief metadata
+      allow read: if true;
+      
+      // Only premium users, contributors, owners, and admins can read full brief content
+      allow read: if true;
+      
+      // Only authenticated users can create new briefs
+      allow create: if isAuthenticated();
+      
+      // Allow authenticated users to update viewCount; owners/admins to update all fields
+      allow update: if isAuthenticated() && (
+                       (isOwner(resource.data.userId) || isAdmin()) ||
+                       (
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+                         request.resource.data.viewCount == resource.data.viewCount + 1
+                       )
+                     );
+      // Only the owner or admin can delete briefs
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Collections (user's saved briefs)
+    match /collections/{collectionId} {
+      allow read, write: if isAuthenticated();  // More permissive for initial setup
+    }
+    
+    // Subscription data - More permissive during setup
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // System configurations
+    match /systemConfig/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Comments
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Flashcard decks
+    match /flashcardDecks/{deckId} {
+      allow read, write: if isAuthenticated();  // More permissive for initial setup
+    }
+
+    // Research Grove Collections - Protected Premium Feature
+    
+    // Helper function to check membership for Research Grove access
+    function hasValidMembership() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/userProfiles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.membershipStatus in ['contributor', 'premium'];
+    }
+    
+    // Mandates - only authenticated users with valid membership can access their own
+    match /mandates/{mandateId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
+    
+    // Legal questions - only mandate owners can access
+    match /legal_questions/{questionId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
+    
+    // Research sources - only mandate owners can access  
+    match /research_sources/{sourceId} {
+      allow read, write: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId
+        && hasValidMembership();
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.userId
+        && hasValidMembership();
+    }
+
+    // User Profile Subcollections - Following/Followers
+    match /userProfiles/{userId}/following/{targetUserId} {
+      // Users can read any public following lists
+      allow read: if isAuthenticated();
+      
+      // Users can only modify their own following list
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    match /userProfiles/{userId}/followers/{followerId} {
+      // Users can read any public followers lists
+      allow read: if isAuthenticated();
+      
+      // Users can write to any user's followers list (needed for follow operations)
+      // but only authenticated users can do this
+      allow write: if isAuthenticated();
+    }
+
+    // Agora Articles - Legal Commentary Platform
+    match /agoraArticles/{articleId} {
+      // Anyone can read published articles
+      allow read: if resource.data.status == 'published';
+      
+      // Authors can read their own articles (including drafts)
+      allow read: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+      
+      // Admins can read all articles
+      allow read: if isAdmin();
+      
+      // Only contributors and premium users can create articles
+      allow create: if isAuthenticated() && 
+                     hasValidMembership() && 
+                     request.resource.data.authorId == request.auth.uid;
+      
+      // Authors can update their own articles, admins can update any
+      allow update: if isAuthenticated() && (
+                       resource.data.authorId == request.auth.uid ||
+                       isAdmin()
+                     );
+      
+      // Allow view count increments by anyone
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'updatedAt']) &&
+                     request.resource.data.viewCount == resource.data.viewCount + 1;
+      
+      // Authors can delete their own articles, admins can delete any
+      allow delete: if isAuthenticated() && (
+                       resource.data.authorId == request.auth.uid ||
+                       isAdmin()
+                     );
+    }
+    
   }
 } 

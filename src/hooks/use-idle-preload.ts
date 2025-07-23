@@ -11,7 +11,6 @@ export const useIdlePreload = () => {
         // Only preload high-traffic routes that are likely to be visited
         const routesToPreload = [
           () => import('@/pages/Library'),
-          () => import('@/pages/ResearchGrove'),
         ];
         
         // Preload one route every 500ms to avoid overwhelming the network

@@ -39,10 +39,8 @@ const Contribute = lazy(() => import('@/pages/Contribute'));
 const PaymentSuccess = lazy(() => import('@/pages/payment-success'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 const PineconeTest = lazy(() => import('@/pages/PineconeTest'));
-const FlashDeck = lazy(() => import('@/pages/FlashDeck'));
 const Blog = lazy(() => import('@/pages/Blog'));
 const MyLibrary = lazy(() => import('@/pages/MyLibrary'));
-const ResearchGrove = lazy(() => import('@/pages/ResearchGrove'));
 const Agora = lazy(() => import('@/pages/Agora'));
 const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
 
@@ -60,8 +58,6 @@ function App() {
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/about" element={<About />} />
-                <Route path="/research-grove" element={<ResearchGrove />} />
-                <Route path="/research-grove/:mandateId" element={<ResearchGrove />} />
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
                 
@@ -112,14 +108,6 @@ function App() {
                   element={
                     <ProtectedRoute requireAuth={true} requireContribution={true}>
                       <Library />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/flash-deck" 
-                  element={
-                    <ProtectedRoute requireAuth={true} requireContribution={true}>
-                      <FlashDeck />
                     </ProtectedRoute>
                   } 
                 />

@@ -40,7 +40,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom'],
           'vendor-react-router': ['react-router-dom'],
           'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'vendor-query': ['@tanstack/react-query'],
+          'vendor-query': ['@tanstack/react-query']
         }
       },
       // Prevent React from being externalized

@@ -15,7 +15,7 @@ interface SearchBarProps {
 
 const examples = [
   "Describe the elements of negligence",
-  "Criminal procedure exclusionary rule",
+  "Criminal procedure exclusionary rule", 
   "Contract law consideration doctrine",
   "When can hearsay evidence be admitted?"
 ];
@@ -65,60 +65,93 @@ export const SearchBar = ({
   };
 
   return (
-    <div className={cn("w-full space-y-2", className)}>
-      <div className={cn(
-        "relative flex items-center transition-all duration-300 ease-in-out",
-        isFocused ? "scale-[1.02] transform" : ""
-      )}>
-        <div className="relative flex-1">
-          <Input
-            ref={inputRef}
-            type="search"
-            placeholder={placeholder}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+    <div className={cn("w-full space-y-4", className)}>
+      {/* Main search container */}
+      <div className="relative group">
+        {/* Background glow effect */}
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl transition-opacity duration-500",
+          isFocused ? "opacity-100" : "opacity-0"
+        )}></div>
+        
+        {/* Search input container */}
+        <div className={cn(
+          "relative flex items-center backdrop-blur-sm border border-white/30 dark:border-gray-700/30 rounded-2xl shadow-xl transition-all duration-300",
+          "bg-white/90 dark:bg-gray-900/90",
+          isFocused ? "scale-[1.02] shadow-2xl" : "hover:scale-[1.01]"
+        )}>
+          <div className="relative flex-1">
+            <Input
+              ref={inputRef}
+              type="search"
+              placeholder={placeholder}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className={cn(
+                "pl-12 pr-4 py-4 h-14 border-0 bg-transparent rounded-l-2xl transition-all duration-300",
+                "text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0",
+                "font-medium"
+              )}
+            />
+            {/* Enhanced search icon */}
+            <div className={cn(
+              "absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300",
+              isFocused ? "text-primary scale-110" : "text-muted-foreground"
+            )}>
+              <MagnifyingGlassIcon className="h-5 w-5" />
+            </div>
+          </div>
+          
+          {/* Enhanced search button */}
+          <Button
+            onClick={handleSearch}
             className={cn(
-              "pl-10 pr-4 py-6 border border-input bg-white dark:bg-black rounded-l-xl transition-all duration-200",
-              isFocused ? "border-primary ring-1 ring-primary/20" : "",
-              "text-base placeholder:text-muted-foreground/70"
+              "h-14 rounded-l-none rounded-r-2xl text-base px-8 font-medium relative overflow-hidden group border-0",
+              "bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary",
+              "shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             )}
-          />
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <span className="relative z-10">Search</span>
+          </Button>
         </div>
-        <Button
-          onClick={handleSearch}
-          className={cn(
-            "h-[56px] rounded-l-none rounded-r-xl text-sm px-5 py-6",
-            "bg-[#384358] hover:bg-[#2b344a] transition-all duration-300",
-            "font-medium shadow-none border-0"
-          )}
-        >
-          Search
-        </Button>
       </div>
       
+      {/* Example queries */}
       {showExamples && (
-        <div className="flex flex-wrap justify-center gap-2 mt-3 animate-fade-in">
-          {examples.map((example, index) => (
-            <button
-              key={index}
-              onClick={() => handleExampleClick(example)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-xs text-primary bg-accent/50 border border-border/50 transition-all duration-300",
-                "hover:bg-accent hover:border-primary/20 hover:shadow-sm",
-                "animate-scale-in",
-                `animate-delay-${(index + 1) * 100}`
-              )}
-            >
-              <span className="flex items-center gap-1">
-                <SparklesIcon className="h-3 w-3" />
-                {example}
-              </span>
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div className="text-center">
+            <span className="text-sm text-muted-foreground font-medium">Try these examples:</span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
+            {examples.map((example, index) => (
+              <button
+                key={index}
+                onClick={() => handleExampleClick(example)}
+                className={cn(
+                  "group relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 opacity-0 animate-slide-up",
+                  "backdrop-blur-sm bg-white/60 dark:bg-gray-900/60 border border-white/30 dark:border-gray-700/30",
+                  "hover:bg-white/80 dark:hover:bg-gray-900/80 hover:scale-105 hover:shadow-lg",
+                  "hover:border-primary/30"
+                )}
+                style={{ 
+                  animationDelay: `${800 + index * 100}ms`, 
+                  animationFillMode: 'forwards' 
+                }}
+              >
+                {/* Hover glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <span className="relative z-10 flex items-center gap-2 text-muted-foreground group-hover:text-foreground">
+                  <SparklesIcon className="h-3 w-3 text-primary group-hover:animate-pulse-subtle" />
+                  {example}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

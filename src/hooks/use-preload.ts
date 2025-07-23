@@ -26,5 +26,4 @@ export const preloadRoutes = {
   // Only preload routes that are commonly accessed
   library: () => import('@/pages/Library'),
   agora: () => import('@/pages/Agora'),
-  researchGrove: () => import('@/pages/ResearchGrove'),
 }; 

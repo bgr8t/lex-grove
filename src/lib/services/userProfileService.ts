@@ -151,7 +151,7 @@ class UserProfileService extends FirestoreService<UserProfile> {
       
       // First check if profile exists and has contributions
       const profileSnap = await getDoc(userRef);
-      let updateData: any = {
+      const updateData: any = {
         membershipStatus: status,
         updatedAt: Date.now()
       };

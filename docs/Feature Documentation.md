@@ -7,13 +7,12 @@ This document provides a comprehensive overview of the main features of the Lex 
 2. [User Authentication](#-feature-1-user-authentication)
 3. [Case Brief Management](#-feature-2-case-brief-management)
 4. [User Library & Collections](#-feature-3-user-library--collections)
-5. [Agora: Collaborative Research](#-feature-4-agora-collaborative-research)
-6. [Research Grove: Mandate Management](#-feature-5-research-grove-mandate-management)
-7. [Flashcard Generation & Study](#-feature-6-flashcard-generation--study)
-8. [Payments & Subscriptions](#-feature-7-payments--subscriptions)
-9. [Blogging Platform](#-feature-8-blogging-platform)
-10. [Semantic Search (Pinecone)](#-feature-9-semantic-search-pinecone)
-11. [Data Management & Architecture](#-data-management--architecture)
+5. [Agora: Collaborative Legal Commentary](#-feature-4-agora-collaborative-legal-commentary)
+6. [Compose: AI-Powered Email Suite](#-feature-5-compose-ai-powered-email-suite)
+7. [Payments & Subscriptions](#-feature-6-payments--subscriptions)
+8. [Blogging Platform](#-feature-7-blogging-platform)
+9. [Semantic Search (Pinecone)](#-feature-8-semantic-search-pinecone)
+10. [Data Management & Architecture](#-data-management--architecture)
 
 ---
 
@@ -24,8 +23,7 @@ Lex Briefs AI is a multi-faceted platform designed to assist legal professionals
 - **AI-Powered Case Analysis**: Quickly generate and analyze case briefs.
 - **Collaborative Research**: Work with others in a shared research space (Agora).
 - **Personalized Library**: Organize and manage your own collection of legal documents.
-- **Research Management**: Track research mandates and objectives (Research Grove).
-- **Study Tools**: Create and review flashcards based on your material.
+- **AI-Powered Email Drafting**: Generate professional, context-aware email drafts (Compose).
 - **Secure & Scalable**: Built on a modern stack with Firebase, React, and integrated AI services.
 
 ---
@@ -130,190 +128,78 @@ interface CaseBrief {
 ## 📚 Feature 3: User Library & Collections
 
 ### Purpose
-To provide users with a personal space (`MyLibrary`) to save, organize, and manage their case briefs and other legal documents into collections.
+The Library is the central hub for legal research and knowledge management, providing users with access to a vast repository of community-contributed case briefs and a personalized space to organize their own collections.
 
 ### Core Components
-- `src/pages/Library.tsx`: A public or general library page.
-- `src/pages/MyLibrary.tsx`: The user's personal library page.
-- `src/components/LibrarySection.tsx`: A reusable component for displaying library content.
-- `src/components/BookmarkCollectionDialog.tsx`: Dialog to add an item to a collection.
-- `src/components/CreateCollectionModal.tsx`: Modal for creating a new collection.
-- `src/components/CollectionDetail.tsx`: Component to display the contents of a single collection.
+-   `src/pages/Library.tsx`: The main public-facing library where users can browse, search, and discover community-shared case briefs.
+-   `src/pages/MyLibrary.tsx`: A private, personalized space where users can manage their saved briefs, drafts, and collections.
+-   `src/components/BriefCard.tsx`: A reusable component that displays a concise summary of a case brief, with actions to save, view, or cite.
+-   `src/components/CreateCollectionModal.tsx`: A modal that allows users to create new collections to organize their saved briefs.
+-   `src/components/BookmarkCollectionDialog.tsx`: A dialog that facilitates saving a brief to one or more collections.
+-   `src/components/CollectionDetail.tsx`: A view that displays the contents of a specific collection.
 
-### User Flow
-
-1.  **Saving to Library**:
-    - Users can save items (like case briefs) to their personal library.
-    - This creates a reference to the item under the user's profile or a dedicated `library` collection in Firestore.
-
-2.  **Creating Collections**:
-    - Within their library, users can create custom collections to organize their saved items (e.g., "Torts Cases", "Contracts Research").
-    - The `CreateCollectionModal` facilitates this, creating a new collection document in Firestore linked to the user.
-
-3.  **Managing Collections**:
-    - Users can add or remove items from their collections. The `BookmarkCollectionDialog` is likely used for this purpose.
-    - They can view the contents of a specific collection, which would be rendered by `CollectionDetail.tsx`.
-
-### Data Model
-
-This feature would likely involve a few related data models in Firestore.
-
-**Collection Model (`Collection`)**
-```typescript
-interface Collection {
-  id: string;
-  userId: string;
-  name: string;
-  description: string;
-  createdAt: Timestamp;
-}
-```
-
-**Library Item Model (`LibraryItem`)**
-This could be a subcollection under each `Collection`.
-```typescript
-interface LibraryItem {
-  id: string; // Document ID of the item in its original collection (e.g., caseBriefs)
-  type: 'caseBrief' | 'article'; // To know which collection to look up
-  addedAt: Timestamp;
-}
-```
+### Use Cases & Potential
+-   **For Students**:
+    -   **Efficient Study Prep**: Quickly find and save relevant case briefs for classes, outlines, and exam preparation.
+    -   **Concept Exploration**: Use the semantic search to explore legal concepts and find related cases, enhancing understanding beyond simple keyword matching.
+    -   **Personalized Organization**: Create collections for different courses (e.g., "Torts," "Contracts") to keep research organized and easily accessible.
+-   **For Legal Professionals**:
+    -   **Rapid Research**: Leverage the community library to quickly get up to speed on unfamiliar areas of law or find foundational cases.
+    -   **Case Management**: Organize briefs into collections based on specific cases, clients, or legal matters for efficient retrieval.
+    -   **Knowledge Discovery**: Use the powerful search and filtering capabilities to uncover connections and precedents that might otherwise be missed.
 
 ---
 
-## 🏛️ Feature 4: Agora: Collaborative Research
+## 🏛️ Feature 4: Agora: Collaborative Legal Commentary
 
 ### Purpose
-Agora is a collaborative space for users to read, edit, and discuss articles and research materials in real-time. It fosters a community of shared knowledge and learning.
+Agora is a dynamic, collaborative platform designed for the legal community to publish, discuss, and refine legal commentary and analysis. It serves as a "Substack for law," enabling users to share their expertise, build a following, and engage in meaningful legal discourse.
 
 ### Core Components
-- `src/pages/Agora.tsx`: The main entry point for the Agora feature.
-- `src/components/agora/AgoraDashboard.tsx`: The central dashboard for Agora, likely showing a list of articles or projects.
-- `src/components/agora/AgoraBrowse.tsx`: A component for browsing available content within Agora.
-- `src/components/agora/AgoraArticleReader.tsx`: The component for reading an article.
-- `src/components/agora/AgoraEditor.tsx`: A component that allows for editing of articles, suggesting real-time collaboration (e.g., using a CRDT-based library or Firestore real-time updates).
-- `src/lib/services/agoraService.ts`: Service for handling Firestore operations related to Agora articles.
+-   `src/pages/Agora.tsx`: The main entry point that routes to all Agora-related views.
+-   `src/components/agora/AgoraBrowse.tsx`: A discovery hub where users can browse, search, and filter articles by topic, author, or popularity.
+-   `src/components/agora/AgoraEditor.tsx`: A powerful rich Markdown editor that allows authors to create, edit, and format their articles with features like premium content paywalls, tags, and source citations.
+-   `src/components/agora/AgoraArticleReader.tsx`: An optimized, clean reading interface that provides a premium experience for consuming content, with features for sharing and engagement.
+-   `src/components/agora/AgoraDashboard.tsx`: A personalized dashboard for authors to manage their published articles and drafts, view performance analytics, and track their earnings.
+-   `src/components/agora/AgoraUserProfile.tsx`: Public-facing profiles for authors to showcase their work, build a following, and establish their reputation within the community.
 
-### User Flow
-1.  **Dashboard**: Users enter Agora and see a dashboard of available or featured articles.
-2.  **Browsing**: Users can browse or search for articles to read or contribute to.
-3.  **Reading**: Selecting an article opens it in the `AgoraArticleReader`, providing a clean reading experience.
-4.  **Editing/Collaboration**: For articles that are editable, the `AgoraEditor` provides tools for modifying content. Multiple users might be able to edit simultaneously, with changes reflected in real-time for all participants.
-5.  **Saving**: Changes made in the editor are persisted to Firestore via the `agoraService`.
-
-### Data Model (`AgoraArticle`)
-```typescript
-interface AgoraArticle {
-  id: string;
-  title: string;
-  content: string; // Could be Markdown, HTML, or a structured JSON for a rich editor
-  authorIds: string[]; // List of user IDs who have contributed
-  viewCount: number;
-  tags: string[];
-  createdAt: Timestamp;
-  lastModifiedAt: Timestamp;
-  // Permissions-related fields might also be present
-}
-```
+### Use Cases & Potential
+-   **For Authors (Legal Professionals, Academics, Students)**:
+    -   **Publishing Platform**: Share in-depth legal analysis, commentary on recent rulings, or practical guides for other legal professionals.
+    -   **Monetization**: Place valuable content behind a premium paywall, generating revenue from subscribers who value their expertise.
+    -   **Reputation Building**: Establish themselves as thought leaders in their area of practice by consistently publishing high-quality content.
+-   **For Readers (The Legal Community)**:
+    -   **Knowledge Hub**: Access a curated feed of legal commentary and analysis from a diverse range of authors.
+    -   **Stay Current**: Keep up with the latest legal trends, discussions, and case analyses from experts in the field.
+    -   **Community Engagement**: Follow favorite authors, engage in discussions, and become part of a vibrant legal community.
 
 ---
 
-## 🌳 Feature 5: Research Grove: Mandate Management
+## ✉️ Feature 5: Compose: AI-Powered Email Suite
 
 ### Purpose
-Research Grove is a specialized tool for legal professionals to create, track, and manage legal research mandates. It helps in organizing research objectives, sources, and deadlines in a structured manner.
+Compose is an intelligent email-drafting assistant designed to enhance productivity and professionalism. It leverages AI to generate well-written, context-aware email drafts, complete with customizable preferences and privacy controls.
 
 ### Core Components
-- `src/pages/ResearchGrove.tsx`: The main page for this feature.
-- `src/components/research-grove/MandateCard.tsx`: Displays a summary of a research mandate.
-- `src/components/research-grove/MandateForm.tsx`: A form for creating or editing a mandate.
-- `src/components/research-grove/ResearchTool.tsx`: A tool for adding and managing research sources related to a mandate.
-- `src/lib/services/firestoreResearchGrove.ts`: Service handling Firestore operations for mandates.
-- `src/lib/models/mandate.ts`: The data model for a mandate.
+-   `src/pages/EmailSuite.tsx`: The main interface for the Email Suite, providing access to all composition and settings tabs.
+-   `src/components/email-suite/ComposeTab.tsx`: The primary workspace where users provide context and instructions to generate new email drafts.
+-   `src/components/email-suite/PreferencesTab.tsx`: A settings panel where users can define their default email tone (e.g., formal, friendly), desired length, and professional signature.
+-   `src/components/email-suite/PrivacyTab.tsx`: An advanced settings panel that allows users to enable privacy-preserving features, such as removing identifying metadata or ensuring attorney-client privilege is maintained.
+-   `src/components/email-suite/GeneratedDraftsList.tsx`: A history panel that displays previously generated drafts for easy access and reuse.
 
-### User Flow
-1.  **Mandate Creation**: A user creates a new mandate, specifying details like the client, legal area, research objective, and deadline using the `MandateForm`.
-2.  **Dashboard View**: All mandates are displayed on the `ResearchGrove` page, likely using `MandateCard` components to give a quick overview of each.
-3.  **Research**: The user can select a mandate and use the `ResearchTool` to add sources, quotes, and notes. This tool might allow for generating a formatted document from the collected research.
-
-### Data Model (`Mandate`)
-This model is more complex and captures the structured nature of legal research tasks.
-```typescript
-interface Mandate {
-  id: string;
-  userId: string;
-  title: string;
-  clientName: string;
-  legalArea: string; // e.g., 'Contract Law', 'Corporate Law'
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
-  researchObjective: string;
-  deadline: Timestamp;
-  createdAt: Timestamp;
-  // It would likely have a subcollection for research sources.
-}
-```
-
-**Research Source Model (`Source`)**
-This would be a subcollection under each `Mandate`.
-```typescript
-interface Source {
-  id: string;
-  quote: string;
-  fullSource: string; // Citation
-  note: string; // User's analysis
-  createdAt: Timestamp;
-}
-```
+### Use Cases & Potential
+-   **For Busy Professionals**:
+    -   **Efficiency Boost**: Drastically reduce the time spent on routine email correspondence, such as follow-ups, meeting requests, and client updates.
+    -   **Enhanced Professionalism**: Maintain a consistent and professional tone across all communications, with customizable signatures and formatting.
+    -   **Complex Communications**: Quickly generate first drafts for more complex communications, such as legal notices or client advisories, which can then be refined.
+-   **For Privacy-Conscious Users**:
+    -   **Secure Communications**: Enable Privacy Mode to automatically strip identifying metadata and use neutral language, reducing digital footprint.
+    -   **Attorney-Client Privilege**: Activate specific settings to ensure communications are framed with attorney-client privilege in mind, adding a layer of security to sensitive correspondence.
+    -   **Controlled Information Flow**: Avoid unintentionally sharing location-specific details or other contextual information that could compromise privacy.
 
 ---
 
-## 🃏 Feature 6: Flashcard Generation & Study
-
-### Purpose
-To help users study and memorize key legal concepts, case holdings, and definitions by creating and reviewing digital flashcards.
-
-### Core Components
-- `src/pages/FlashDeck.tsx`: The main page for viewing and interacting with a deck of flashcards.
-- `src/components/FlashDeck.tsx`: The component that likely implements the flashcard flipping and deck navigation logic.
-- `src/app/api/flashcards/generate/route.ts`: An API endpoint for automatically generating flashcards from a given text or document, likely using an AI model.
-- `src/lib/services/flashcardService.ts`: Service for Firestore operations related to flashcard decks.
-
-### User Flow
-1.  **Generation**:
-    - A user can provide text (e.g., from a case brief or an article) to an AI-powered generation service.
-    - The `generate` API endpoint processes the text and returns a set of questions and answers.
-    - This set is saved as a new "deck" in Firestore.
-2.  **Studying**:
-    - The user navigates to the `FlashDeck` page to study a deck.
-    - They are presented with one card at a time. They can click to "flip" the card and reveal the answer.
-    - They can navigate through the deck (next/previous card).
-
-### Data Model
-
-**Flashcard Deck Model (`FlashcardDeck`)**
-```typescript
-interface FlashcardDeck {
-  id: string;
-  userId: string;
-  title: string; // e.g., "Contracts - Week 1"
-  sourceId: string; // ID of the document it was generated from
-  createdAt: Timestamp;
-}
-```
-
-**Flashcard Model (`Flashcard`)**
-This would be a subcollection under each `FlashcardDeck`.
-```typescript
-interface Flashcard {
-  id: string;
-  question: string;
-  answer: string;
-}
-```
-
----
-
-## 💳 Feature 7: Payments & Subscriptions
+## 💳 Feature 6: Payments & Subscriptions
 
 ### Purpose
 To manage user subscriptions for premium features, handling payments through Stripe. This enables monetization of the platform.
@@ -355,7 +241,7 @@ interface UserProfile {
 
 ---
 
-## ✍️ Feature 8: Blogging Platform
+## ✍️ Feature 7: Blogging Platform
 
 ### Purpose
 To provide a simple content management system (CMS) for creating, publishing, and displaying blog posts. This can be used for announcements, articles, and other content.
@@ -392,7 +278,7 @@ interface BlogPost {
 
 ---
 
-## 🔎 Feature 9: Semantic Search (Pinecone)
+## 🔎 Feature 8: Semantic Search (Pinecone)
 
 ### Purpose
 To provide an advanced search experience that understands the *meaning* and *context* of a user's query, not just keywords. This is powered by vector embeddings and the Pinecone vector database.
@@ -427,5 +313,7 @@ This feature represents a Retrieval-Augmented Generation (RAG) pattern.
 4.  **Application Backend**: The API routes orchestrate the flow between Firestore, the embedding model, and Pinecone.
 
 ---
+
+## 📊 Feature 9: Data Management & Architecture
 
 This concludes the feature documentation. 
