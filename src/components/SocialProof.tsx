@@ -79,25 +79,6 @@ export const SocialProof = ({ className }: SocialProofProps) => {
             </div>
           </div>
           
-          {/* Statistics or additional trust indicators */}
-          <div className="mt-12 opacity-0 animate-fade-in" style={{ animationDelay: '1200ms', animationFillMode: 'forwards' }}>
-            <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-              <div className="text-center group">
-                <div className="text-2xl md:text-3xl font-light text-primary mb-1 group-hover:scale-110 transition-transform duration-300">10,000+</div>
-                <div className="text-sm text-muted-foreground">Students Served</div>
-              </div>
-              <div className="w-px h-8 bg-border"></div>
-              <div className="text-center group">
-                <div className="text-2xl md:text-3xl font-light text-primary mb-1 group-hover:scale-110 transition-transform duration-300">50,000+</div>
-                <div className="text-sm text-muted-foreground">Briefs Generated</div>
-              </div>
-              <div className="w-px h-8 bg-border"></div>
-              <div className="text-center group">
-                <div className="text-2xl md:text-3xl font-light text-primary mb-1 group-hover:scale-110 transition-transform duration-300">98%</div>
-                <div className="text-sm text-muted-foreground">Satisfaction Rate</div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       

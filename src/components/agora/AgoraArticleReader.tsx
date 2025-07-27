@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { agoraArticleService } from '@/lib/services/agoraService';
 import { AgoraArticle } from '@/lib/models/agoraArticle';
 import { SecureMarkdown } from '@/components/ui/SecureMarkdown';
+import { SEO } from '@/components/SEO';
 import {
   Calendar,
   Clock,
@@ -165,181 +166,206 @@ export default function AgoraArticleReader() {
     );
   }
 
+  const isAuthor = currentUser && currentUser.uid === article.authorId;
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": article.title,
+    "description": article.excerpt,
+    "author": {
+      "@type": "Person",
+      "name": article.authorName 
+    },
+    "datePublished": new Date(article.publishedAt || article.createdAt).toISOString(),
+    "image": article.coverImage || 'https://www.lexgrove.com/og-image.png'
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Navigation */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/agora')}
-          className="p-2"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back to Agora
-        </Button>
-      </div>
-
-      {/* Article Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          {article.isPremium && (
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-              <Crown className="w-3 h-3 mr-1" />
-              Premium
-            </Badge>
-          )}
+    <>
+      <SEO
+        title={article.title}
+        description={article.excerpt}
+        ogType="article"
+        canonicalUrl={`https://www.lexgrove.com/agora/article/${article.slug}`}
+        ogImage={article.coverImage}
+        structuredData={structuredData}
+      />
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        {/* Navigation */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/agora')}
+            className="p-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Agora
+          </Button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl md:text-4xl font-bold leading-tight">
-            {article.title}
-          </h1>
-          {article.difficulty && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <div 
-                    className={`w-3 h-3 rounded-full shadow-sm ${
-                      article.difficulty === 'beginner' ? 'bg-green-400' :
-                      article.difficulty === 'intermediate' ? 'bg-yellow-400' :
-                      'bg-red-400'
-                    }`}
-                  />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{article.difficulty.charAt(0).toUpperCase() + article.difficulty.slice(1)} Level</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-
-        {/* Tags and Categories */}
+        {/* Article Header */}
         <div className="space-y-4">
-          {/* All Tags Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Legal Area Tag */}
-            {article.legalArea && (
-              <Badge 
-                variant="outline" 
-                className="text-sm px-3 py-1 bg-slate-50/50 shadow-sm hover:bg-slate-100/50 transition-colors"
-              >
-                {article.legalArea}
+          <div className="flex items-center gap-4">
+            {article.isPremium && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                <Crown className="w-3 h-3 mr-1" />
+                Premium
               </Badge>
             )}
-            
-            {/* Regular Tags */}
-            {article.tags && article.tags.length > 0 && (
-              article.tags.map((tag) => (
+          </div>
+
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+              {article.title}
+            </h1>
+            {article.difficulty && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div 
+                      className={`w-3 h-3 rounded-full shadow-sm ${
+                        article.difficulty === 'beginner' ? 'bg-green-400' :
+                        article.difficulty === 'intermediate' ? 'bg-yellow-400' :
+                        'bg-red-400'
+                      }`}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{article.difficulty.charAt(0).toUpperCase() + article.difficulty.slice(1)} Level</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+
+          {/* Tags and Categories */}
+          <div className="space-y-4">
+            {/* All Tags Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Legal Area Tag */}
+              {article.legalArea && (
                 <Badge 
-                  key={tag} 
                   variant="outline" 
                   className="text-sm px-3 py-1 bg-slate-50/50 shadow-sm hover:bg-slate-100/50 transition-colors"
                 >
-                  {tag}
+                  {article.legalArea}
                 </Badge>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Article metadata */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <Link
-            to={`/agora/user/${article.authorId}`}
-            className="flex items-center gap-2 hover:text-primary transition-colors"
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={article.authorAvatar} />
-              <AvatarFallback>
-                {article.authorName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-medium">{article.authorName}</span>
-          </Link>
-          
-          <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
-            <span>{formatDate(article.publishedAt || article.createdAt)}</span>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{getReadingTime(article.content)} min read</span>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Eye className="w-4 h-4" />
-            <span>{article.viewCount} views</span>
-          </div>
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 className="w-4 h-4 mr-1" />
-              Share
-            </Button>
-          </div>
-        </div>
-
-        <p className="text-xl text-muted-foreground">
-          {article.excerpt}
-        </p>
-
-        
-      </div>
-
-      {/* Article Content */}
-      <Card>
-        <CardContent className="p-6 md:p-8">
-          <div className="prose prose-lg max-w-none">
-            <SecureMarkdown contentType="article">{getDisplayContent()}</SecureMarkdown>
-          </div>
-
-          {/* Premium paywall */}
-          {article.isPremium && !canAccessFullArticle() && (
-            <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-yellow-100 rounded-full">
-                  <Lock className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-yellow-800">Premium Content</h3>
-                  <p className="text-sm text-yellow-700">
-                    This article is available to premium subscribers and contributors
-                  </p>
-                </div>
-              </div>
+              )}
               
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button onClick={handleSubscribe} className="flex-1">
-                  <Crown className="w-4 h-4 mr-2" />
-                  Get Premium Access
-                </Button>
-                <Button variant="outline" onClick={() => navigate('/contribute')}>
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Contribute to Access
-                </Button>
-              </div>
+              {/* Regular Tags */}
+              {article.tags && article.tags.length > 0 && (
+                article.tags.map((tag) => (
+                  <Badge 
+                    key={tag} 
+                    variant="outline" 
+                    className="text-sm px-3 py-1 bg-slate-50/50 shadow-sm hover:bg-slate-100/50 transition-colors"
+                  >
+                    {tag}
+                  </Badge>
+                ))
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
 
-      {/* Sources */}
-      {article.sources && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sources</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-sm max-w-none">
-              <SecureMarkdown contentType="article">{article.sources}</SecureMarkdown>
+          {/* Article metadata */}
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <Link
+              to={`/agora/user/${article.authorId}`}
+              className="flex items-center gap-2 hover:text-primary transition-colors"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={article.authorAvatar} />
+                <AvatarFallback>
+                  {article.authorName.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium">{article.authorName}</span>
+            </Link>
+            
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>{formatDate(article.publishedAt || article.createdAt)}</span>
             </div>
+            
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              <span>{getReadingTime(article.content)} min read</span>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              <span>{article.viewCount} views</span>
+            </div>
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="w-4 h-4 mr-1" />
+                Share
+              </Button>
+            </div>
+          </div>
+
+          <p className="text-xl text-muted-foreground">
+            {article.excerpt}
+          </p>
+
+          
+        </div>
+
+        {/* Article Content */}
+        <Card>
+          <CardContent className="p-6 md:p-8">
+            <div className="prose prose-lg max-w-none">
+              <SecureMarkdown contentType="article">{getDisplayContent()}</SecureMarkdown>
+            </div>
+
+            {/* Premium paywall */}
+            {article.isPremium && !canAccessFullArticle() && (
+              <div className="mt-8 p-6 bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-yellow-100 rounded-full">
+                    <Lock className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-yellow-800">Premium Content</h3>
+                    <p className="text-sm text-yellow-700">
+                      This article is available to premium subscribers and contributors
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button onClick={handleSubscribe} className="flex-1">
+                    <Crown className="w-4 h-4 mr-2" />
+                    Get Premium Access
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('/contribute')}>
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Contribute to Access
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
 
-    </div>
+        {/* Sources */}
+        {article.sources && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Sources</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm max-w-none">
+                <SecureMarkdown contentType="article">{article.sources}</SecureMarkdown>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+      </div>
+    </>
   );
 } 

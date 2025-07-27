@@ -24,6 +24,9 @@ import {
   Sparkles,
   ExternalLink
 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SEO } from '@/components/SEO';
 
 const LEGAL_AREAS = [
   'Constitutional Law', 'Contract Law', 'Tort Law', 'Criminal Law', 'Property Law',
@@ -34,6 +37,7 @@ const LEGAL_AREAS = [
 
 export default function AgoraBrowse() {
   const { currentUser, membershipStatus } = useAuth();
+  const { t } = useLanguage();
   const [articles, setArticles] = useState<AgoraArticle[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<AgoraArticle | null>(null);
   const [trendingArticles, setTrendingArticles] = useState<AgoraArticle[]>([]);
@@ -46,76 +50,36 @@ export default function AgoraBrowse() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    loadArticles();
-    loadPopularTags();
+    loadInitialData();
   }, []);
 
   useEffect(() => {
-    // Auto-search when filters change (but not on initial load)
-    if (selectedTags.length > 0 || selectedLegalArea || selectedDifficulty) {
-      handleSearch();
-    }
-  }, [selectedTags, selectedLegalArea, selectedDifficulty]);
+    // Auto-search when filters change
+    loadArticles();
+  }, [searchQuery, selectedTags, selectedLegalArea, selectedDifficulty]);
 
-  const loadArticles = async () => {
+  const loadInitialData = async () => {
     try {
       setLoading(true);
-      const fetchedArticles = await agoraArticleService.getPublishedArticles(20);
-      
-      if (fetchedArticles.length > 0) {
-        // Sort by view count and recent date for featured selection
-        const sortedByEngagement = [...fetchedArticles].sort((a, b) => {
-          const scoreA = (a.viewCount || 0) + (a.likeCount || 0) * 2;
-          const scoreB = (b.viewCount || 0) + (b.likeCount || 0) * 2;
-          return scoreB - scoreA;
-        });
-        
-        // Only set featured article if we have 3+ articles to avoid empty articles list
-        if (sortedByEngagement.length >= 3) {
-          setFeaturedArticle(sortedByEngagement[0]);
-          setArticles(sortedByEngagement.slice(1));
-        } else {
-          // If we have 1-2 articles, show all in the articles list without featured
-          setFeaturedArticle(null);
-          setArticles(sortedByEngagement);
-        }
-        
-        // Set trending articles (top 5 by views from last week)
-        const trending = sortedByEngagement
-          .filter(article => {
-            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-            return (article.publishedAt || article.createdAt) > weekAgo;
-          })
-          .slice(0, 5);
-        setTrendingArticles(trending);
-      } else {
-        setFeaturedArticle(null);
-        setArticles(fetchedArticles);
-      }
+      await Promise.all([
+        loadArticles(),
+        loadPopularTags()
+      ]);
     } catch (error) {
-      console.error('Error loading articles:', error);
+      console.error('Error loading initial data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadPopularTags = async () => {
+  const loadArticles = async () => {
     try {
-      const tags = await agoraArticleService.getPopularTags(15);
-      setPopularTags(tags);
-    } catch (error) {
-      console.error('Error loading popular tags:', error);
-    }
-  };
-
-  const handleSearch = async () => {
-    try {
-      setLoading(true);
       const filters = {
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         legalArea: selectedLegalArea && selectedLegalArea !== 'any' ? selectedLegalArea : undefined,
         difficulty: selectedDifficulty && selectedDifficulty !== 'any' ? (selectedDifficulty as 'beginner' | 'intermediate' | 'advanced') : undefined,
       };
+      
       const searchResults = await agoraArticleService.searchArticles(searchQuery, filters);
       
       if (searchResults.length > 0 && !searchQuery && selectedTags.length === 0 && !selectedLegalArea && !selectedDifficulty) {
@@ -139,11 +103,34 @@ export default function AgoraBrowse() {
         setFeaturedArticle(null);
         setArticles(searchResults);
       }
+
+      // Set trending articles (top 5 by views from last week)
+      const trending = searchResults
+        .filter(article => {
+          const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          return (article.publishedAt || article.createdAt) > weekAgo;
+        })
+        .slice(0, 5);
+      setTrendingArticles(trending);
+
     } catch (error) {
-      console.error('Error searching articles:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error loading articles:', error);
     }
+  };
+
+  const loadPopularTags = async () => {
+    try {
+      const tags = await agoraArticleService.getPopularTags(15);
+      setPopularTags(tags);
+    } catch (error) {
+      console.error('Error loading popular tags:', error);
+    }
+  };
+
+  const handleSearch = async () => {
+    setLoading(true);
+    await loadArticles();
+    setLoading(false);
   };
 
   const handleTagClick = (tag: string) => {
@@ -159,7 +146,6 @@ export default function AgoraBrowse() {
     setSelectedLegalArea('');
     setSelectedDifficulty('');
     setSearchQuery('');
-    loadArticles();
   };
 
   const hasActiveFilters = selectedTags.length > 0 || (selectedLegalArea && selectedLegalArea !== 'any') || (selectedDifficulty && selectedDifficulty !== 'any') || searchQuery;
@@ -221,376 +207,384 @@ export default function AgoraBrowse() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-              Agora
-            </h1>
-            <p className="text-slate-600 leading-relaxed max-w-2xl">
-              Legal commentary and analysis from legal practitioners and law students
-            </p>
-            
-            {/* Welcome message */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100 shadow-sm">
-              <div className="flex items-start gap-2">
-                <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-                  <Sparkles className="w-3 h-3 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-blue-900 text-sm mb-1">Welcome to the Knowledge Zone!</h3>
-                  <p className="text-xs text-blue-700 leading-relaxed">
-                    While our brilliant authors share amazing legal insights, remember this is like a really good study group – 
-                    perfect for learning, but not a substitute for professional legal counsel. Enjoy the wisdom! ✨
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
-            <Link to="/agora/new">
-              <Button 
-                className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-primary to-primary/90 min-h-[40px] px-4"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Write Article
-              </Button>
-            </Link>
-          )}
-        </div>
-
-        {/* Featured Article Section */}
-        {featuredArticle && !hasActiveFilters && (
-          <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-white via-white to-slate-50/30 rounded-xl group hover:shadow-xl transition-all duration-300">
-            <CardContent className="p-5">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <Badge className="bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-full px-3 py-1 text-xs font-medium">
-                  Featured
-                </Badge>
-                {featuredArticle.tags && featuredArticle.tags.slice(0, 2).map(tag => (
-                  <Badge 
-                    key={tag} 
-                    variant="outline" 
-                    className="rounded-full bg-white/80 border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors text-xs"
-                    onClick={() => handleTagClick(tag)}
-                  >
-                    #{tag}
-                  </Badge>
-                ))}
-                {featuredArticle.isPremium && (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full text-xs">
-                    <Crown className="w-3 h-3 mr-1" />
-                    Premium
-                  </Badge>
-                )}
-              </div>
-              
-              <Link to={`/agora/article/${featuredArticle.slug}`}>
-                <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3 hover:text-primary transition-colors leading-tight group-hover:text-primary">
-                  {featuredArticle.title}
-                </h2>
-              </Link>
-              
-              <p className="text-slate-600 mb-4 leading-relaxed line-clamp-2">
-                {featuredArticle.excerpt}
+    <>
+      <SEO
+        title="Agora Legal Community"
+        description="Explore a community-driven platform for legal articles, analysis, and discussions. Share insights and learn from peers in the legal field."
+        keywords="legal articles, law community, legal analysis, legal discussion"
+        canonicalUrl="https://www.lexgrove.com/agora"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        <div className="container mx-auto px-4 py-6 space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-2">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                Agora
+              </h1>
+              <p className="text-slate-600 leading-relaxed max-w-2xl">
+                Legal commentary and analysis from legal practitioners and law students
               </p>
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <Link 
-                  to={`/agora/user/${featuredArticle.authorId}`} 
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity group/author"
-                >
-                  <Avatar className="w-8 h-8 shadow-md border border-white">
-                    <AvatarImage src={featuredArticle.authorAvatar} alt={featuredArticle.authorName} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-sm font-medium">
-                      {featuredArticle.authorName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <p className="font-medium text-slate-900 text-sm group-hover/author:text-primary transition-colors">{featuredArticle.authorName}</p>
-                      <p className="text-slate-500 text-xs">{formatDate(featuredArticle.publishedAt || featuredArticle.createdAt)}</p>
-                    </div>
-                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover/author:text-primary transition-colors" />
+              {/* Welcome message */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-blue-600" />
                   </div>
-                </Link>
-                
-                <div className="flex items-center gap-4 text-slate-500 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{getReadingTime(featuredArticle.content)} min</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Eye className="w-4 h-4" />
-                    <span>{featuredArticle.viewCount.toLocaleString()}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-blue-900 text-sm mb-1">Welcome to the Knowledge Zone!</h3>
+                    <p className="text-xs text-blue-700 leading-relaxed">
+                      While our brilliant authors share amazing legal insights, remember this is like a really good study group – 
+                      perfect for learning, but not a substitute for professional legal counsel. Enjoy the wisdom! ✨
+                    </p>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Main Layout: Content + Sidebar */}
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Search and Filters */}
-            <Card className="shadow-lg border-0 rounded-xl bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-4 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search articles..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className="pl-10 rounded-lg border-slate-200 bg-white/50 focus:bg-white transition-colors min-h-[48px]"
-                      aria-label="Search articles"
-                    />
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="rounded-lg min-h-[48px] px-4"
-                    aria-expanded={showFilters}
-                    aria-controls="filters-section"
-                  >
-                    <Filter className="w-4 h-4 mr-2" />
-                    Filters
-                    {hasActiveFilters && (
-                      <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary">
-                        {selectedTags.length + (selectedLegalArea && selectedLegalArea !== 'any' ? 1 : 0) + (selectedDifficulty && selectedDifficulty !== 'any' ? 1 : 0)}
-                      </Badge>
-                    )}
-                  </Button>
-                  <Button 
-                    onClick={handleSearch}
-                    className="rounded-lg min-h-[48px] px-6"
-                  >
-                    Search
-                  </Button>
-                </div>
-
-                {/* Filters */}
-                {showFilters && (
-                  <div id="filters-section" className="border-t pt-6 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label htmlFor="legal-area-select" className="text-sm font-medium mb-2 block text-slate-700">
-                          Legal Area
-                        </label>
-                        <Select value={selectedLegalArea || undefined} onValueChange={(value) => setSelectedLegalArea(value || '')}>
-                          <SelectTrigger id="legal-area-select" className="rounded-lg">
-                            <SelectValue placeholder="Any area" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="any">Any area</SelectItem>
-                            {LEGAL_AREAS.map((area) => (
-                              <SelectItem key={area} value={area}>
-                                {area}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <label htmlFor="difficulty-select" className="text-sm font-medium mb-2 block text-slate-700">
-                          Difficulty
-                        </label>
-                        <Select value={selectedDifficulty || undefined} onValueChange={(value) => setSelectedDifficulty(value || '')}>
-                          <SelectTrigger id="difficulty-select" className="rounded-lg">
-                            <SelectValue placeholder="Any level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="any">Any level</SelectItem>
-                            <SelectItem value="beginner">Beginner</SelectItem>
-                            <SelectItem value="intermediate">Intermediate</SelectItem>
-                            <SelectItem value="advanced">Advanced</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex items-end">
-                        {hasActiveFilters && (
-                          <Button 
-                            variant="outline" 
-                            onClick={clearFilters}
-                            className="w-full rounded-lg min-h-[48px]"
-                          >
-                            <X className="w-4 h-4 mr-2" />
-                            Clear Filters
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Active Tag Filters */}
-                    {selectedTags.length > 0 && (
-                      <div>
-                        <label className="text-sm font-medium mb-3 block text-slate-700">Selected Tags:</label>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTags.map((tag) => (
-                            <Badge 
-                              key={tag} 
-                              variant="secondary" 
-                              className="cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded-full min-h-[32px] px-3"
-                              onClick={() => handleTagClick(tag)}
-                            >
-                              #{tag}
-                              <X className="w-3 h-3 ml-2" />
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Latest Articles Section */}
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    {hasActiveFilters ? 'Search Results' : 'Latest Articles'}
-                  </h2>
-                </div>
-                {articles.length > 0 && (
-                  <Badge variant="outline" className="bg-white/50 rounded-full text-xs">
-                    {articles.length} article{articles.length !== 1 ? 's' : ''}
-                  </Badge>
-                )}
-              </div>
-
-              {articles.length === 0 ? (
-                <Card className="text-center py-16 bg-gradient-to-br from-white to-slate-50/50 rounded-xl border-0 shadow-lg">
-                  <CardContent className="space-y-6">
-                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center">
-                      <Search className="w-10 h-10 text-slate-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-900 mb-3">No articles found</h3>
-                      <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                        {searchQuery || hasActiveFilters
-                          ? 'Try adjusting your search terms or filters to find more content.'
-                          : 'Be the first to share your legal insights with the community!'
-                        }
-                      </p>
-                      {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
-                        <Link to="/agora/new">
-                          <Button size="lg" className="rounded-full min-h-[48px]">
-                            <Plus className="w-4 h-4 mr-2" />
-                            {articles.length === 0 && !hasActiveFilters ? 'Write First Article' : 'Write Article'}
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {articles.map(article => (
-                    <ModernArticleCard 
-                      key={article.id} 
-                      article={article} 
-                      canAccessPremium={canAccessPremium()}
-                      onTagClick={handleTagClick}
-                      selectedTags={selectedTags}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
+            
+            {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
+              <Link to="/agora/new">
+                <Button 
+                  className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-primary to-primary/90 min-h-[40px] px-4"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Write Article
+                </Button>
+              </Link>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Popular Tags */}
-            <Card className="shadow-lg border-0 rounded-xl bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                  <Hash className="w-5 h-5 text-primary" />
-                  Popular Tags
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {popularTags.slice(0, 12).map(({ tag, count }) => (
-                  <button
-                    key={tag}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors text-left group focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[48px]"
-                    onClick={() => handleTagClick(tag)}
-                    type="button"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-slate-700 group-hover:text-primary transition-colors truncate">
-                        #{tag}
-                      </span>
-                      {selectedTags.includes(tag) && (
-                        <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
-                          selected
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge variant="outline" className="text-xs bg-white/50 flex-shrink-0">
-                      {count}
+          {/* Featured Article Section */}
+          {featuredArticle && !hasActiveFilters && (
+            <Card className="overflow-hidden shadow-lg border-0 bg-gradient-to-br from-white via-white to-slate-50/30 rounded-xl group hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-5">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <Badge className="bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-full px-3 py-1 text-xs font-medium">
+                    Featured
+                  </Badge>
+                  {featuredArticle.tags && featuredArticle.tags.slice(0, 2).map(tag => (
+                    <Badge 
+                      key={tag} 
+                      variant="outline" 
+                      className="rounded-full bg-white/80 border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors text-xs"
+                      onClick={() => handleTagClick(tag)}
+                    >
+                      #{tag}
                     </Badge>
-                  </button>
-                ))}
+                  ))}
+                  {featuredArticle.isPremium && (
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-full text-xs">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
+                </div>
+                
+                <Link to={`/agora/article/${featuredArticle.slug}`}>
+                  <h2 className="text-xl md:text-2xl font-bold text-slate-900 mb-3 hover:text-primary transition-colors leading-tight group-hover:text-primary">
+                    {featuredArticle.title}
+                  </h2>
+                </Link>
+                
+                <p className="text-slate-600 mb-4 leading-relaxed line-clamp-2">
+                  {featuredArticle.excerpt}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <Link 
+                    to={`/agora/user/${featuredArticle.authorId}`} 
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity group/author"
+                  >
+                    <Avatar className="w-8 h-8 shadow-md border border-white">
+                      <AvatarImage src={featuredArticle.authorAvatar} alt={featuredArticle.authorName} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-sm font-medium">
+                        {featuredArticle.authorName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="font-medium text-slate-900 text-sm group-hover/author:text-primary transition-colors">{featuredArticle.authorName}</p>
+                        <p className="text-slate-500 text-xs">{formatDate(featuredArticle.publishedAt || featuredArticle.createdAt)}</p>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-slate-400 group-hover/author:text-primary transition-colors" />
+                    </div>
+                  </Link>
+                  
+                  <div className="flex items-center gap-4 text-slate-500 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{getReadingTime(featuredArticle.content)} min</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-4 h-4" />
+                      <span>{featuredArticle.viewCount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Most Read This Week */}
-            {trendingArticles.length > 0 && (
+          {/* Main Layout: Content + Sidebar */}
+          <div className="grid lg:grid-cols-4 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Search and Filters */}
+              <Card className="shadow-lg border-0 rounded-xl bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search articles..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        className="pl-10 rounded-lg border-slate-200 bg-white/50 focus:bg-white transition-colors min-h-[48px]"
+                        aria-label="Search articles"
+                      />
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="rounded-lg min-h-[48px] px-4"
+                      aria-expanded={showFilters}
+                      aria-controls="filters-section"
+                    >
+                      <Filter className="w-4 h-4 mr-2" />
+                      Filters
+                      {hasActiveFilters && (
+                        <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary">
+                          {selectedTags.length + (selectedLegalArea && selectedLegalArea !== 'any' ? 1 : 0) + (selectedDifficulty && selectedDifficulty !== 'any' ? 1 : 0)}
+                        </Badge>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={handleSearch}
+                      className="rounded-lg min-h-[48px] px-6"
+                    >
+                      Search
+                    </Button>
+                  </div>
+
+                  {/* Filters */}
+                  {showFilters && (
+                    <div id="filters-section" className="border-t pt-6 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label htmlFor="legal-area-select" className="text-sm font-medium mb-2 block text-slate-700">
+                            Legal Area
+                          </label>
+                          <Select value={selectedLegalArea || undefined} onValueChange={(value) => setSelectedLegalArea(value || '')}>
+                            <SelectTrigger id="legal-area-select" className="rounded-lg">
+                              <SelectValue placeholder="Any area" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any area</SelectItem>
+                              {LEGAL_AREAS.map((area) => (
+                                <SelectItem key={area} value={area}>
+                                  {area}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="difficulty-select" className="text-sm font-medium mb-2 block text-slate-700">
+                            Difficulty
+                          </label>
+                          <Select value={selectedDifficulty || undefined} onValueChange={(value) => setSelectedDifficulty(value || '')}>
+                            <SelectTrigger id="difficulty-select" className="rounded-lg">
+                              <SelectValue placeholder="Any level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="any">Any level</SelectItem>
+                              <SelectItem value="beginner">Beginner</SelectItem>
+                              <SelectItem value="intermediate">Intermediate</SelectItem>
+                              <SelectItem value="advanced">Advanced</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex items-end">
+                          {hasActiveFilters && (
+                            <Button 
+                              variant="outline" 
+                              onClick={clearFilters}
+                              className="w-full rounded-lg min-h-[48px]"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Clear Filters
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Active Tag Filters */}
+                      {selectedTags.length > 0 && (
+                        <div>
+                          <label className="text-sm font-medium mb-3 block text-slate-700">Selected Tags:</label>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedTags.map((tag) => (
+                              <Badge 
+                                key={tag} 
+                                variant="secondary" 
+                                className="cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-colors rounded-full min-h-[32px] px-3"
+                                onClick={() => handleTagClick(tag)}
+                              >
+                                #{tag}
+                                <X className="w-3 h-3 ml-2" />
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Latest Articles Section */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full"></div>
+                    <h2 className="text-xl font-bold text-slate-900">
+                      {hasActiveFilters ? 'Search Results' : 'Latest Articles'}
+                    </h2>
+                  </div>
+                  {articles.length > 0 && (
+                    <Badge variant="outline" className="bg-white/50 rounded-full text-xs">
+                      {articles.length} article{articles.length !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+
+                {articles.length === 0 ? (
+                  <Card className="text-center py-16 bg-gradient-to-br from-white to-slate-50/50 rounded-xl border-0 shadow-lg">
+                    <CardContent className="space-y-6">
+                      <div className="w-20 h-20 mx-auto bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center">
+                        <Search className="w-10 h-10 text-slate-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-slate-900 mb-3">No articles found</h3>
+                        <p className="text-slate-600 mb-6 max-w-md mx-auto">
+                          {searchQuery || hasActiveFilters
+                            ? 'Try adjusting your search terms or filters to find more content.'
+                            : 'Be the first to share your legal insights with the community!'
+                          }
+                        </p>
+                        {(membershipStatus === 'premium' || membershipStatus === 'contributor') && (
+                          <Link to="/agora/new">
+                            <Button size="lg" className="rounded-full min-h-[48px]">
+                              <Plus className="w-4 h-4 mr-2" />
+                              {articles.length === 0 && !hasActiveFilters ? 'Write First Article' : 'Write Article'}
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {articles.map(article => (
+                      <ModernArticleCard 
+                        key={article.id} 
+                        article={article} 
+                        canAccessPremium={canAccessPremium()}
+                        onTagClick={handleTagClick}
+                        selectedTags={selectedTags}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Popular Tags */}
               <Card className="shadow-lg border-0 rounded-xl bg-white/80 backdrop-blur-sm">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-lg font-semibold">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Most Read This Week
+                    <Hash className="w-5 h-5 text-primary" />
+                    Popular Tags
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {trendingArticles.map((article, index) => (
-                    <Link 
-                      key={article.id} 
-                      to={`/agora/article/${article.slug}`}
-                      className="block p-3 rounded-lg hover:bg-slate-50 transition-colors group focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[48px]"
+                <CardContent className="space-y-2">
+                  {popularTags.slice(0, 12).map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors text-left group focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[48px]"
+                      onClick={() => handleTagClick(tag)}
+                      type="button"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center text-sm font-bold text-primary">
-                          {index + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-slate-900 text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors leading-tight">
-                            {article.title}
-                          </h4>
-                          <div className="flex items-center gap-3 text-xs text-slate-500">
-                            <div className="flex items-center gap-1">
-                              <Eye className="w-3 h-3" />
-                              <span>{article.viewCount.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{getReadingTime(article.content)} min</span>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-slate-700 group-hover:text-primary transition-colors truncate">
+                          #{tag}
+                        </span>
+                        {selectedTags.includes(tag) && (
+                          <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                            selected
+                          </Badge>
+                        )}
                       </div>
-                    </Link>
+                      <Badge variant="outline" className="text-xs bg-white/50 flex-shrink-0">
+                        {count}
+                      </Badge>
+                    </button>
                   ))}
                 </CardContent>
               </Card>
-            )}
+
+              {/* Most Read This Week */}
+              {trendingArticles.length > 0 && (
+                <Card className="shadow-lg border-0 rounded-xl bg-white/80 backdrop-blur-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      Most Read This Week
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {trendingArticles.map((article, index) => (
+                      <Link 
+                        key={article.id} 
+                        to={`/agora/article/${article.slug}`}
+                        className="block p-3 rounded-lg hover:bg-slate-50 transition-colors group focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[48px]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center text-sm font-bold text-primary">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-slate-900 text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors leading-tight">
+                              {article.title}
+                            </h4>
+                            <div className="flex items-center gap-3 text-xs text-slate-500">
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                <span>{article.viewCount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{getReadingTime(article.content)} min</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

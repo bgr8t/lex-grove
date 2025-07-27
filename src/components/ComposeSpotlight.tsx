@@ -111,7 +111,7 @@ export const ComposeSpotlight = ({ className }: ComposeSpotlightProps) => {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 size="lg"
-                onClick={() => navigate('/email-suite')}
+                onClick={() => navigate('/compose')}
                 className="group"
               >
                 Try Compose Now
@@ -120,7 +120,7 @@ export const ComposeSpotlight = ({ className }: ComposeSpotlightProps) => {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => navigate('/email-suite')}
+                onClick={() => navigate('/compose')}
               >
                 View Templates
               </Button>

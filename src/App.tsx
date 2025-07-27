@@ -42,6 +42,8 @@ const PineconeTest = lazy(() => import('@/pages/PineconeTest'));
 const Blog = lazy(() => import('@/pages/Blog'));
 const MyLibrary = lazy(() => import('@/pages/MyLibrary'));
 const Agora = lazy(() => import('@/pages/Agora'));
+const Akazi = lazy(() => import('@/pages/Akazi'));
+const JobDetail = lazy(() => import('@/pages/JobDetail'));
 const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
 
 function App() {
@@ -73,6 +75,10 @@ function App() {
                 
                 {/* Agora routes - mix of public and protected */}
                 <Route path="/agora/*" element={<Agora />} />
+                
+                {/* Akazi (Jobs) routes - public */}
+                <Route path="/akazi" element={<Akazi />} />
+                <Route path="/akazi/job/:jobId" element={<JobDetail />} />
                 
                 {/* Auth routes - redirect to home if already logged in */}
                 <Route 

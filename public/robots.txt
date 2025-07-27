@@ -1,0 +1,14 @@
+# Allow all friendly crawlers
+User-agent: *
+Disallow: /login
+Disallow: /register
+Disallow: /compose
+Disallow: /payment-success
+Disallow: /settings
+Disallow: /dashboard
+
+# Allow everything else that is not explicitly disallowed
+Allow: /
+
+# Sitemap location
+Sitemap: https://www.lexgrove.com/sitemap.xml 

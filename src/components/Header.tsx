@@ -217,6 +217,19 @@ export const Header = () => {
             </Link>
             
             <Link 
+              to="/akazi" 
+              className={cn(
+                "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
+                "hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
+                location.pathname.startsWith("/akazi") 
+                  ? "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm" 
+                  : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground"
+              )}
+            >
+              {t('nav.akazi')}
+            </Link>
+            
+            <Link 
               to="/compose" 
               className={cn(
                 "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center",
@@ -338,6 +351,16 @@ export const Header = () => {
                         onMouseEnter={() => preloadComponent(preloadRoutes.agora, 'agora')}
                       >
                         Agora
+                      </Link>
+                      <Link 
+                        to="/akazi" 
+                        className={cn(
+                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
+                          location.pathname.startsWith("/akazi") ? "text-primary" : "text-foreground/70"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {t('nav.akazi')}
                       </Link>
                       <Link 
                         to="/compose" 

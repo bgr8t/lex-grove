@@ -7,8 +7,6 @@ import Features from '@/components/Features';
 import AgoraSpotlight from '@/components/AgoraSpotlight';
 import ComposeSpotlight from '@/components/ComposeSpotlight';
 import FAQ from '@/components/FAQ';
-import HowItWorks from '@/components/HowItWorks';
-import PricingSection from '@/components/PricingSection';
 import SearchResults from '@/components/SearchResults';
 import TopBriefs from '@/components/TopBriefs';
 import Footer from '@/components/Footer';
@@ -58,7 +56,6 @@ const Index = () => {
           <ComposeSpotlight />
           <TopBriefs />
           <FAQ />
-          {!currentUser && <PricingSection />}
         </>
       )}
       
