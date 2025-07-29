@@ -1,27 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PencilIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { EmailPreferences } from '@/pages/EmailSuite';
 
 interface PreferencesTabProps {
   preferences: EmailPreferences;
   onPreferencesChange: (preferences: EmailPreferences) => void;
+  onSavePreferences: (preferences: EmailPreferences) => Promise<void>;
+  isSaving?: boolean;
 }
 
-export default function PreferencesTab({ preferences, onPreferencesChange }: PreferencesTabProps) {
+export default function PreferencesTab({ 
+  preferences, 
+  onPreferencesChange, 
+  onSavePreferences,
+  isSaving = false 
+}: PreferencesTabProps) {
+  // Local state for draft preferences
+  const [draftPreferences, setDraftPreferences] = useState<EmailPreferences>(preferences);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Update draft preferences when props change (on initial load or external updates)
+  useEffect(() => {
+    setDraftPreferences(preferences);
+    setHasUnsavedChanges(false);
+  }, [preferences]);
+
+  // Check if there are unsaved changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(draftPreferences) !== JSON.stringify(preferences);
+    setHasUnsavedChanges(hasChanges);
+  }, [draftPreferences, preferences]);
+
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string, maxLength: number = 500): string => {
     if (!input || typeof input !== 'string') return '';
-    // Only trim if it's at the start or end, preserve spaces in between
     const value = input.slice(0, maxLength);
     return value;
   };
 
-  const updatePreference = (key: keyof EmailPreferences, value: string) => {
+  const updateDraftPreference = (key: keyof EmailPreferences, value: string) => {
     // Validate and sanitize string inputs
     let sanitizedValue = value;
     if (key === 'role' || key === 'organization') {
@@ -40,12 +62,24 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
       if (!validLengths.includes(value)) return;
     }
 
-    onPreferencesChange({
-      ...preferences,
+    // Update local draft state using functional update to ensure we have the latest state
+    // Update local draft state only - don't update parent until save
+    setDraftPreferences(prev => ({
+      ...prev,
       [key]: sanitizedValue
-    });
+    }));
+  };
+  const handleSaveChanges = async () => {
+    try {
+      await onSavePreferences(draftPreferences);
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+    }
   };
 
+  const handleDiscardChanges = () => {
+    setDraftPreferences(preferences);
+  };
   return (
     <div className="space-y-6">
       {/* Email Composition */}
@@ -59,8 +93,8 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
             <div>
               <label className="text-sm font-medium">Default Tone</label>
               <Select 
-                value={preferences.tone} 
-                onValueChange={(value) => updatePreference('tone', value)}
+                value={draftPreferences.tone} 
+                onValueChange={(value) => updateDraftPreference('tone', value)}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -74,8 +108,8 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
             <div>
               <label className="text-sm font-medium">Default Length</label>
               <Select 
-                value={preferences.length} 
-                onValueChange={(value) => updatePreference('length', value)}
+                value={draftPreferences.length} 
+                onValueChange={(value) => updateDraftPreference('length', value)}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -100,8 +134,8 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
             <div>
               <label className="text-sm font-medium">Your Role</label>
               <Input 
-                value={preferences.role} 
-                onChange={(e) => updatePreference('role', e.target.value)}
+                value={draftPreferences.role} 
+                onChange={(e) => updateDraftPreference('role', e.target.value)}
                 placeholder="e.g., Senior attorney"
                 maxLength={100}
               />
@@ -109,8 +143,8 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
             <div>
               <label className="text-sm font-medium">Organization</label>
               <Input 
-                value={preferences.organization} 
-                onChange={(e) => updatePreference('organization', e.target.value)}
+                value={draftPreferences.organization} 
+                onChange={(e) => updateDraftPreference('organization', e.target.value)}
                 placeholder="e.g., Lex Grove LLP"
                 maxLength={100}
               />
@@ -120,8 +154,8 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
             <label className="text-sm font-medium">Default Email Signature</label>
             <div className="relative">
               <Textarea 
-                value={preferences.signature} 
-                onChange={(e) => updatePreference('signature', e.target.value)}
+                value={draftPreferences.signature} 
+                onChange={(e) => updateDraftPreference('signature', e.target.value)}
                 className="pr-10" 
                 placeholder="Your email signature"
                 maxLength={1000}
@@ -137,6 +171,50 @@ export default function PreferencesTab({ preferences, onPreferencesChange }: Pre
           </div>
         </CardContent>
       </Card>
+
+      {/* Save/Discard Actions - Always visible */}
+      <Card className={hasUnsavedChanges ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-gray-50"}>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${hasUnsavedChanges ? 'bg-amber-500' : 'bg-gray-400'}`}></div>
+              <span className={`text-sm font-medium ${hasUnsavedChanges ? 'text-amber-700' : 'text-gray-600'}`}>
+                {hasUnsavedChanges ? 'You have unsaved changes' : 'All changes saved'}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {hasUnsavedChanges && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleDiscardChanges}
+                  disabled={isSaving}
+                >
+                  Discard
+                </Button>
+              )}
+              <Button 
+                size="sm"
+                onClick={handleSaveChanges}
+                disabled={isSaving || !hasUnsavedChanges}
+                className="gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckIcon className="h-4 w-4" />
+                    {hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-} 
+}

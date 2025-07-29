@@ -280,15 +280,6 @@ export const JobCard = ({
           </Dialog>
           
           <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate(`/akazi/job/${job.id}`)}
-            className="h-8 px-3 text-xs transition-all duration-300 hover:bg-accent"
-          >
-            View Details
-          </Button>
-          
-          <Button 
             variant="outline" 
             size="sm" 
             className="h-8 px-3 text-xs transition-all duration-300 hover:bg-accent"

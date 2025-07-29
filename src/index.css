@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-first touch target classes */
+@layer utilities {
+  .touch-target-large {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
 /* Critical CSS for faster loading */
 @layer base {
   /* Loading state styles */
@@ -86,7 +94,7 @@
     
     --radius: 0.75rem;
     
-    --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-serif: Georgia, 'Times New Roman', serif;
     --font-mono: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
   }

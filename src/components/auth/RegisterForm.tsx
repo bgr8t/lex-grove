@@ -99,15 +99,18 @@ export function RegisterForm() {
       }
       
       toast({
-        title: "Success",
-        description: "Your account has been created successfully",
+        title: "Registration Successful",
+        description: "A verification email has been sent to your inbox. Please verify your email to continue.",
       });
-      navigate('/');
+      navigate('/login'); // Redirect to login page to wait for verification
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Handle specific Firebase error codes
-      if (error.code === 'auth/email-already-in-use') {
+      // The AuthContext now provides user-friendly error messages
+      const errorMessage = error.message || "Failed to register. Please try again.";
+      
+      // Special handling for email already exists case
+      if (errorMessage.includes("already exists")) {
         toast({
           title: "Account Already Exists",
           description: (
@@ -118,10 +121,9 @@ export function RegisterForm() {
           variant: "destructive",
         });
       } else {
-        // Generic error for other cases
         toast({
           title: "Registration Failed",
-          description: error.message || "Failed to register. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       }

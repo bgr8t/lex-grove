@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from "@/components/ui/use-toast";
 import { Cog8ToothIcon, PencilSquareIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { Draft } from '@/lib/models/draft';
 import GeneratedDraftsList from '@/components/email-suite/GeneratedDraftsList';
+import { emailPreferencesService } from '@/lib/services/emailPreferencesService';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Lazy load tab content for better performance
 const PreferencesTab = React.lazy(() => import('@/components/email-suite/PreferencesTab'));
@@ -36,24 +38,62 @@ export default function EmailSuite() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('compose');
   const { toast } = useToast();
+  const { currentUser, loading: authLoading } = useAuth();
 
-  // Preferences state with secure defaults
-  const [preferences, setPreferences] = useState<EmailPreferences>({
-    tone: 'professional',
-    length: 'medium',
-    role: 'Senior attorney',
-    organization: 'Lex Grove LLP',
-    signature: 'Brian Ndabarasa\nLex Grove LLP'
-  });
+  // Preferences state with loading state
+  const [preferences, setPreferences] = useState<EmailPreferences>(
+    emailPreferencesService.getDefaultEmailPreferences()
+  );
+  const [privacyPreferences, setPrivacyPreferences] = useState<PrivacyPreferences>(
+    emailPreferencesService.getDefaultPrivacyPreferences()
+  );
+  const [preferencesLoading, setPreferencesLoading] = useState(true);
+  const [preferencesError, setPreferencesError] = useState<string | null>(null);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
-  // Privacy preferences state with secure defaults
-  const [privacyPreferences, setPrivacyPreferences] = useState<PrivacyPreferences>({
-    mode: 'standard',
-    removeMetadata: false,
-    neutralLanguage: false,
-    avoidLocation: false,
-    attorneyClient: false,
-  });
+  // Load user preferences when user is authenticated
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (authLoading) return; // Wait for auth to complete
+      
+      if (!currentUser) {
+        // User not authenticated, use defaults
+        setPreferencesLoading(false);
+        return;
+      }
+
+      try {
+        setPreferencesLoading(true);
+        setPreferencesError(null);
+        
+        const userPreferences = await emailPreferencesService.getCurrentUserPreferences();
+        
+        if (userPreferences) {
+          // User has existing preferences
+          setPreferences(userPreferences.emailPreferences);
+          setPrivacyPreferences(userPreferences.privacyPreferences);
+        } else {
+          // New user, initialize with defaults
+          try {
+            const newPreferences = await emailPreferencesService.initializeUserPreferences();
+            setPreferences(newPreferences.emailPreferences);
+            setPrivacyPreferences(newPreferences.privacyPreferences);
+          } catch (initError) {
+            console.error('Error initializing user preferences:', initError);
+            // Keep using defaults
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        setPreferencesError('Failed to load your preferences. Using defaults.');
+        // Keep using defaults on error
+      } finally {
+        setPreferencesLoading(false);
+      }
+    };
+
+    loadUserPreferences();
+  }, [currentUser, authLoading]);
 
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string): string => {
@@ -213,7 +253,6 @@ Generate only the email content without any additional commentary or explanation
     setSelectedDraftId(id);
     setActiveTab('compose');
   };
-
   const handlePreferencesChange = (newPreferences: EmailPreferences) => {
     // Validate preferences before setting
     if (!newPreferences || typeof newPreferences !== 'object') return;
@@ -225,35 +264,154 @@ Generate only the email content without any additional commentary or explanation
       return;
     }
     
+    // Update local state immediately for responsive UI (no saving)
     setPreferences(newPreferences);
   };
 
-  const handlePrivacyPreferencesChange = (newPrivacyPreferences: PrivacyPreferences) => {
+  const handleSavePreferences = async (newPreferences: EmailPreferences): Promise<void> => {
+    // Validate preferences before saving
+    if (!newPreferences || typeof newPreferences !== 'object') {
+      toast({
+        title: "Error",
+        description: "Invalid preferences data",
+        variant: "destructive"
+      });
+      throw new Error("Invalid preferences data");
+    }
+    
+    const validTones = ['friendly', 'formal', 'professional', 'casual'];
+    const validLengths = ['short', 'medium', 'long'];
+    
+    if (!validTones.includes(newPreferences.tone) || !validLengths.includes(newPreferences.length)) {
+      toast({
+        title: "Error",
+        description: "Please select valid tone and length options",
+        variant: "destructive"
+      });
+      throw new Error("Invalid tone or length values");
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "Please log in to save your preferences",
+        variant: "destructive"
+      });
+      throw new Error("User not authenticated");
+    }
+
+    setIsSavingPreferences(true);
+    
+    try {
+      await emailPreferencesService.updateEmailPreferences(newPreferences);
+      setPreferences(newPreferences); // Update local state with saved values
+      toast({
+        title: "Success",
+        description: "Email preferences saved successfully",
+      });
+    } catch (error) {
+      console.error('Error saving email preferences:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
+        variant: "destructive"
+      });
+      throw error; // Re-throw to let the PreferencesTab handle it
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
+  const handlePrivacyPreferencesChange = async (newPrivacyPreferences: PrivacyPreferences) => {
     // Validate privacy preferences before setting
-    if (!newPrivacyPreferences || typeof newPrivacyPreferences !== 'object') return;
+    if (!newPrivacyPreferences || typeof newPrivacyPreferences !== 'object') {
+      toast({
+        title: "Error",
+        description: "Invalid privacy preferences data",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const validModes = ['standard', 'privacy'];
     if (!validModes.includes(newPrivacyPreferences.mode)) {
+      toast({
+        title: "Error",
+        description: "Invalid privacy mode selected",
+        variant: "destructive"
+      });
       return;
     }
     
     // Validate boolean values
     const booleanKeys = ['removeMetadata', 'neutralLanguage', 'avoidLocation', 'attorneyClient'];
     for (const key of booleanKeys) {
-      if (typeof newPrivacyPreferences[key] !== 'boolean') {
+      if (typeof newPrivacyPreferences[key as keyof PrivacyPreferences] !== 'boolean') {
+        toast({
+          title: "Error",
+          description: "Invalid privacy preference values",
+          variant: "destructive"
+        });
         return;
       }
     }
     
+    // Update local state immediately for responsive UI
     setPrivacyPreferences(newPrivacyPreferences);
+    
+    // Save to Firestore if user is authenticated
+    if (currentUser) {
+      try {
+        await emailPreferencesService.updatePrivacyPreferences(newPrivacyPreferences);
+        toast({
+          title: "Success",
+          description: "Privacy preferences saved successfully",
+        });
+      } catch (error) {
+        console.error('Error saving privacy preferences:', error);
+        toast({
+          title: "Warning",
+          description: "Privacy settings updated locally but failed to sync to cloud. Changes may be lost on refresh.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Warning",
+        description: "Please log in to save your privacy preferences permanently",
+        variant: "destructive"
+      });
+    }
   };
 
   const selectedDraft = drafts.find(d => d.id === selectedDraftId) || null;
+
+  // Show loading state while auth or preferences are loading
+  if (authLoading || preferencesLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-muted/40">
+        <Header />
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 mt-16 md:mt-32">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading your preferences...</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/40">
       <Header />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 mt-16 md:mt-32">
+        {preferencesError && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-600">{preferencesError}</p>
+          </div>
+        )}
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col md:flex-row gap-8 items-start">
           
           {/* Navigation */}
@@ -278,6 +436,8 @@ Generate only the email content without any additional commentary or explanation
                 <PreferencesTab 
                   preferences={preferences} 
                   onPreferencesChange={handlePreferencesChange} 
+                  onSavePreferences={handleSavePreferences}
+                  isSaving={isSavingPreferences}
                 />
               </TabsContent>
               <TabsContent value="compose">

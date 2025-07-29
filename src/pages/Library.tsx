@@ -37,7 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { CreateCollectionModal } from '@/components/CreateCollectionModal';
 import { BookmarkCollectionDialog } from '@/components/BookmarkCollectionDialog';
 import { CollectionDetail } from '@/components/CollectionDetail';
-import { CreateBriefModal } from '@/components/CreateBriefModal';
+// import { CreateBriefModal } from '@/components/CreateBriefModal'; // Replaced with navigation
 import { AuroraButton } from '@/components/ui/aurora-button';
 import { useAuth } from '@/contexts/AuthContext';
 import { caseBriefService } from '@/lib/services/caseBriefService';
@@ -107,7 +107,7 @@ const Library = () => {
   const [briefToBookmark, setBriefToBookmark] = useState<Brief | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const [collectionDetailOpen, setCollectionDetailOpen] = useState(false);
-  const [createBriefOpen, setCreateBriefOpen] = useState(false);
+  // const [createBriefOpen, setCreateBriefOpen] = useState(false); // Replaced with navigation
   const [loadingMore, setLoadingMore] = useState(false);
   const [allBriefsLoaded, setAllBriefsLoaded] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -693,7 +693,7 @@ const Library = () => {
               </form>
               
               <div className="mt-3 flex justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setCreateBriefOpen(true)} className="text-xs sm:text-sm h-8">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/create-brief')} className="text-xs sm:text-sm h-8">
                   <PlusIcon className="h-4 w-4 mr-1" />
                   Create Brief
                 </Button>
@@ -912,7 +912,7 @@ const Library = () => {
                     <p className="text-muted-foreground mb-4">
                       Be the first to create a case brief and share it with the community!
                     </p>
-                    <Button onClick={() => setCreateBriefOpen(true)}>Create Your First Brief</Button>
+                    <Button onClick={() => navigate('/create-brief')}>Create Your First Brief</Button>
                   </div>
                 )}
               </>
@@ -1122,14 +1122,7 @@ const Library = () => {
         onRemoveFromCollection={handleRemoveFromCollection}
       />
       
-      {/* Create Brief Modal */}
-      <CreateBriefModal
-        open={createBriefOpen}
-        onOpenChange={setCreateBriefOpen}
-        collections={collections}
-        onCreateBrief={handleCreateBrief}
-        onCreateCollection={handleCreateCollection}
-      />
+      {/* Create Brief Modal replaced with navigation to /create-brief */}
     </div>
   );
 };

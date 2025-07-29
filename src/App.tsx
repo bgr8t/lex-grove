@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useIdlePreload } from '@/hooks/use-idle-preload';
+import { EmailVerificationGuard } from '@/components/auth/EmailVerificationGuard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ const Agora = lazy(() => import('@/pages/Agora'));
 const Akazi = lazy(() => import('@/pages/Akazi'));
 const JobDetail = lazy(() => import('@/pages/JobDetail'));
 const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
+const CreateBrief = lazy(() => import('@/pages/CreateBrief'));
 
 function App() {
   // Enable idle-time preloading for better UX
@@ -63,12 +65,26 @@ function App() {
                 <Route path="/pinecone-test" element={<PineconeTest />} />
                 <Route path="/library" element={<Library />} />
                 
-                {/* Email Suite Route */}
+                {/* Create Brief Route - Protected with limited email verification */}
+                <Route 
+                  path="/create-brief" 
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard allowLimitedAccess={true}>
+                        <CreateBrief />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Email Suite Route - Full verification required */}
                 <Route 
                   path="/compose" 
                   element={
                     <ProtectedRoute requireAuth={true}>
-                      <EmailSuite />
+                      <EmailVerificationGuard>
+                        <EmailSuite />
+                      </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
                 />
@@ -98,12 +114,14 @@ function App() {
                   } 
                 />
                 
-                {/* Contribution route - requires auth but not completed contributions */}
+                {/* Contribution route - Limited access allowed for unverified users */}
                 <Route 
                   path="/contribute" 
                   element={
                     <ProtectedRoute requireAuth={true} requireContribution={false}>
-                      <Contribute />
+                      <EmailVerificationGuard allowLimitedAccess={true}>
+                        <Contribute />
+                      </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
                 />
@@ -113,7 +131,9 @@ function App() {
                   path="/library/pro" 
                   element={
                     <ProtectedRoute requireAuth={true} requireContribution={true}>
-                      <Library />
+                      <EmailVerificationGuard>
+                        <Library />
+                      </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
                 />
@@ -125,17 +145,21 @@ function App() {
                   path="/payment-success" 
                   element={
                     <ProtectedRoute>
-                      <PaymentSuccess />
+                      <EmailVerificationGuard>
+                        <PaymentSuccess />
+                      </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
                 />
                 
-                {/* MyLibrary route */}
+                {/* MyLibrary route - Limited access allowed for unverified users */}
                 <Route 
                   path="/my-library" 
                   element={
                     <ProtectedRoute requireAuth={true}>
-                      <MyLibrary />
+                      <EmailVerificationGuard allowLimitedAccess={true}>
+                        <MyLibrary />
+                      </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
                 />

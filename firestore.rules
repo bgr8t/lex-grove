@@ -130,5 +130,10 @@ service cloud.firestore {
                      );
     }
     
+    // Email Preferences - User-specific settings
+    match /emailPreferences/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+    }
+    
   }
 } 

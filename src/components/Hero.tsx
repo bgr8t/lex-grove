@@ -97,11 +97,11 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
             <Button 
               size="lg" 
               className="h-14 px-8 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden"
-              onClick={() => navigate('/case-brief')}
+              onClick={() => navigate('/library')}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <BookOpenIcon className="h-5 w-5 mr-2 relative z-10" />
-              <span className="relative z-10">Generate Your First Brief for Free</span>
+              <span className="relative z-10">Generate Your First Brief</span>
             </Button>
             <Button 
               size="lg" 

@@ -10,7 +10,8 @@ import {
   UserCredential,
   Auth,
   fetchSignInMethodsForEmail,
-  signInWithPopup
+  signInWithPopup,
+  sendEmailVerification
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { userProfileService } from '@/lib/services/userProfileService';
@@ -27,6 +28,8 @@ interface AuthContextType {
   checkEmailExists: (email: string) => Promise<boolean>;
   checkMembershipStatus: () => Promise<'contributor' | 'premium' | null>;
   signInWithGoogle: () => Promise<UserCredential>;
+  sendVerificationEmail: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -47,10 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign up function
   async function signUp(email: string, password: string) {
     setLoading(true);
+    let userCredential: UserCredential | null = null;
+    
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Step 1: Create user account
+      userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("User account created successfully");
       
-      // Create a complete user profile after successful signup
+      // Step 2: Create user profile (critical step)
       try {
         await userProfileService.createUserProfile({
           uid: userCredential.user.uid,
@@ -65,15 +72,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         });
         console.log("User profile created successfully");
-      } catch (error) {
-        console.error("Error creating user profile:", error);
-        // Continue even if profile creation fails, we can try again later
+      } catch (profileError) {
+        console.error("Error creating user profile:", profileError);
+        
+        // Rollback: Delete the Firebase Auth user if profile creation fails
+        try {
+          await userCredential.user.delete();
+          console.log("Rolled back user creation due to profile creation failure");
+        } catch (deleteError) {
+          console.error("Failed to rollback user creation:", deleteError);
+        }
+        
+        throw new Error("Registration failed: Unable to create user profile. Please try again.");
+      }
+      
+      // Step 3: Send verification email (non-critical, user can resend)
+      try {
+        await sendEmailVerification(userCredential.user);
+        console.log("Verification email sent successfully");
+      } catch (emailError) {
+        console.error("Error sending verification email:", emailError);
+        // Don't fail registration for email issues - user can resend later
+        console.log("Registration completed but verification email failed - user can resend");
       }
       
       return userCredential;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during signup:", error);
-      throw error;
+      
+      // Provide more specific error messages
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error("An account with this email already exists. Please try logging in instead.");
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error("Password is too weak. Please choose a stronger password.");
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error("Invalid email address. Please check your email and try again.");
+      } else if (error.message && error.message.includes("profile")) {
+        // Re-throw profile creation errors as-is
+        throw error;
+      } else {
+        throw new Error("Registration failed. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -138,6 +177,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     throw new Error('No user is signed in');
   }
 
+  // Resend verification email
+  async function sendVerificationEmail() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    } else {
+      throw new Error('No user is signed in');
+    }
+  }
+
+  // Reload user
+  async function reloadUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setCurrentUser({ ...auth.currentUser });
+    }
+  }
+
   // Check if email exists
   async function checkEmailExists(email: string): Promise<boolean> {
     try {
@@ -185,6 +241,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Subscribe to auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await user.reload();
+      }
       setCurrentUser(user);
       
       if (user) {
@@ -237,7 +296,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateUserProfile,
     checkEmailExists,
     checkMembershipStatus,
-    signInWithGoogle
+    signInWithGoogle,
+    sendVerificationEmail,
+    reloadUser
   };
 
   return (
