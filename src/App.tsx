@@ -49,6 +49,7 @@ const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
 const CreateBrief = lazy(() => import('@/pages/CreateBrief'));
 const Compose = lazy(() => import('@/pages/Compose'));
 const EmailDraft = lazy(() => import('@/pages/compose/EmailDraft'));
+const Proofreading = lazy(() => import('@/pages/compose/Proofreading'));
 const ComingSoon = lazy(() => import('@/pages/compose/ComingSoon'));
 
 function App() {
@@ -92,13 +93,25 @@ function App() {
                   } 
                 />
                 
-                {/* Individual Compose Tools */}
+                                {/* Individual Compose Tools */}
                 <Route 
-                  path="/compose/email-draft" 
+                  path="/compose/email-draft"
                   element={
                     <ProtectedRoute requireAuth={true}>
                       <EmailVerificationGuard>
                         <EmailDraft />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Proofreading Tool */}
+                <Route 
+                  path="/compose/proofreading"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard>
+                        <Proofreading />
                       </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 

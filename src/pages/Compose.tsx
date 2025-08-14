@@ -11,7 +11,8 @@ import {
   DocumentMagnifyingGlassIcon,
   ClockIcon,
   SparklesIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  DocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,15 @@ const composeTools: ComposeTool[] = [
     status: 'available',
     route: '/compose/email-draft',
     features: ['Smart tone detection', 'Privacy controls', 'Template library', 'Draft history']
+  },
+  {
+    id: 'proofreading',
+    title: 'Course Notes Proofreader',
+    description: 'Conservative AI proofreading that preserves legal meaning and terminology',
+    icon: DocumentCheckIcon,
+    status: 'available',
+    route: '/compose/proofreading',
+    features: ['Grammar correction', 'Spelling fixes', 'Meaning preservation', 'Legal term protection']
   },
   {
     id: 'document-generator',
