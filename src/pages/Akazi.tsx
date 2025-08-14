@@ -93,14 +93,14 @@ const Akazi: React.FC = () => {
         <main className="pt-28 md:pt-36 pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Hero Section */}
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <BriefcaseIcon className="w-8 h-8 text-primary" />
-                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <div className="text-center mb-12 px-6 sm:px-8 lg:px-12">
+              <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                <BriefcaseIcon className="w-8 h-8 text-primary flex-shrink-0" />
+                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent break-words leading-tight px-2 overflow-visible">
                   {t('akazi.title')}
                 </h1>
               </div>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto px-4">
                 {t('akazi.subtitle')}
               </p>
             </div>
@@ -261,7 +261,7 @@ const Akazi: React.FC = () => {
                   Are you a law firm, legal organization, or company looking to hire legal talent? 
                   Contact us to learn about posting opportunities on Akazi.
                 </p>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => window.location.href = 'mailto:contact@lexgrove.com'}>
                   Contact Us
                 </Button>
               </div>

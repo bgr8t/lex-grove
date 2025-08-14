@@ -47,6 +47,9 @@ const Akazi = lazy(() => import('@/pages/Akazi'));
 const JobDetail = lazy(() => import('@/pages/JobDetail'));
 const EmailSuite = lazy(() => import('@/pages/EmailSuite'));
 const CreateBrief = lazy(() => import('@/pages/CreateBrief'));
+const Compose = lazy(() => import('@/pages/Compose'));
+const EmailDraft = lazy(() => import('@/pages/compose/EmailDraft'));
+const ComingSoon = lazy(() => import('@/pages/compose/ComingSoon'));
 
 function App() {
   // Enable idle-time preloading for better UX
@@ -77,9 +80,45 @@ function App() {
                   } 
                 />
                 
-                {/* Email Suite Route - Full verification required */}
+                {/* Compose Routes - Grid layout with individual tools */}
                 <Route 
                   path="/compose" 
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard>
+                        <Compose />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Individual Compose Tools */}
+                <Route 
+                  path="/compose/email-draft" 
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard>
+                        <EmailDraft />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Coming Soon Tools */}
+                <Route 
+                  path="/compose/:toolId" 
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard>
+                        <ComingSoon />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Legacy Email Suite Route - Keep for direct access */}
+                <Route 
+                  path="/email-suite" 
                   element={
                     <ProtectedRoute requireAuth={true}>
                       <EmailVerificationGuard>

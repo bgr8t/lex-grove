@@ -291,37 +291,39 @@ export default function AgoraEditor() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             {article?.id ? 'Edit Article' : 'New Article'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             Create compelling legal commentary for your readers
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <span className="text-sm text-muted-foreground text-center sm:text-left">
             {wordCount} words · {readingTime} min read
           </span>
-          <Button variant="outline" onClick={handleCancel}>
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-            <Save className="w-4 h-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Draft'}
-          </Button>
-          <Button onClick={handlePublish} disabled={isPublishing}>
-            <Send className="w-4 h-4 mr-2" />
-            {isPublishing ? 'Publishing...' : 'Publish'}
-          </Button>
+          <div className="flex items-center gap-2 justify-center sm:justify-end">
+            <Button variant="outline" onClick={handleCancel} className="flex-1 sm:flex-none min-h-[44px]">
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button variant="outline" onClick={handleSave} disabled={isSaving} className="flex-1 sm:flex-none min-h-[44px]">
+              <Save className="w-4 h-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save Draft'}
+            </Button>
+            <Button onClick={handlePublish} disabled={isPublishing} className="flex-1 sm:flex-none min-h-[44px]">
+              <Send className="w-4 h-4 mr-2" />
+              {isPublishing ? 'Publishing...' : 'Publish'}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Main Editor */}
         <div className="lg:col-span-3 space-y-4">
           {/* Article Details */}

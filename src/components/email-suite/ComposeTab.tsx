@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { SparklesIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/components/ui/use-toast";
@@ -11,6 +11,8 @@ import { EmailPreferences, PrivacyPreferences } from '@/pages/EmailSuite';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheckIcon } from '@heroicons/react/24/solid';
 import { EmailDraft } from '@/lib/models/emailDraft';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 interface ComposeTabProps {
   selectedDraft: Draft | null;
@@ -25,6 +27,7 @@ interface ComposeTabProps {
 export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenerateDraft, isLoading, error, preferences, privacyPreferences }: ComposeTabProps) {
   const [context, setContext] = useState('');
   const [instructions, setInstructions] = useState('');
+  const { toast } = useToast();
 
   // Update form when a draft is selected
   useEffect(() => {
@@ -67,6 +70,161 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
   const handleInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = validateAndSanitizeInput(e.target.value);
     setInstructions(value);
+  };
+
+  // Function to extract subject and body from draft content with proper validation
+  const extractEmailParts = (content: string) => {
+    if (!content || typeof content !== 'string') {
+      return { subject: '', body: '' };
+    }
+
+    // Sanitize content to prevent any potential issues
+    const sanitizedContent = content.trim();
+    
+    // Extract subject line (case-insensitive)
+    const subjectMatch = sanitizedContent.match(/Subject:\s*(.+?)(?:\n|$)/i);
+    const subject = subjectMatch ? subjectMatch[1].trim() : '';
+    
+    // Remove the subject line and clean up the body
+    let body = sanitizedContent.replace(/Subject:\s*.+?(?:\n|$)/i, '').trim();
+    
+    // Additional sanitization for email body
+    body = body.replace(/[\r\n]{3,}/g, '\n\n'); // Normalize line breaks
+    
+    return { subject, body };
+  };
+
+  // Function to open email client with pre-populated draft
+  const openEmailClient = () => {
+    if (!selectedDraft?.content) {
+      toast({
+        title: "Error",
+        description: "No draft content available to open in email client.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { subject, body } = extractEmailParts(selectedDraft.content);
+      
+      // Validate extracted content
+      if (!body.trim()) {
+        toast({
+          title: "Warning",
+          description: "Draft appears to be empty. Opening email client anyway.",
+        });
+      }
+      
+      // Encode the subject and body for URL with proper length limits
+      const maxSubjectLength = 200; // Reasonable email subject limit
+      const maxBodyLength = 5000; // Reasonable email body limit for mailto
+      
+      const truncatedSubject = subject.slice(0, maxSubjectLength);
+      const truncatedBody = body.slice(0, maxBodyLength);
+      
+      const encodedSubject = encodeURIComponent(truncatedSubject);
+      const encodedBody = encodeURIComponent(truncatedBody);
+      
+      // Create mailto URL
+      const mailtoUrl = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
+      
+      // Validate mailto URL length (some email clients have limits)
+      if (mailtoUrl.length > 8000) {
+        toast({
+          title: "Warning", 
+          description: "Email content is very long and may be truncated by your email client.",
+        });
+      }
+      
+      // Open the email client
+      window.open(mailtoUrl, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: "Success",
+        description: "Opening in your default email client...",
+      });
+      
+    } catch (error) {
+      console.error('Error opening email client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open email client. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Utility function to create Gmail compose URL
+  const createGmailUrl = (subject: string, body: string): string => {
+    const encodedSubject = encodeURIComponent(subject.slice(0, 200));
+    const encodedBody = encodeURIComponent(body.slice(0, 5000));
+    return `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=&su=${encodedSubject}&body=${encodedBody}`;
+  };
+
+  // Utility function to create Outlook compose URL
+  const createOutlookUrl = (subject: string, body: string): string => {
+    const encodedSubject = encodeURIComponent(subject.slice(0, 200));
+    const encodedBody = encodeURIComponent(body.slice(0, 5000));
+    return `https://outlook.live.com/mail/0/deeplink/compose?subject=${encodedSubject}&body=${encodedBody}`;
+  };
+
+  // Enhanced email client handler with provider selection
+  const handleEmailClientOpen = (provider: 'default' | 'gmail' | 'outlook') => {
+    if (!selectedDraft?.content) {
+      toast({
+        title: "Error",
+        description: "No draft content available to open in email client.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { subject, body } = extractEmailParts(selectedDraft.content);
+      
+      if (!body.trim()) {
+        toast({
+          title: "Warning",
+          description: "Draft appears to be empty. Opening email client anyway.",
+        });
+      }
+
+      let url: string;
+      let successMessage: string;
+
+      switch (provider) {
+        case 'gmail':
+          url = createGmailUrl(subject, body);
+          successMessage = "Opening Gmail compose window...";
+          break;
+        case 'outlook':
+          url = createOutlookUrl(subject, body);
+          successMessage = "Opening Outlook compose window...";
+          break;
+        default:
+          // Use existing mailto functionality
+          const encodedSubject = encodeURIComponent(subject.slice(0, 200));
+          const encodedBody = encodeURIComponent(body.slice(0, 5000));
+          url = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
+          successMessage = "Opening in your default email client...";
+      }
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+      
+      toast({
+        title: "Success",
+        description: successMessage,
+      });
+
+    } catch (error) {
+      console.error('Error opening email client:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open email client. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -172,11 +330,48 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
             {selectedDraft ? (
               <ScrollArea className="h-full w-full">
                 <div className="space-y-3 mb-4">
-                  <div>
-                    <h4 className="font-medium">Generated Draft</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Created: {selectedDraft.timestamp.toLocaleString()}
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Generated Draft</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Created: {selectedDraft.timestamp.toLocaleString()}
+                      </p>
+                    </div>
+                    
+                    {/* Email Client Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 min-w-fit"
+                          title="Open this draft in an email client"
+                        >
+                          <EnvelopeIcon className="h-4 w-4" />
+                          <span className="hidden sm:inline">Open in Email Client</span>
+                          <span className="sm:hidden">Open</span>
+                          <ChevronDownIcon className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => handleEmailClientOpen('default')}>
+                          <EnvelopeIcon className="h-4 w-4 mr-2" />
+                          Default Email Client
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEmailClientOpen('gmail')}>
+                          <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h.819L12 10.183l9.545-6.362h.819A1.636 1.636 0 0 1 24 5.457z"/>
+                          </svg>
+                          Gmail
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEmailClientOpen('outlook')}>
+                          <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7.88 12.05L0 7.03v10.1l7.88-5.02v-.06zm8.11-.05L24 6.98v10.1L15.99 12v.05-.05zM7.86 8.78l4.14 2.64 4.14-2.64v4.44l-4.14 2.64-4.14-2.64V8.78z"/>
+                          </svg>
+                          Outlook
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   
                   {selectedEmailDraft && (
@@ -217,11 +412,30 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
                   )}
                 </div>
                 
-                <Textarea
-                  readOnly
-                  className="w-full h-full min-h-[calc(100vh-20rem)] resize-none border-0 focus:ring-0 p-1 bg-transparent"
-                  value={selectedDraft.content}
-                />
+                {/* Simple Subject and Body Separation */}
+                <div className="space-y-4">
+                  {/* Subject Section - Extract first line that looks like a subject */}
+                  {selectedDraft.content.includes('Subject:') && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Subject:</label>
+                      <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
+                        <p className="text-sm font-medium">
+                          {selectedDraft.content.match(/Subject:\s*(.+?)(?:\n|$)/i)?.[1] || 'No subject'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Body Section */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Email Body:</label>
+                    <Textarea
+                      readOnly
+                      className="w-full min-h-[calc(100vh-24rem)] resize-none border-0 focus:ring-0 p-3 bg-muted/30 rounded-lg"
+                      value={selectedDraft.content}
+                    />
+                  </div>
+                </div>
               </ScrollArea>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
