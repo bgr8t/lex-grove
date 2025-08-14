@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,11 @@ import { Draft } from '@/lib/models/draft';
 import { EmailPreferences, PrivacyPreferences } from '@/pages/EmailSuite';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheckIcon } from '@heroicons/react/24/solid';
+import { EmailDraft } from '@/lib/models/emailDraft';
 
 interface ComposeTabProps {
   selectedDraft: Draft | null;
+  selectedEmailDraft: EmailDraft | null;
   onGenerateDraft: (data: { context: string; instructions: string; }) => void;
   isLoading: boolean;
   error: string | null;
@@ -20,9 +22,17 @@ interface ComposeTabProps {
   privacyPreferences: PrivacyPreferences;
 }
 
-export default function ComposeTab({ selectedDraft, onGenerateDraft, isLoading, error, preferences, privacyPreferences }: ComposeTabProps) {
+export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenerateDraft, isLoading, error, preferences, privacyPreferences }: ComposeTabProps) {
   const [context, setContext] = useState('');
   const [instructions, setInstructions] = useState('');
+
+  // Update form when a draft is selected
+  useEffect(() => {
+    if (selectedEmailDraft) {
+      setContext(selectedEmailDraft.context);
+      setInstructions(selectedEmailDraft.instructions);
+    }
+  }, [selectedEmailDraft]);
 
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string, maxLength: number = 5000): string => {
@@ -161,12 +171,52 @@ export default function ComposeTab({ selectedDraft, onGenerateDraft, isLoading, 
           <CardContent className="p-4 h-full">
             {selectedDraft ? (
               <ScrollArea className="h-full w-full">
-                <div className="space-y-2 mb-4">
-                  <h4 className="font-medium">Generated Draft</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Created: {selectedDraft.timestamp.toLocaleString()}
-                  </p>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <h4 className="font-medium">Generated Draft</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {selectedDraft.timestamp.toLocaleString()}
+                    </p>
+                  </div>
+                  
+                  {selectedEmailDraft && (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedEmailDraft.preferences.tone}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedEmailDraft.preferences.length}
+                        </Badge>
+                        {selectedEmailDraft.privacySettings.mode === 'privacy' && (
+                          <Badge variant="outline" className="text-xs flex items-center gap-1">
+                            <ShieldCheckIcon className="h-3 w-3" />
+                            Privacy
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {selectedEmailDraft.preferences.role && (
+                        <p className="text-xs text-muted-foreground">
+                          Role: {selectedEmailDraft.preferences.role}
+                          {selectedEmailDraft.preferences.organization && 
+                            ` at ${selectedEmailDraft.preferences.organization}`
+                          }
+                        </p>
+                      )}
+                      
+                      {selectedEmailDraft.context !== selectedDraft.content && (
+                        <div className="bg-muted/30 rounded-lg p-2">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Original Context:</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {selectedEmailDraft.context}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+                
                 <Textarea
                   readOnly
                   className="w-full h-full min-h-[calc(100vh-20rem)] resize-none border-0 focus:ring-0 p-1 bg-transparent"

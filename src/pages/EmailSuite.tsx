@@ -7,6 +7,8 @@ import { Draft } from '@/lib/models/draft';
 import GeneratedDraftsList from '@/components/email-suite/GeneratedDraftsList';
 import { emailPreferencesService } from '@/lib/services/emailPreferencesService';
 import { useAuth } from '@/contexts/AuthContext';
+import { emailDraftService } from '@/lib/services/emailDraftService';
+import { EmailDraft, emailDraftToLegacyDraft } from '@/lib/models/emailDraft';
 
 // Lazy load tab content for better performance
 const PreferencesTab = React.lazy(() => import('@/components/email-suite/PreferencesTab'));
@@ -33,8 +35,11 @@ export interface PrivacyPreferences {
 export default function EmailSuite() {
   // State for drafts and UI, lifted up to the parent
   const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [emailDrafts, setEmailDrafts] = useState<EmailDraft[]>([]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+  const [draftsError, setDraftsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('compose');
   const { toast } = useToast();
@@ -94,6 +99,44 @@ export default function EmailSuite() {
 
     loadUserPreferences();
   }, [currentUser, authLoading]);
+
+  // Load drafts when user is authenticated
+  useEffect(() => {
+    const loadDrafts = async () => {
+      if (authLoading) return;
+      
+      if (!currentUser) {
+        setEmailDrafts([]);
+        setDrafts([]);
+        setDraftsLoading(false);
+        return;
+      }
+
+      try {
+        setDraftsLoading(true);
+        setDraftsError(null);
+        
+        const userDrafts = await emailDraftService.getDraftsByUser(currentUser.uid);
+        setEmailDrafts(userDrafts);
+        
+        // Convert to legacy Draft format for compatibility with existing components
+        const legacyDrafts = userDrafts.map(emailDraftToLegacyDraft);
+        setDrafts(legacyDrafts);
+      } catch (error) {
+        console.error('Error loading drafts:', error);
+        setDraftsError('Failed to load your draft history');
+        toast({
+          title: "Error",
+          description: "Failed to load your draft history",
+          variant: "destructive"
+        });
+      } finally {
+        setDraftsLoading(false);
+      }
+    };
+
+    loadDrafts();
+  }, [currentUser, authLoading, toast]);
 
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string): string => {
@@ -211,19 +254,77 @@ Generate only the email content without any additional commentary or explanation
           throw new Error("Generated content exceeds reasonable length limits.");
         }
 
-        const newDraft: Draft = {
-          id: `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // More secure ID generation
-          content: generatedContent,
-          recipient: "No Recipient",
-          timestamp: new Date(),
-        };
-        
-        setDrafts(prev => [newDraft, ...prev]);
-        setSelectedDraftId(newDraft.id);
-        toast({ 
-          title: "Success", 
-          description: "New draft generated with your preferences." 
-        });
+        if (!currentUser) {
+          // For non-authenticated users, fall back to in-memory storage
+          const newDraft: Draft = {
+            id: `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            content: generatedContent,
+            recipient: "No Recipient",
+            timestamp: new Date(),
+          };
+          
+          setDrafts(prev => [newDraft, ...prev]);
+          setSelectedDraftId(newDraft.id);
+          toast({ 
+            title: "Success", 
+            description: "Draft generated (sign in to save permanently)" 
+          });
+        } else {
+          // For authenticated users, save to Firestore
+          try {
+            const emailDraftData: Omit<EmailDraft, 'id' | 'createdAt' | 'updatedAt'> = {
+              userId: currentUser.uid,
+              content: generatedContent,
+              context: sanitizedContext,
+              instructions: sanitizedInstructions,
+              preferences: {
+                tone: preferences.tone,
+                length: preferences.length,
+                role: preferences.role,
+                organization: preferences.organization,
+                signature: preferences.signature
+              },
+              privacySettings: {
+                mode: privacyPreferences.mode,
+                removeMetadata: privacyPreferences.removeMetadata,
+                neutralLanguage: privacyPreferences.neutralLanguage,
+                avoidLocation: privacyPreferences.avoidLocation,
+                attorneyClient: privacyPreferences.attorneyClient
+              }
+            };
+
+            const savedDraft = await emailDraftService.saveDraft(emailDraftData);
+            
+            // Update both email drafts and legacy drafts state
+            setEmailDrafts(prev => [savedDraft, ...prev]);
+            const legacyDraft = emailDraftToLegacyDraft(savedDraft);
+            setDrafts(prev => [legacyDraft, ...prev]);
+            setSelectedDraftId(savedDraft.id!);
+            
+            toast({ 
+              title: "Success", 
+              description: "Draft saved to your history" 
+            });
+          } catch (saveError) {
+            console.error('Error saving draft:', saveError);
+            
+            // Fall back to in-memory storage if save fails
+            const newDraft: Draft = {
+              id: `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              content: generatedContent,
+              recipient: "No Recipient",
+              timestamp: new Date(),
+            };
+            
+            setDrafts(prev => [newDraft, ...prev]);
+            setSelectedDraftId(newDraft.id);
+            toast({ 
+              title: "Warning", 
+              description: "Draft generated but not saved to cloud. Changes may be lost on refresh.",
+              variant: "destructive"
+            });
+          }
+        }
       } else {
         throw new Error("The generated draft was empty or invalid.");
       }
@@ -252,6 +353,42 @@ Generate only the email content without any additional commentary or explanation
     
     setSelectedDraftId(id);
     setActiveTab('compose');
+  };
+
+  // Add function to delete draft
+  const handleDeleteDraft = async (draftId: string) => {
+    if (!currentUser) {
+      // For non-authenticated users, just remove from in-memory state
+      setDrafts(prev => prev.filter(d => d.id !== draftId));
+      if (selectedDraftId === draftId) {
+        setSelectedDraftId(null);
+      }
+      return;
+    }
+
+    try {
+      await emailDraftService.deleteDraft(draftId);
+      
+      // Update both states
+      setEmailDrafts(prev => prev.filter(d => d.id !== draftId));
+      setDrafts(prev => prev.filter(d => d.id !== draftId));
+      
+      if (selectedDraftId === draftId) {
+        setSelectedDraftId(null);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Draft deleted from history"
+      });
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete draft",
+        variant: "destructive"
+      });
+    }
   };
   const handlePreferencesChange = (newPreferences: EmailPreferences) => {
     // Validate preferences before setting
@@ -385,6 +522,7 @@ Generate only the email content without any additional commentary or explanation
   };
 
   const selectedDraft = drafts.find(d => d.id === selectedDraftId) || null;
+  const selectedEmailDraft = emailDrafts.find(d => d.id === selectedDraftId) || null;
 
   // Show loading state while auth or preferences are loading
   if (authLoading || preferencesLoading) {
@@ -443,6 +581,7 @@ Generate only the email content without any additional commentary or explanation
               <TabsContent value="compose">
                 <ComposeTab 
                   selectedDraft={selectedDraft}
+                  selectedEmailDraft={selectedEmailDraft}
                   onGenerateDraft={handleGenerateDraft}
                   isLoading={isLoading}
                   error={error}
@@ -465,6 +604,9 @@ Generate only the email content without any additional commentary or explanation
               drafts={drafts}
               selectedDraftId={selectedDraftId}
               onSelectDraft={handleSelectDraft}
+              onDeleteDraft={handleDeleteDraft}
+              isLoading={draftsLoading}
+              error={draftsError}
             />
           </div>
           

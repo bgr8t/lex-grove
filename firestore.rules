@@ -135,5 +135,27 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
     
+    // Email Drafts - User-specific email drafts with strict security
+    match /emailDrafts/{draftId} {
+      // Users can only read their own drafts
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can only create drafts for themselves
+      allow create: if isAuthenticated() && 
+                     request.resource.data.userId == request.auth.uid &&
+                     request.resource.data.keys().hasAll(['userId', 'content', 'context', 'preferences', 'privacySettings', 'createdAt', 'updatedAt']);
+      
+      // Users can only update their own drafts
+      allow update: if isAuthenticated() && 
+                     resource.data.userId == request.auth.uid &&
+                     request.resource.data.userId == request.auth.uid;
+      
+      // Users can only delete their own drafts
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Admins can read/update/delete any draft for moderation
+      allow read, update, delete: if isAdmin();
+    }
+    
   }
 } 

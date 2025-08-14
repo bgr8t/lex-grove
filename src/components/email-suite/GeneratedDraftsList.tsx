@@ -2,11 +2,16 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Draft } from '@/lib/models/draft';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Trash2Icon, AlertCircleIcon } from 'lucide-react';
 
 interface GeneratedDraftsListProps {
   drafts: Draft[];
   selectedDraftId: string | null;
   onSelectDraft: (id: string) => void;
+  onDeleteDraft: (id: string) => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 const extractEmailSubject = (content: string): string => {
@@ -38,11 +43,28 @@ const extractEmailSubject = (content: string): string => {
   return words.length < content.length ? `${words}...` : words;
 };
 
-export default function GeneratedDraftsList({ drafts, selectedDraftId, onSelectDraft }: GeneratedDraftsListProps) {
+export default function GeneratedDraftsList({ 
+  drafts, 
+  selectedDraftId, 
+  onSelectDraft, 
+  onDeleteDraft, 
+  isLoading = false, 
+  error = null 
+}: GeneratedDraftsListProps) {
   return (
     <Card className="p-2">
       <h3 className="text-sm font-medium mb-2 px-1">History</h3>
-      {drafts.length === 0 ? (
+      {error ? (
+        <div className="p-2 text-center bg-destructive/10 rounded-md">
+          <AlertCircleIcon className="h-4 w-4 text-destructive mx-auto mb-1" />
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      ) : isLoading ? (
+        <div className="p-2 text-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mx-auto"></div>
+          <p className="text-xs text-muted-foreground mt-1">Loading...</p>
+        </div>
+      ) : drafts.length === 0 ? (
         <div className="p-2 text-center bg-muted/50 rounded-md">
           <p className="text-xs text-muted-foreground">No drafts yet</p>
         </div>
@@ -52,25 +74,42 @@ export default function GeneratedDraftsList({ drafts, selectedDraftId, onSelectD
             {drafts.map((d) => {
               const subject = extractEmailSubject(d.content);
               return (
-                <button
+                <div
                   key={d.id}
-                  onClick={() => onSelectDraft(d.id)}
-                  className={`w-full text-left px-2 py-1.5 rounded-sm transition-colors ${
+                  className={`group relative w-full text-left px-2 py-1.5 rounded-sm transition-colors ${
                     selectedDraftId === d.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium truncate flex-1">
-                      {subject}
+                  <button
+                    onClick={() => onSelectDraft(d.id)}
+                    className="w-full text-left pr-6"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium truncate flex-1">
+                        {subject}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground ml-2 whitespace-nowrap">
+                        {d.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                      {d.content.split('\n')[0]}
                     </p>
-                    <p className="text-[10px] text-muted-foreground ml-2 whitespace-nowrap">
-                      {d.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                    {d.content.split('\n')[0]}
-                  </p>
-                </button>
+                  </button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteDraft(d.id);
+                    }}
+                    title="Delete draft"
+                  >
+                    <Trash2Icon className="h-3 w-3" />
+                  </Button>
+                </div>
               );
             })}
           </div>
