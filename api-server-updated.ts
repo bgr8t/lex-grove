@@ -8,14 +8,14 @@ import { config } from 'dotenv';
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import rateLimit from 'express-rate-limit';
-import { requireEnvVar } from './src/utils/security.js';
+import { requireEnvVar } from './src/utils/security';
 
-import { verifyAuth, requirePremiumAccess, requireAdmin } from './src/api/middleware/auth.js';
-import { searchValidator, briefValidator, profileValidator, idValidator } from './src/api/middleware/validation.js';
-import { generateCsrfToken, verifyCsrfToken } from './src/api/middleware/csrf.js';
-import { sessionRotationManager } from './src/utils/sessionUtils.js';
-import { createCheckoutSession, checkSubscriptionStatus } from './src/api/index.js';
-import { flashcardsRouter } from './src/api/flashcards.js';
+import { verifyAuth, requirePremiumAccess, requireAdmin } from './src/api/middleware/auth';
+import { searchValidator, briefValidator, profileValidator, idValidator } from './src/api/middleware/validation';
+import { generateCsrfToken, verifyCsrfToken } from './src/api/middleware/csrf';
+import { sessionRotationManager } from './src/utils/sessionUtils';
+import { createCheckoutSession, checkSubscriptionStatus } from './src/api/index';
+import { flashcardsRouter } from './src/api/flashcards';
 import {
     searchHandler,
     getBriefHandler,
@@ -28,7 +28,7 @@ import {
     adminDashboardHandler,
     summarizeBriefHandler,
     uploadPdf
-} from './src/api/handlers.js';
+} from './src/api/handlers';
 
 config();
 

@@ -21,7 +21,8 @@ import {
   DocumentTextIcon, 
   SparklesIcon,
   ShieldCheckIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { userProfileService } from '@/lib/services/userProfileService';
@@ -29,6 +30,10 @@ import { caseBriefService } from '@/lib/services/caseBriefService';
 import { ContributionProgress } from '@/components/ContributionProgress';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { auth } from '@/lib/firebase';
+import { ClientPdfProcessor } from '@/lib/services/clientPdfProcessor';
+import { PdfSecurityValidator } from '@/utils/pdfSecurity';
+import { PdfProcessingStatus, usePdfProcessingStatus } from '@/components/PdfProcessingStatus';
 // import Select components removed - no longer needed without court field
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -39,7 +44,7 @@ import {
   validateCaseBriefContent,
   checkBriefCreationRateLimit
 } from '@/utils/createBriefSecurity';
-import { writeBatch, doc, increment } from 'firebase/firestore';
+import { writeBatch, doc, increment, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 // Court options removed - no longer needed
@@ -52,6 +57,10 @@ export default function CreateBrief() {
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [securityErrors, setSecurityErrors] = useState<string[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  
+  // PDF processing status management
+  const processingStatus = usePdfProcessingStatus();
   
   const form = useForm<SecureCreateBriefFormValues>({
     resolver: zodResolver(secureCreateBriefSchema),
@@ -101,6 +110,119 @@ export default function CreateBrief() {
     form.setValue('tags', newTags);
   };
 
+  // PDF upload functionality
+  const handlePdfUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // Reset input for security
+    
+    if (!file) return;
+
+    // Reset any previous status
+    processingStatus.reset();
+    
+    // Start processing with filename
+    processingStatus.startProcessing(file.name);
+    
+    try {
+      // Initialize PDF processor with enhanced options
+      const processor = new ClientPdfProcessor({
+        maxFileSize: 10 * 1024 * 1024, // 10MB
+        timeout: 90000, // 90 seconds for complex PDFs
+        retries: 3 // Better reliability
+      });
+
+      // Check if service is available
+      if (!processor.isAvailable()) {
+        throw new Error('PDF processing service not configured. Please contact support.');
+      }
+
+      // Update status to validation stage
+      processingStatus.updateStage('validating');
+
+      // Comprehensive security validation
+      if (currentUser) {
+        const securityValidation = await PdfSecurityValidator.performSecurityValidation(file, currentUser.uid);
+        if (!securityValidation.isValid) {
+          throw new Error(securityValidation.errors.join('; '));
+        }
+      }
+
+      // Update status to processing stage
+      processingStatus.updateStage('processing');
+
+      // Process the file with AI
+      const result = await processor.processFile(file);
+      
+      // Update status to extraction stage
+      processingStatus.updateStage('extracting');
+      
+      // Populate form fields with extracted data
+      if (result.title) {
+        form.setValue('title', result.title);
+      }
+      if (result.facts) {
+        form.setValue('facts', result.facts);
+      }
+      if (result.issue) {
+        form.setValue('issue', result.issue);
+      }
+      if (result.rule) {
+        form.setValue('rule', result.rule);
+      }
+      if (result.analysis) {
+        form.setValue('analysis', result.analysis);
+      }
+      if (result.conclusion) {
+        form.setValue('conclusion', result.conclusion);
+      }
+      
+      if (result.tags.length > 0) {
+        setTags(result.tags);
+        form.setValue('tags', result.tags);
+      }
+
+      // Set success status
+      processingStatus.setSuccess();
+
+      // Enhanced success toast with extracted title
+      toast({
+        title: 'PDF processed successfully',
+        description: `Extracted information for "${result.title || 'case'}". Review and edit as needed.`,
+      });
+
+    } catch (error: any) {
+      console.error('PDF processing error:', error);
+      
+      // Set error status
+      processingStatus.setError(error.message);
+      
+      // Enhanced error messages based on error type
+      let errorMessage = 'Failed to process PDF. Please try again.';
+      
+      if (error.message.includes('not configured')) {
+        errorMessage = 'PDF processing is temporarily unavailable.';
+      } else if (error.message.includes('file type')) {
+        errorMessage = 'Please upload a valid PDF file.';
+      } else if (error.message.includes('too large')) {
+        errorMessage = 'File is too large. Please upload a smaller PDF.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Processing took too long. Try a smaller or simpler PDF.';
+      } else if (error.message.includes('Authentication') || error.message.includes('rate limit')) {
+        errorMessage = error.message; // Use the specific error message
+      }
+      
+      toast({
+        title: 'Processing failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    }
+  };
+
   async function onSubmit(values: SecureCreateBriefFormValues) {
     if (!currentUser) {
       toast({
@@ -140,8 +262,8 @@ export default function CreateBrief() {
       // Use Firebase batch operation for cost efficiency and atomicity
       const batch = writeBatch(db);
       
-      // Create case brief document
-      const briefRef = doc(db, 'caseBriefs');
+      // Create case brief document with auto-generated ID
+      const briefRef = doc(collection(db, 'caseBriefs'));
       const caseBrief = {
         title: sanitizedValues.title,
         citation: sanitizedValues.title, // Use title as citation since course was removed
@@ -256,13 +378,44 @@ export default function CreateBrief() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Basic Information Card */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-xl">Basic Information</CardTitle>
-                      <CardDescription>
-                        Essential case details
-                      </CardDescription>
+                    <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <CardTitle className="text-xl">Basic Information</CardTitle>
+                        <CardDescription>
+                          Essential case details
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={handleFileChange}
+                          aria-hidden="true"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handlePdfUpload}
+                          disabled={processingStatus.status.isProcessing || isSubmitting}
+                          className="h-10"
+                          aria-label="Upload case PDF to auto-fill fields"
+                        >
+                          <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                          {processingStatus.status.isProcessing ? 'Processing...' : 'Upload PDF'}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* PDF Processing Status */}
+                      <PdfProcessingStatus
+                        isProcessing={processingStatus.status.isProcessing}
+                        error={processingStatus.status.error}
+                        success={processingStatus.status.success}
+                        fileName={processingStatus.status.fileName}
+                        processingStage={processingStatus.status.stage}
+                      />
                       <FormField
                         control={form.control}
                         name="title"

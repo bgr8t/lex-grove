@@ -9,6 +9,7 @@ Lex Grove is a comprehensive web application designed to help law students acces
 ## Key Features
 
 - **Smart Search**: Find relevant case briefs quickly and efficiently
+- **PDF Upload & AI Summarization**: Upload case PDFs and automatically generate IRAC briefs using Gemini AI
 - **Community Contribution**: Share insights and build a collaborative knowledge base
 - **Personal Collections**: Organize briefs into custom collections for efficient studying
 - **Mobile-Responsive Design**: Optimized experience across all devices
@@ -39,9 +40,36 @@ cd lex-grove
 # Install dependencies
 npm install
 
+# Set up environment variables (see Environment Setup below)
+# Copy .env.example to .env.local and fill in your values
+
 # Start the development server
 npm run dev
 ```
+
+## Environment Setup
+
+The application requires several environment variables to be configured:
+
+### Required Environment Variables
+
+- **Firebase Configuration**: `VITE_FIREBASE_*` variables for authentication and database
+- **Stripe Configuration**: `VITE_STRIPE_*` and `STRIPE_SECRET_KEY` for payment processing
+- **AI Services**: 
+  - `GEMINI_API_KEY`: For PDF summarization with Gemini AI (recommended)
+  - `OPENAI_API_KEY`: For document generation and embeddings (fallback)
+- **Pinecone**: `PINECONE_*` variables for vector search functionality
+- **Session Management**: `SESSION_SECRET` and `MONGO_URL`
+
+### Setting up PDF Summarization
+
+To enable PDF upload and automatic case brief generation:
+
+1. Get a Google AI API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Add it to your environment as `GEMINI_API_KEY=your_api_key_here`
+3. Restart your development server
+
+The feature will automatically fallback to OpenAI if Google AI is not configured.
 
 ## Brief Structure
 
