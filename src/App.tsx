@@ -178,17 +178,8 @@ function App() {
                   } 
                 />
                 
-                {/* Protected routes with contribution requirement */}
-                <Route 
-                  path="/library/pro" 
-                  element={
-                    <ProtectedRoute requireAuth={true} requireContribution={true}>
-                      <EmailVerificationGuard>
-                        <Library />
-                      </EmailVerificationGuard>
-                    </ProtectedRoute>
-                  } 
-                />
+                {/* Library route - accessible to all */}
+                <Route path="/library" element={<Library />} />
                 <Route 
                   path="/case-brief/:id" 
                   element={<CaseBrief />} 

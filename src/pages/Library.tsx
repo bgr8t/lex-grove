@@ -89,7 +89,6 @@ const Library = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, membershipStatus, checkMembershipStatus } = useAuth();
-  const isProLibrary = location.pathname === '/library/pro';
   const [savedBriefs, setSavedBriefs] = useState<Brief[]>([]);
   const [submittedBriefs, setSubmittedBriefs] = useState<Brief[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,28 +190,10 @@ const Library = () => {
     }
   };
 
-  // Check authentication and membership status immediately
+  // Set auth as checked since library is now accessible to all
   useEffect(() => {
-    async function checkUserAccess() {
-      try {
-        if (currentUser) {
-          const status = await checkMembershipStatus();
-          
-          // If user is on pro route but doesn't have access, redirect to public library
-          if (isProLibrary && status !== 'contributor' && status !== 'premium') {
-            navigate('/library');
-            return;
-          }
-        }
-      } catch (error) {
-        console.error("Error checking library access:", error);
-      } finally {
-        setAuthChecked(true);
-      }
-    }
-    
-    checkUserAccess();
-  }, [currentUser, navigate, checkMembershipStatus, isProLibrary]);
+    setAuthChecked(true);
+  }, []);
 
   // Suggested search terms based on the current input
   const suggestedTerms = useMemo(() => {
@@ -574,22 +555,22 @@ const Library = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8 mt-16">
+      <main className="flex-1 container mx-auto px-4 py-8 mt-24">
         {/* Page Header */}
         <div className="max-w-7xl mx-auto mb-8">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Case Brief Library</h1>
               <p className="text-muted-foreground">
-                {isProLibrary ? 'Full access to all case briefs and features' : 'Browse case briefs from the legal community'}
+                Browse case briefs from the legal community
               </p>
             </div>
-            {!isProLibrary && currentUser && membershipStatus !== 'premium' && membershipStatus !== 'contributor' && (
+            {currentUser && membershipStatus !== 'premium' && membershipStatus !== 'contributor' && (
               <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-100 dark:border-blue-900">
                 <p className="text-blue-800 dark:text-blue-200">
-                  Want full access to all case briefs?{' '}
+                  Want to contribute to our community?{' '}
                   <Link to="/contribute" className="font-medium underline">
-                    Contribute to unlock premium features
+                    Share your case briefs to help other students
                   </Link>
                 </p>
               </div>

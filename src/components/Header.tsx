@@ -37,8 +37,17 @@ const CustomSheetContent = React.forwardRef<
         side === "bottom" && "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         className
       )}
+      aria-describedby="mobile-menu-description"
       {...props}
     >
+      {/* Hidden title for accessibility */}
+      <SheetPrimitive.Title className="sr-only">
+        Navigation Menu
+      </SheetPrimitive.Title>
+      {/* Hidden description for accessibility */}
+      <SheetPrimitive.Description id="mobile-menu-description" className="sr-only">
+        Mobile navigation menu with links to different sections of the application
+      </SheetPrimitive.Description>
       {children}
       {/* No close button here */}
     </SheetPrimitive.Content>
@@ -46,33 +55,17 @@ const CustomSheetContent = React.forwardRef<
 ));
 CustomSheetContent.displayName = "CustomSheetContent";
 
-// Custom Library Link component that checks membership status before navigating
+// Custom Library Link component for navigating to the library
 const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => {
   const { t } = useLanguage();
-  const { currentUser, checkMembershipStatus, membershipStatus } = useAuth();
+  const { currentUser, membershipStatus } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { preloadComponent } = usePreload();
 
-  const handleLibraryClick = async (e) => {
+  const handleLibraryClick = (e) => {
     e.preventDefault();
-    
-    if (currentUser) {
-      try {
-        const status = await checkMembershipStatus();
-        
-        if (status === 'contributor' || status === 'premium') {
-          navigate('/library/pro');
-        } else {
-          navigate('/library');
-        }
-      } catch (error) {
-        console.error('Error checking membership status:', error);
-        navigate('/library');
-      }
-    } else {
-      navigate('/library');
-    }
+    navigate('/library');
     
     if (isMobile) {
       closeMobileMenu();
@@ -85,10 +78,10 @@ const HeaderLibraryLink = ({ isMobile = false, closeMobileMenu = () => {} }) => 
       onMouseEnter={() => preloadComponent(preloadRoutes.library, 'library')}
       className={cn(
         isMobile ? 
-          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left" :
+          "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent" :
           "relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 ease-out flex-1 text-center hover:text-primary hover:scale-105 hover:shadow-sm min-w-[80px]",
-        (location.pathname === "/library" || location.pathname === "/library/pro") 
-          ? (isMobile ? "text-primary" : "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm")
+        location.pathname === "/library" 
+          ? (isMobile ? "text-primary bg-accent/50" : "bg-white/90 dark:bg-white/20 text-primary shadow-sm border border-white/30 dark:border-white/10 backdrop-blur-sm")
           : (isMobile ? "text-foreground/70" : "text-foreground/80 hover:bg-white/30 dark:hover:bg-white/10 hover:text-foreground")
       )}
     >
@@ -293,12 +286,13 @@ export const Header = () => {
               </SheetTrigger>
                 <CustomSheetContent 
                   side="left" 
-                  className="w-full p-0 border-0 bg-background text-foreground"
+                  className="w-[calc(100vw-2rem)] left-4 p-0 border-0 bg-background text-foreground rounded-lg overflow-hidden"
                 >
                   <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between p-4">
+                    {/* Header with logo and controls */}
+                    <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
                       <Link to="/" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-                        <span className="font-bold text-xl md:text-2xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                        <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                           {t('app.title')}
                         </span>
                       </Link>
@@ -319,74 +313,79 @@ export const Header = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="rounded-full border border-white/30 dark:border-white/10 bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-white/10 h-12 w-12 flex items-center justify-center transition-all duration-200 hover:scale-105 backdrop-blur-sm"
+                          className="rounded-full border border-white/30 dark:border-white/10 bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-white/10 h-10 w-10 flex items-center justify-center transition-all duration-200 hover:scale-105 backdrop-blur-sm"
                           onClick={() => setIsMobileMenuOpen(false)}
+                          aria-label="Close navigation menu"
                         >
                           <XMarkIcon className="h-5 w-5 text-foreground" />
                         </Button>
                       </div>
                     </div>
                     
-                    <nav className="flex flex-col pt-8 px-5 space-y-2 w-full">
-                      <Link 
-                        to="/"
-                        className={cn(
-                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                          location.pathname === "/" ? "text-primary" : "text-foreground/70"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {t('nav.home')}
-                      </Link>
-                      <div className="w-full">
-                        <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
-                      </div>
-                      <Link 
-                        to="/agora" 
-                        className={cn(
-                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                          location.pathname.startsWith("/agora") ? "text-primary" : "text-foreground/70"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        onMouseEnter={() => preloadComponent(preloadRoutes.agora, 'agora')}
-                      >
-                        Agora
-                      </Link>
-                      <Link 
-                        to="/akazi" 
-                        className={cn(
-                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                          location.pathname.startsWith("/akazi") ? "text-primary" : "text-foreground/70"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {t('nav.akazi')}
-                      </Link>
-                      <Link 
-                        to="/compose" 
-                        className={cn(
-                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                          location.pathname === "/compose" ? "text-primary" : "text-foreground/70"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        Compose
-                      </Link>
-                      <Link 
-                        to="/about" 
-                        className={cn(
-                          "py-4 text-[22px] font-normal transition-colors hover:text-primary w-full text-left",
-                          location.pathname === "/about" ? "text-primary" : "text-foreground/70"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {t('nav.about')}
-                      </Link>
-                      {/* Auth Buttons (Mobile) */}
-                      <div className="w-full flex flex-col space-y-2 mt-2">
+                    {/* Scrollable navigation content */}
+                    <div className="flex-1 overflow-y-auto">
+                      <nav className="flex flex-col px-4 py-6 space-y-1">
+                        <Link 
+                          to="/"
+                          className={cn(
+                            "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent",
+                            location.pathname === "/" ? "text-primary bg-accent/50" : "text-foreground/70"
+                          )}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {t('nav.home')}
+                        </Link>
+                        <div className="w-full">
+                          <HeaderLibraryLink isMobile={true} closeMobileMenu={() => setIsMobileMenuOpen(false)} />
+                        </div>
+                        <Link 
+                          to="/agora" 
+                          className={cn(
+                            "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent",
+                            location.pathname.startsWith("/agora") ? "text-primary bg-accent/50" : "text-foreground/70"
+                          )}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          onMouseEnter={() => preloadComponent(preloadRoutes.agora, 'agora')}
+                        >
+                          Agora
+                        </Link>
+                        <Link 
+                          to="/akazi" 
+                          className={cn(
+                            "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent",
+                            location.pathname.startsWith("/akazi") ? "text-primary bg-accent/50" : "text-foreground/70"
+                          )}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {t('nav.akazi')}
+                        </Link>
+                        <Link 
+                          to="/compose" 
+                          className={cn(
+                            "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent",
+                            location.pathname === "/compose" ? "text-primary bg-accent/50" : "text-foreground/70"
+                          )}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Compose
+                        </Link>
+                        <Link 
+                          to="/about" 
+                          className={cn(
+                            "py-3 px-3 text-lg font-medium transition-colors hover:text-primary w-full text-left rounded-lg hover:bg-accent",
+                            location.pathname === "/about" ? "text-primary bg-accent/50" : "text-foreground/70"
+                          )}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {t('nav.about')}
+                        </Link>
+                      </nav>
+                      
+                      {/* Auth section - fixed at bottom */}
+                      <div className="border-t border-border/50 p-4 bg-accent/5">
                         <AuthButtons isMobile />
                       </div>
-                    </nav>
+                    </div>
                   </div>
                 </CustomSheetContent>
               </Sheet>

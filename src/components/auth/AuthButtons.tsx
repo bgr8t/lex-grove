@@ -90,62 +90,63 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
     if (isMobile) {
       // Mobile view
       return (
-        <div className="py-4 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar>
-                  <AvatarFallback>{getUserInitials()}</AvatarFallback>
-                </Avatar>
-                {membershipStatus === 'premium' && (
-                  <span className="absolute -top-1 -right-1 text-yellow-500">
-                    <Star className="h-4 w-4 fill-yellow-500" />
-                  </span>
-                )}
-                {membershipStatus === 'contributor' && (
-                  <span className="absolute -top-1 -right-1 bg-green-500 rounded-full w-3 h-3 border-2 border-background" />
-                )}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">
-                  {currentUser.displayName || currentUser.email}
+        <div className="py-4 flex flex-col space-y-4">
+          {/* User info section */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Avatar>
+                <AvatarFallback>{getUserInitials()}</AvatarFallback>
+              </Avatar>
+              {membershipStatus === 'premium' && (
+                <span className="absolute -top-1 -right-1 text-yellow-500">
+                  <Star className="h-4 w-4 fill-yellow-500" />
                 </span>
-              </div>
+              )}
+              {membershipStatus === 'contributor' && (
+                <span className="absolute -top-1 -right-1 bg-green-500 rounded-full w-3 h-3 border-2 border-background" />
+              )}
             </div>
-            <div className="flex gap-2">
-              <Link to="/my-library">
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  className="min-w-[48px]"
-                >
-                  My Library
-                </Button>
-              </Link>
-              <Link to="/agora/dashboard">
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  className="min-w-[48px]"
-                >
-                  Dashboard
-                </Button>
-              </Link>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-medium truncate">
+                {currentUser.displayName || currentUser.email}
+              </span>
+            </div>
+          </div>
+          
+          {/* Buttons section - stacked for better mobile UX */}
+          <div className="flex flex-col gap-2 w-full">
+            <Link to="/my-library" className="w-full">
               <Button 
-                variant="destructive" 
+                variant="secondary" 
                 size="sm"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="min-w-[48px]"
+                className="w-full justify-center"
               >
-                {isLoggingOut ? 'Logging out...' : 'Sign out'}
+                My Library
               </Button>
-            </div>
+            </Link>
+            <Link to="/agora/dashboard" className="w-full">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                className="w-full justify-center"
+              >
+                Dashboard
+              </Button>
+            </Link>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full justify-center"
+            >
+              {isLoggingOut ? 'Logging out...' : 'Sign out'}
+            </Button>
           </div>
           
           {/* Show contribution status on mobile */}
           {contributionStatus && (
-            <div className="mt-3 p-3 bg-background rounded-lg border border-border">
+            <div className="p-3 bg-background rounded-lg border border-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Contribution Status</span>
                 {membershipStatus === 'premium' && (
