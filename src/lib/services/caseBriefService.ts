@@ -18,6 +18,14 @@ class CaseBriefService extends FirestoreService<CaseBrief> {
     });
   }
 
+  // Get limited case briefs for a user (optimized for sidebar/preview display)
+  async getUserBriefsPreview(userId: string, limitCount: number = 10): Promise<CaseBrief[]> {
+    return this.query([{ field: 'userId', operator: '==', value: userId }], {
+      field: 'createdAt',
+      direction: 'desc'
+    }, limitCount);
+  }
+
   // Get all community briefs
   async getAllCommunityBriefs(limit = 20): Promise<CaseBrief[]> {
     return this.query([], {

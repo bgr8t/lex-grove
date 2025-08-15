@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { userProfileService } from '@/lib/services/userProfileService';
 import { caseBriefService } from '@/lib/services/caseBriefService';
 import { ContributionProgress } from '@/components/ContributionProgress';
+import { UserBriefsSection } from '@/components/UserBriefsSection';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { auth } from '@/lib/firebase';
@@ -345,7 +346,7 @@ export default function CreateBrief() {
                   <div className="flex-1">
                     <h1 className="text-2xl md:text-3xl font-bold mb-2">Create Case Brief</h1>
                     <p className="text-muted-foreground text-sm md:text-base">
-                      Create a comprehensive case brief using the IRAC method
+                      Create a comprehensive case brief using the IRAC method or upload a PDF for AI assistance
                     </p>
                   </div>
                 </div>
@@ -383,6 +384,8 @@ export default function CreateBrief() {
                         <CardTitle className="text-xl">Basic Information</CardTitle>
                         <CardDescription>
                           Essential case details
+                          <br />
+                          <span className="text-primary text-xs font-medium">💡 Tip: Upload a PDF case to auto-fill IRAC fields with AI</span>
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
@@ -400,10 +403,10 @@ export default function CreateBrief() {
                           onClick={handlePdfUpload}
                           disabled={processingStatus.status.isProcessing || isSubmitting}
                           className="h-10"
-                          aria-label="Upload case PDF to auto-fill fields"
+                          aria-label="Upload case PDF for AI auto-fill of IRAC fields"
                         >
                           <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                          {processingStatus.status.isProcessing ? 'Processing...' : 'Upload PDF'}
+                          {processingStatus.status.isProcessing ? 'AI Processing...' : 'AI Upload'}
                         </Button>
                       </div>
                     </CardHeader>
@@ -620,19 +623,19 @@ export default function CreateBrief() {
             {/* Progress sidebar */}
             <div className="lg:block">
               <div className="lg:sticky lg:top-36">
-                {/* Contribution Progress - shown in sidebar on desktop, above form on mobile */}
+                {/* User Case Briefs - shown in sidebar on desktop, above form on mobile */}
                 <Card className="mb-6 lg:mb-0 shadow-lg bg-card/50 backdrop-blur-sm">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <SparklesIcon className="h-5 w-5 text-primary" />
-                      Your Progress
+                      <DocumentTextIcon className="h-5 w-5 text-primary" />
+                      Your Case Briefs
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      Contribute 3 case briefs to gain full library access
+                      Quick access to your created case briefs
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ContributionProgress />
+                    <UserBriefsSection />
                   </CardContent>
                 </Card>
               </div>

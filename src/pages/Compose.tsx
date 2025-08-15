@@ -12,7 +12,8 @@ import {
   ClockIcon,
   SparklesIcon,
   ArrowRightIcon,
-  DocumentCheckIcon
+  DocumentCheckIcon,
+  ScaleIcon
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +45,15 @@ const composeTools: ComposeTool[] = [
     status: 'available',
     route: '/compose/proofreading',
     features: ['Grammar correction', 'Spelling fixes', 'Meaning preservation', 'Legal term protection']
+  },
+  {
+    id: 'case-briefs',
+    title: 'Case Briefs',
+    description: 'Create comprehensive case briefs using the IRAC method with PDF upload and cataloging',
+    icon: ScaleIcon,
+    status: 'available',
+    route: '/create-brief',
+    features: ['IRAC method', 'PDF upload', 'Case cataloging', 'Community sharing']
   },
   {
     id: 'document-generator',

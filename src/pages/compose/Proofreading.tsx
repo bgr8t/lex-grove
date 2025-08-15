@@ -144,18 +144,19 @@ export default function Proofreading() {
     <div className="flex flex-col min-h-screen bg-muted/40">
       <Header />
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 mt-16 md:mt-32">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+                {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/compose')}
-            className="gap-2"
+            className="gap-2 self-start"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             Back to Compose Tools
           </Button>
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="hidden sm:block h-6" />
+          <Separator orientation="horizontal" className="sm:hidden" />
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 text-primary rounded-lg">
               <DocumentCheckIcon className="h-6 w-6" />
