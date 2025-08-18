@@ -9,6 +9,7 @@ export interface EmailDraft extends DocumentData {
   preferences: {
     tone: 'friendly' | 'formal' | 'professional' | 'casual';
     length: 'short' | 'medium' | 'long';
+    language: 'en' | 'fr';
     role: string;
     organization: string;
     signature: string;

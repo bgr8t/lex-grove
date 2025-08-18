@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowLeftIcon, DocumentCheckIcon, SparklesIcon, ClipboardDocumentIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, DocumentCheckIcon, SparklesIcon, ClipboardDocumentIcon, ShieldCheckIcon, LanguageIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/contexts/AuthContext';
 import { proofreadingService } from '@/lib/services/proofreadingService';
@@ -17,6 +17,7 @@ import { ProofreadingDraft, ProofreadingCorrection } from '@/lib/models/proofrea
 import { cn } from '@/lib/utils';
 
 type DocumentType = 'course-notes' | 'case-brief' | 'legal-memo' | 'statute-analysis' | 'other';
+type OutputLanguage = 'en' | 'fr';
 
 export default function Proofreading() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export default function Proofreading() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [documentType, setDocumentType] = useState<DocumentType>('course-notes');
+  const [outputLanguage, setOutputLanguage] = useState<OutputLanguage>('en');
 
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string): string => {
@@ -71,7 +73,8 @@ export default function Proofreading() {
 
       const result = await proofreadingService.generateProofreadingCorrections(
         sanitizedText,
-        documentType
+        documentType,
+        outputLanguage
       );
 
       setCorrectedText(result.correctedText);
@@ -256,24 +259,59 @@ export default function Proofreading() {
                   </p>
                 </div>
 
-                <Button
-                  onClick={handleProofread}
-                  disabled={isLoading || !originalText.trim()}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Proofreading...
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon className="h-5 w-5" />
-                      Proofread My Notes
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  {/* Main Proofread Button - 90% width */}
+                  <Button
+                    onClick={handleProofread}
+                    disabled={isLoading || !originalText.trim()}
+                    className="flex-1 gap-2"
+                    size="lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Proofreading...
+                      </>
+                    ) : (
+                      <>
+                        <SparklesIcon className="h-5 w-5" />
+                        Proofread My Notes
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Language Toggle - 10% width */}
+                  <Select 
+                    value={outputLanguage}
+                    onValueChange={(value: OutputLanguage) => setOutputLanguage(value)}
+                  >
+                    <SelectTrigger className="w-16 h-11 p-0 border-2 border-primary/20 hover:border-primary/40 transition-colors">
+                      <div className="flex items-center justify-center w-full">
+                        <span className="text-xs font-medium text-primary">
+                          {outputLanguage.toUpperCase()}
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      <SelectItem value="en">
+                        <div className="flex items-center gap-2">
+                          <LanguageIcon className="h-4 w-4" />
+                          English
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="fr">
+                        <div className="flex items-center gap-2">
+                          <LanguageIcon className="h-4 w-4" />
+                          Français
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-2">
+                  AI will output corrections in {outputLanguage === 'en' ? 'English' : 'French'}
+                </p>
               </CardContent>
             </Card>
           </div>

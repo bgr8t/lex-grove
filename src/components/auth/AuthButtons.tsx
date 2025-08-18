@@ -245,38 +245,46 @@ export function AuthButtons({ isMobile = false }: { isMobile?: boolean }) {
 
   // User is not logged in, show login/signup buttons
   if (isMobile) {
-    // Mobile view
+    // Mobile view - improved spacing and hierarchy
     return (
-      <>
-        <Link 
-          to="/login" 
-          className="py-4 text-[22px] font-normal transition-colors hover:text-primary"
-        >
-          Sign In
+      <div className="flex flex-col space-y-3">
+        <Link to="/login" className="w-full">
+          <Button 
+            variant="ghost" 
+            className="w-full text-lg font-medium py-3 px-4 transition-all duration-200 hover:bg-accent hover:text-accent-foreground"
+          >
+            Sign In
+          </Button>
         </Link>
-        <Link 
-          to="/register" 
-          className="py-4 text-[22px] font-normal transition-colors hover:text-primary"
-        >
-          Sign Up
+        <Link to="/register" className="w-full">
+          <Button 
+            className="w-full bg-primary hover:bg-primary/90 text-lg font-medium py-3 px-4 transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            Sign Up
+          </Button>
         </Link>
-      </>
+      </div>
     );
   }
 
-  // Desktop view
+  // Desktop view - improved layout with better spacing and visual hierarchy
   return (
-    <>
+    <div className="flex items-center space-x-4">
       <Link to="/login">
-        <Button variant="ghost" className="text-sm px-4 transition-all duration-200 hover:bg-accent mr-3">
+        <Button 
+          variant="ghost" 
+          className="text-sm font-medium px-6 py-2 transition-all duration-200 hover:bg-accent hover:text-accent-foreground"
+        >
           Sign In
         </Button>
       </Link>
       <Link to="/register">
-        <Button className="bg-primary hover:bg-primary/90 text-sm px-4 transition-all duration-200">
+        <Button 
+          className="bg-primary hover:bg-primary/90 text-sm font-medium px-6 py-2 transition-all duration-200 shadow-sm hover:shadow-md"
+        >
           Sign Up
         </Button>
       </Link>
-    </>
+    </div>
   );
 } 

@@ -50,6 +50,7 @@ const CreateBrief = lazy(() => import('@/pages/CreateBrief'));
 const Compose = lazy(() => import('@/pages/Compose'));
 const EmailDraft = lazy(() => import('@/pages/compose/EmailDraft'));
 const Proofreading = lazy(() => import('@/pages/compose/Proofreading'));
+const ContentAnalyzer = lazy(() => import('@/pages/compose/ContentAnalyzer'));
 const ComingSoon = lazy(() => import('@/pages/compose/ComingSoon'));
 
 function App() {
@@ -115,6 +116,18 @@ function App() {
                       </EmailVerificationGuard>
                     </ProtectedRoute>
                   } 
+                />
+
+                                {/* Quick Summary Tool */}
+                <Route 
+                  path="/compose/quick-summary"
+                  element={
+                    <ProtectedRoute requireAuth={true}>
+                      <EmailVerificationGuard>
+                        <ContentAnalyzer />
+                      </EmailVerificationGuard>
+                    </ProtectedRoute>
+                  }
                 />
 
                 {/* Coming Soon Tools */}

@@ -19,6 +19,7 @@ const PrivacyTab = React.lazy(() => import('@/components/email-suite/PrivacyTab'
 export interface EmailPreferences {
   tone: 'friendly' | 'formal' | 'professional' | 'casual';
   length: 'short' | 'medium' | 'long';
+  language: 'en' | 'fr';
   role: string;
   organization: string;
   signature: string;
@@ -587,6 +588,7 @@ Generate only the email content without any additional commentary or explanation
                   error={error}
                   preferences={preferences}
                   privacyPreferences={privacyPreferences}
+                  onPreferencesChange={handlePreferencesChange}
                 />
               </TabsContent>
               <TabsContent value="privacy">

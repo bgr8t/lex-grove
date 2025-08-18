@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { SparklesIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { SparklesIcon, EnvelopeIcon, GlobeAltIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import GeneratedDraftsList from '@/components/email-suite/GeneratedDraftsList';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/components/ui/use-toast";
@@ -22,9 +24,37 @@ interface ComposeTabProps {
   error: string | null;
   preferences: EmailPreferences;
   privacyPreferences: PrivacyPreferences;
+  onPreferencesChange: (preferences: EmailPreferences) => void;
+  // History panel props
+  drafts?: Draft[];
+  selectedDraftId?: string | null;
+  onSelectDraft?: (id: string) => void;
+  onDeleteDraft?: (id: string) => void;
+  draftsLoading?: boolean;
+  draftsError?: string | null;
+  isHistoryOpen?: boolean;
+  setIsHistoryOpen?: (open: boolean) => void;
 }
 
-export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenerateDraft, isLoading, error, preferences, privacyPreferences }: ComposeTabProps) {
+export default function ComposeTab({ 
+  selectedDraft, 
+  selectedEmailDraft, 
+  onGenerateDraft, 
+  isLoading, 
+  error, 
+  preferences, 
+  privacyPreferences, 
+  onPreferencesChange,
+  // History props
+  drafts = [],
+  selectedDraftId,
+  onSelectDraft,
+  onDeleteDraft,
+  draftsLoading = false,
+  draftsError,
+  isHistoryOpen = false,
+  setIsHistoryOpen
+}: ComposeTabProps) {
   const [context, setContext] = useState('');
   const [instructions, setInstructions] = useState('');
   const { toast } = useToast();
@@ -70,6 +100,14 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
   const handleInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = validateAndSanitizeInput(e.target.value);
     setInstructions(value);
+  };
+
+  // Handle language preference changes
+  const handleLanguageChange = (language: 'en' | 'fr') => {
+    onPreferencesChange({
+      ...preferences,
+      language
+    });
   };
 
   // Function to extract subject and body from draft content with proper validation
@@ -233,9 +271,50 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
       <div className="w-full md:w-[45%] space-y-4">
         <Card>
           <CardContent className="p-4 space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">Compose Your Email</h3>
-              <p className="text-sm text-muted-foreground">Fill in the details below to generate a new draft.</p>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-medium">Compose Your Email</h3>
+                <p className="text-sm text-muted-foreground">Fill in the details below to generate a new draft.</p>
+              </div>
+              
+              {/* History Button - shows in mobile/all views */}
+              {setIsHistoryOpen && onSelectDraft && onDeleteDraft && (
+                <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                  <SheetTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-2 hover:bg-primary/10 shrink-0"
+                    >
+                      <ClockIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">History</span>
+                      {drafts.length > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs px-1.5">
+                          {drafts.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-80 sm:w-96">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-2">
+                        <ClockIcon className="h-5 w-5" />
+                        Draft History
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <GeneratedDraftsList 
+                        drafts={drafts}
+                        selectedDraftId={selectedDraftId}
+                        onSelectDraft={onSelectDraft}
+                        onDeleteDraft={onDeleteDraft}
+                        isLoading={draftsLoading}
+                        error={draftsError}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
             </div>
 
             {/* Current Preferences Display */}
@@ -295,24 +374,73 @@ export default function ComposeTab({ selectedDraft, selectedEmailDraft, onGenera
               </div>
             </div>
 
-            <Button 
-              size="lg" 
-              className="w-full gap-2" 
-              onClick={handleGenerateClick} 
-              disabled={isLoading || !context.trim()}
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <SparklesIcon className="h-5 w-5" /> 
-                  Generate Draft
-                </>
-              )}
-            </Button>
+            {/* Generate Button Row with Language Toggle - 90/10 split */}
+            <div className="flex gap-2">
+              {/* Generate Draft Button - 90% width */}
+              <Button 
+                size="lg" 
+                className="flex-1 gap-2" 
+                onClick={handleGenerateClick} 
+                disabled={isLoading || !context.trim()}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="h-5 w-5" /> 
+                    Generate Draft
+                  </>
+                )}
+              </Button>
+
+              {/* Language Toggle - 10% width */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="px-3 gap-1 min-w-fit"
+                    disabled={isLoading}
+                    title={`Language: ${preferences.language === 'fr' ? 'Français' : 'English'}`}
+                  >
+                    <GlobeAltIcon className="h-4 w-4" />
+                    <span className="text-sm font-medium">
+                      {preferences.language === 'fr' ? '🇫🇷' : '🇺🇸'}
+                    </span>
+                    <ChevronDownIcon className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuItem
+                    onClick={() => handleLanguageChange('en')}
+                    className={`flex items-center gap-2 ${
+                      preferences.language === 'en' ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <span>🇺🇸</span>
+                    <span className="text-sm">English</span>
+                    {preferences.language === 'en' && (
+                      <span className="ml-auto text-xs text-primary">✓</span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleLanguageChange('fr')}
+                    className={`flex items-center gap-2 ${
+                      preferences.language === 'fr' ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <span>🇫🇷</span>
+                    <span className="text-sm">Français</span>
+                    {preferences.language === 'fr' && (
+                      <span className="ml-auto text-xs text-primary">✓</span>
+                    )}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">

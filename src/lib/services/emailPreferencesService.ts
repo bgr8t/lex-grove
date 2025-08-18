@@ -6,6 +6,7 @@ import { db } from '../firebase';
 export interface EmailPreferences {
   tone: 'friendly' | 'formal' | 'professional' | 'casual';
   length: 'short' | 'medium' | 'long';
+  language: 'en' | 'fr';
   role: string;
   organization: string;
   signature: string;
@@ -128,9 +129,13 @@ class EmailPreferencesService extends FirestoreService<UserEmailPreferences> {
 
   // Get default preferences for new users (empty values, not hardcoded names)
   getDefaultEmailPreferences(): EmailPreferences {
+    // Get user's current language from localStorage or default to English
+    const currentLanguage = (localStorage.getItem('language') as 'en' | 'fr') || 'en';
+    
     return {
       tone: 'professional',
       length: 'medium',
+      language: currentLanguage,
       role: '',
       organization: '',
       signature: ''

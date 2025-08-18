@@ -196,6 +196,7 @@ class EmailDraftService extends FirestoreService<EmailDraft> {
       preferences: {
         tone: draft.preferences.tone,
         length: draft.preferences.length,
+        language: draft.preferences.language || 'en',
         role: (draft.preferences.role || '').trim().slice(0, 100),
         organization: (draft.preferences.organization || '').trim().slice(0, 100),
         signature: (draft.preferences.signature || '').trim().slice(0, 200)

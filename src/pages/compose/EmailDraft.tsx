@@ -10,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from "@/components/ui/use-toast";
 import { Cog8ToothIcon, PencilSquareIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { Draft } from '@/lib/models/draft';
-import GeneratedDraftsList from '@/components/email-suite/GeneratedDraftsList';
 import { emailPreferencesService } from '@/lib/services/emailPreferencesService';
 import { useAuth } from '@/contexts/AuthContext';
 import { emailDraftService } from '@/lib/services/emailDraftService';
@@ -25,6 +24,7 @@ const PrivacyTab = React.lazy(() => import('@/components/email-suite/PrivacyTab'
 export interface EmailPreferences {
   tone: 'friendly' | 'formal' | 'professional' | 'casual';
   length: 'short' | 'medium' | 'long';
+  language: 'en' | 'fr';
   role: string;
   organization: string;
   signature: string;
@@ -52,6 +52,9 @@ export default function EmailDraftTool() {
   const [draftsError, setDraftsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('compose');
+
+  // History panel state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Preferences state
   const [preferences, setPreferences] = useState<EmailPreferences>(
@@ -197,6 +200,7 @@ export default function EmailDraftTool() {
       const sanitizedPreferences = {
         tone: preferences.tone,
         length: preferences.length,
+        language: preferences.language,
         role: validateAndSanitizeInput(preferences.role),
         organization: validateAndSanitizeInput(preferences.organization),
         signature: validateAndSanitizeInput(preferences.signature)
@@ -204,6 +208,9 @@ export default function EmailDraftTool() {
 
       // Build enhanced prompt with preferences, privacy, and security considerations
       const privacyInstructions = buildPrivacyInstructions(privacyPreferences);
+      
+      // Get the language name for the prompt
+      const languageName = sanitizedPreferences.language === 'fr' ? 'French' : 'English';
       
       const prompt = `You are an expert email assistant. Generate a professional email draft based on the following details:
 
@@ -213,6 +220,7 @@ export default function EmailDraftTool() {
 **Style Guidelines:**
 - Tone: ${sanitizedPreferences.tone}
 - Length: ${sanitizedPreferences.length}
+- Language: Write the entire email in ${languageName}
 - Writer's Role: ${sanitizedPreferences.role}
 - Organization: ${sanitizedPreferences.organization}
 
@@ -223,6 +231,7 @@ ${privacyInstructions}
 - Use a ${sanitizedPreferences.tone} tone throughout the email
 - Keep the email ${sanitizedPreferences.length} in length (short: 1-2 paragraphs, medium: 3-4 paragraphs, long: 5+ paragraphs)
 - Write as a ${sanitizedPreferences.role} from ${sanitizedPreferences.organization}
+- Write the ENTIRE email in ${languageName} language, including all text, greetings, and closings
 - Include the signature: "${sanitizedPreferences.signature}" at the end
 - Ensure the email is professional and appropriate for legal communication
 - Do not include any harmful, inappropriate, or unprofessional content
@@ -284,6 +293,7 @@ Generate only the email content without any additional commentary or explanation
               preferences: {
                 tone: preferences.tone,
                 length: preferences.length,
+                language: preferences.language,
                 role: preferences.role,
                 organization: preferences.organization,
                 signature: preferences.signature
@@ -416,6 +426,8 @@ Generate only the email content without any additional commentary or explanation
   // Handle draft selection
   const handleSelectDraft = (draftId: string) => {
     setSelectedDraftId(draftId);
+    // Close history panel when draft is selected
+    setIsHistoryOpen(false);
   };
 
   // Handle draft deletion
@@ -482,9 +494,6 @@ Generate only the email content without any additional commentary or explanation
               <h1 className="text-3xl font-bold">Email Draft</h1>
               <p className="text-muted-foreground">AI-powered email composition with customizable tone and privacy settings</p>
             </div>
-            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-              Available
-            </Badge>
           </div>
         </div>
 
@@ -511,7 +520,7 @@ Generate only the email content without any additional commentary or explanation
             </TabsList>
           </div>
 
-          {/* Right Column: Tab Content */}
+          {/* Tab Content - Now expands to full available width */}
           <div className="flex-1 min-w-0 order-2 md:order-none">
             <React.Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
               <TabsContent value="preferences">
@@ -531,6 +540,16 @@ Generate only the email content without any additional commentary or explanation
                   error={error}
                   preferences={preferences}
                   privacyPreferences={privacyPreferences}
+                  onPreferencesChange={handlePreferencesChange}
+                  // History props
+                  drafts={drafts}
+                  selectedDraftId={selectedDraftId}
+                  onSelectDraft={handleSelectDraft}
+                  onDeleteDraft={handleDeleteDraft}
+                  draftsLoading={draftsLoading}
+                  draftsError={draftsError}
+                  isHistoryOpen={isHistoryOpen}
+                  setIsHistoryOpen={setIsHistoryOpen}
                 />
               </TabsContent>
               <TabsContent value="privacy">
@@ -540,18 +559,6 @@ Generate only the email content without any additional commentary or explanation
                 />
               </TabsContent>
             </React.Suspense>
-          </div>
-
-          {/* History Section */}
-          <div className="w-full md:w-48 shrink-0 order-3 md:order-none mt-8 md:mt-0">
-            <GeneratedDraftsList 
-              drafts={drafts}
-              selectedDraftId={selectedDraftId}
-              onSelectDraft={handleSelectDraft}
-              onDeleteDraft={handleDeleteDraft}
-              isLoading={draftsLoading}
-              error={draftsError}
-            />
           </div>
           
         </Tabs>

@@ -74,13 +74,13 @@ const composeTools: ComposeTool[] = [
     features: ['Real-time chat', 'Context memory', 'Quick actions', 'Voice input']
   },
   {
-    id: 'content-analyzer',
-    title: 'Content Analyzer',
-    description: 'Analyze and improve your written content for clarity and impact',
-    icon: DocumentMagnifyingGlassIcon,
-    status: 'coming-soon',
-    route: '/compose/content-analyzer',
-    features: ['Readability score', 'Tone analysis', 'Grammar check', 'Style suggestions']
+    id: 'quick-summary',
+    title: 'Quick Summary',
+    description: 'Get key points and actionable insights from legal documents quickly',
+    icon: SparklesIcon,
+    status: 'available',
+    route: '/compose/quick-summary',
+    features: ['Key points extraction', 'Action items', 'Quick insights', 'Content analysis']
   },
   {
     id: 'meeting-notes',

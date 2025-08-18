@@ -127,7 +127,8 @@ class ProofreadingService extends FirestoreService<ProofreadingDraft> {
    */
   async generateProofreadingCorrections(
     originalText: string,
-    documentType: string
+    documentType: string,
+    outputLanguage: 'en' | 'fr' = 'en'
   ): Promise<{
     correctedText: string;
     corrections: any[];
@@ -167,9 +168,15 @@ class ProofreadingService extends FirestoreService<ProofreadingDraft> {
     }
 
     try {
+      // Language-specific prompts
+      const languageInstructions = outputLanguage === 'fr' 
+        ? 'Vous devez répondre en français. Corrigez le texte en français tout en préservant le sens juridique exact.'
+        : 'You must respond in English. Correct the text in English while preserving the exact legal meaning.';
 
       // Conservative legal proofreading system prompt
       const systemPrompt = `You are a hyper-conservative legal proofreading assistant 🧐. Your sole function is to correct grammar, spelling, punctuation, and syntax in legal course notes. Your absolute, non-negotiable priority is the 100% preservation of the original legal meaning and substance.
+
+${languageInstructions}
 
 You must operate under a "do no harm" principle regarding the content.
 
@@ -199,11 +206,12 @@ Please return ONLY the corrected text with minimal changes, preserving 100% of t
       const prompt = `${systemPrompt}
 
 Document Type: ${documentType}
+Output Language: ${outputLanguage === 'fr' ? 'French' : 'English'}
 
 Original Legal Text:
 "${originalText.trim()}"
 
-Please proofread this legal document following the conservative principles outlined above. Return only the corrected text with minimal changes that preserve all legal meaning.`;
+Please proofread this legal document following the conservative principles outlined above. Return only the corrected text with minimal changes that preserve all legal meaning. Respond in ${outputLanguage === 'fr' ? 'French' : 'English'}.`;
 
       try {
         const result = await model.generateContent(prompt);
