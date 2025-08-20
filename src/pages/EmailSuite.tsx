@@ -441,8 +441,19 @@ Generate only the email content without any additional commentary or explanation
     setIsSavingPreferences(true);
     
     try {
+      // Save preferences to Firestore
       await emailPreferencesService.updateEmailPreferences(newPreferences);
-      setPreferences(newPreferences); // Update local state with saved values
+      
+      // Reload preferences from Firestore to ensure UI reflects actual saved state
+      const savedPreferences = await emailPreferencesService.getCurrentUserPreferences();
+      if (savedPreferences) {
+        setPreferences(savedPreferences.emailPreferences);
+        setPrivacyPreferences(savedPreferences.privacyPreferences);
+      } else {
+        // Fallback to the preferences we tried to save if re-fetch fails
+        setPreferences(newPreferences);
+      }
+      
       toast({
         title: "Success",
         description: "Email preferences saved successfully",
@@ -589,6 +600,13 @@ Generate only the email content without any additional commentary or explanation
                   preferences={preferences}
                   privacyPreferences={privacyPreferences}
                   onPreferencesChange={handlePreferencesChange}
+                  onSavePreferences={handleSavePreferences}
+                  drafts={drafts}
+                  selectedDraftId={selectedDraftId}
+                  onSelectDraft={handleSelectDraft}
+                  onDeleteDraft={handleDeleteDraft}
+                  draftsLoading={draftsLoading}
+                  draftsError={draftsError}
                 />
               </TabsContent>
               <TabsContent value="privacy">

@@ -212,32 +212,46 @@ export default function EmailDraftTool() {
       // Get the language name for the prompt
       const languageName = sanitizedPreferences.language === 'fr' ? 'French' : 'English';
       
-      const prompt = `You are an expert email assistant. Generate a professional email draft based on the following details:
+      const prompt = `You are an expert email assistant. Your task is to write a RESPONSE to an email that someone sent to you.
 
-**Context:** ${sanitizedContext}
-**Instructions:** ${sanitizedInstructions}
+**THE EMAIL YOU RECEIVED (Email Context):**
+${sanitizedContext}
 
-**Style Guidelines:**
+**HOW YOU WANT TO RESPOND (Instructions):**
+${sanitizedInstructions || 'Write a polite and professional response to the email above.'}
+
+**YOUR TASK:**
+Read the email you received above, then write a RESPONSE email that follows the instructions. You are NOT writing a similar email - you are RESPONDING to the email that was sent to you.
+
+**CRITICAL UNDERSTANDING:**
+- The "Email Context" above is an email that was SENT TO YOU
+- You need to write a REPLY/RESPONSE to that email
+- Follow the response instructions to determine your approach (polite, firm, etc.)
+- Do NOT copy or imitate the received email - RESPOND to it appropriately
+
+**WRITING STYLE:**
 - Tone: ${sanitizedPreferences.tone}
-- Length: ${sanitizedPreferences.length}
-- Language: Write the entire email in ${languageName}
-- Writer's Role: ${sanitizedPreferences.role}
-- Organization: ${sanitizedPreferences.organization}
+- Length: ${sanitizedPreferences.length} (short: 1-2 paragraphs, medium: 3-4 paragraphs, long: 5+ paragraphs)
+- Language: Write the ENTIRE response in ${languageName}, including all text, greetings, and closings
+- Role: Write as a ${sanitizedPreferences.role}${sanitizedPreferences.organization ? ` from ${sanitizedPreferences.organization}` : ''}
 
-**Privacy & Security Requirements:**
+**PRIVACY & SECURITY REQUIREMENTS:**
 ${privacyInstructions}
 
-**Additional Requirements:**
-- Use a ${sanitizedPreferences.tone} tone throughout the email
-- Keep the email ${sanitizedPreferences.length} in length (short: 1-2 paragraphs, medium: 3-4 paragraphs, long: 5+ paragraphs)
-- Write as a ${sanitizedPreferences.role} from ${sanitizedPreferences.organization}
-- Write the ENTIRE email in ${languageName} language, including all text, greetings, and closings
-- Include the signature: "${sanitizedPreferences.signature}" at the end
-- Ensure the email is professional and appropriate for legal communication
+**FORMATTING REQUIREMENTS:**
+- Include "Subject: [appropriate subject line]" at the beginning
+- Write your response email addressing the email you received appropriately
+- End with the signature: "${sanitizedPreferences.signature}"
+- Ensure the email is professional and appropriate for legal/business communication
 - Do not include any harmful, inappropriate, or unprofessional content
-- Focus on clear, concise, and respectful communication
 
-Generate only the email content without any additional commentary or explanations.`;
+**EXAMPLE UNDERSTANDING:**
+If you received: "I'm sorry but I can't help you"
+And instructions say: "Respond politely to this refusal"
+You should write: "Thank you for letting me know. I understand your position..."
+NOT: "I'm sorry but I can't help someone else"
+
+Generate only the response email content (starting with Subject:) without any additional commentary or explanations.`;
       
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -366,30 +380,53 @@ Generate only the email content without any additional commentary or explanation
     setPreferences(newPreferences);
   };
 
-  const handleSavePreferences = async () => {
+  const handleSavePreferences = async (newPreferences: EmailPreferences): Promise<void> => {
+    if (!newPreferences || typeof newPreferences !== 'object') {
+      toast({
+        title: "Error",
+        description: "Invalid preferences data",
+        variant: "destructive"
+      });
+      throw new Error("Invalid preferences data");
+    }
+    
     if (!currentUser) {
       toast({
-        title: "Warning",
-        description: "Please log in to save your preferences permanently",
+        title: "Error",
+        description: "Please log in to save your preferences",
         variant: "destructive"
       });
-      return;
+      throw new Error("User not authenticated");
     }
 
+    setIsSavingPreferences(true);
+    
     try {
-      setIsSavingPreferences(true);
-      await emailPreferencesService.updateEmailPreferences(preferences);
+      // Save preferences to Firestore
+      await emailPreferencesService.updateEmailPreferences(newPreferences);
+      
+      // Reload preferences from Firestore to ensure UI reflects actual saved state
+      const savedPreferences = await emailPreferencesService.getCurrentUserPreferences();
+      if (savedPreferences) {
+        setPreferences(savedPreferences.emailPreferences);
+        setPrivacyPreferences(savedPreferences.privacyPreferences);
+      } else {
+        // Fallback to the preferences we tried to save if re-fetch fails
+        setPreferences(newPreferences);
+      }
+      
       toast({
         title: "Success",
-        description: "Preferences saved successfully",
+        description: "Email preferences saved successfully",
       });
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      console.error('Error saving email preferences:', error);
       toast({
-        title: "Warning",
-        description: "Preferences updated locally but failed to sync to cloud. Changes may be lost on refresh.",
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
         variant: "destructive"
       });
+      throw error; // Re-throw to let the PreferencesTab handle it
     } finally {
       setIsSavingPreferences(false);
     }

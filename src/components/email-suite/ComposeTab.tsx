@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SparklesIcon, EnvelopeIcon, GlobeAltIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import GeneratedDraftsList from '@/components/email-suite/GeneratedDraftsList';
@@ -25,6 +26,7 @@ interface ComposeTabProps {
   preferences: EmailPreferences;
   privacyPreferences: PrivacyPreferences;
   onPreferencesChange: (preferences: EmailPreferences) => void;
+  onSavePreferences?: (preferences: EmailPreferences) => Promise<void>;
   // History panel props
   drafts?: Draft[];
   selectedDraftId?: string | null;
@@ -32,6 +34,7 @@ interface ComposeTabProps {
   onDeleteDraft?: (id: string) => void;
   draftsLoading?: boolean;
   draftsError?: string | null;
+
   isHistoryOpen?: boolean;
   setIsHistoryOpen?: (open: boolean) => void;
 }
@@ -45,6 +48,7 @@ export default function ComposeTab({
   preferences, 
   privacyPreferences, 
   onPreferencesChange,
+  onSavePreferences,
   // History props
   drafts = [],
   selectedDraftId,
@@ -55,17 +59,30 @@ export default function ComposeTab({
   isHistoryOpen = false,
   setIsHistoryOpen
 }: ComposeTabProps) {
-  const [context, setContext] = useState('');
-  const [instructions, setInstructions] = useState('');
+  
+  // Updated state for the 3 simplified inputs
+  const [emailAbout, setEmailAbout] = useState(''); // Question 1: What is the email about?
+  const [emailContent, setEmailContent] = useState(''); // Question 2: What do you want to say?
+  
+  // Local state for inline tone and length controls (Question 3: How to say it?)
+  const [localTone, setLocalTone] = useState<EmailPreferences['tone']>(preferences.tone);
+  const [localLength, setLocalLength] = useState<EmailPreferences['length']>(preferences.length);
+  
   const { toast } = useToast();
 
   // Update form when a draft is selected
   useEffect(() => {
     if (selectedEmailDraft) {
-      setContext(selectedEmailDraft.context);
-      setInstructions(selectedEmailDraft.instructions);
+      setEmailAbout(selectedEmailDraft.context);
+      setEmailContent(selectedEmailDraft.instructions);
     }
   }, [selectedEmailDraft]);
+
+  // Update local preferences when parent preferences change
+  useEffect(() => {
+    setLocalTone(preferences.tone);
+    setLocalLength(preferences.length);
+  }, [preferences.tone, preferences.length]);
 
   // Input validation and sanitization
   const validateAndSanitizeInput = (input: string, maxLength: number = 5000): string => {
@@ -77,10 +94,46 @@ export default function ComposeTab({
     return input.trim();
   };
 
-  const handleGenerateClick = () => {
+  const handleGenerateClick = async () => {
+    // Create updated preferences object
+    const updatedPreferences = {
+      ...preferences,
+      tone: localTone,
+      length: localLength
+    };
+
+    // Check if preferences have changed and save them if user is authenticated
+    const preferencesChanged = 
+      localTone !== preferences.tone || 
+      localLength !== preferences.length;
+
+    if (preferencesChanged && onSavePreferences) {
+      try {
+        // Save preferences to Firestore automatically
+        await onSavePreferences(updatedPreferences);
+        toast({
+          title: "Preferences Updated",
+          description: "Your tone and length preferences have been saved",
+          duration: 2000,
+        });
+      } catch (error) {
+        console.error('Error saving preferences:', error);
+        // Still continue with draft generation even if save fails
+        toast({
+          title: "Warning",
+          description: "Preferences updated locally but not saved to cloud",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    }
+
+    // Update parent preferences with local selections (for immediate use)
+    onPreferencesChange(updatedPreferences);
+
     // Validate and sanitize inputs before passing to parent
-    const sanitizedContext = sanitizeForSubmission(context);
-    const sanitizedInstructions = sanitizeForSubmission(instructions);
+    const sanitizedContext = sanitizeForSubmission(emailAbout);
+    const sanitizedInstructions = sanitizeForSubmission(emailContent);
     
     if (!sanitizedContext) {
       return; // Parent component will handle the error
@@ -92,22 +145,45 @@ export default function ComposeTab({
     });
   };
 
-  const handleContextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleEmailAboutChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = validateAndSanitizeInput(e.target.value);
-    setContext(value);
+    setEmailAbout(value);
   };
 
-  const handleInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleEmailContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = validateAndSanitizeInput(e.target.value);
-    setInstructions(value);
+    setEmailContent(value);
   };
 
   // Handle language preference changes
-  const handleLanguageChange = (language: 'en' | 'fr') => {
-    onPreferencesChange({
+  const handleLanguageChange = async (language: 'en' | 'fr') => {
+    const updatedPreferences = {
       ...preferences,
       language
-    });
+    };
+
+    // Save language change immediately if user is authenticated
+    if (onSavePreferences) {
+      try {
+        await onSavePreferences(updatedPreferences);
+        toast({
+          title: "Language Updated",
+          description: `Language changed to ${language === 'fr' ? 'Français' : 'English'}`,
+          duration: 2000,
+        });
+      } catch (error) {
+        console.error('Error saving language preference:', error);
+        toast({
+          title: "Warning",
+          description: "Language updated locally but not saved to cloud",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+    }
+
+    // Update parent preferences (for immediate use)
+    onPreferencesChange(updatedPreferences);
   };
 
   // Function to extract subject and body from draft content with proper validation
@@ -118,135 +194,77 @@ export default function ComposeTab({
 
     // Sanitize content to prevent any potential issues
     const sanitizedContent = content.trim();
-    
-    // Extract subject line (case-insensitive)
+
+    // Try to extract subject
     const subjectMatch = sanitizedContent.match(/Subject:\s*(.+?)(?:\n|$)/i);
-    const subject = subjectMatch ? subjectMatch[1].trim() : '';
+    const subject = subjectMatch?.[1]?.trim() || '';
     
-    // Remove the subject line and clean up the body
-    let body = sanitizedContent.replace(/Subject:\s*.+?(?:\n|$)/i, '').trim();
-    
-    // Additional sanitization for email body
-    body = body.replace(/[\r\n]{3,}/g, '\n\n'); // Normalize line breaks
+    // Extract body by removing subject line if present
+    let body = sanitizedContent;
+    if (subjectMatch) {
+      body = sanitizedContent.replace(/Subject:\s*.+?(?:\n|$)/i, '').trim();
+    }
     
     return { subject, body };
   };
 
-  // Function to open email client with pre-populated draft
-  const openEmailClient = () => {
+  // Email client handlers with proper validation and sanitization
+  const handleEmailClientOpen = (client: 'default' | 'gmail' | 'outlook') => {
     if (!selectedDraft?.content) {
       toast({
-        title: "Error",
-        description: "No draft content available to open in email client.",
+        title: "No Draft Available",
+        description: "Please generate a draft first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { subject, body } = extractEmailParts(selectedDraft.content);
+    
+    if (!body.trim()) {
+      toast({
+        title: "Invalid Draft",
+        description: "The draft appears to be empty or invalid.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const { subject, body } = extractEmailParts(selectedDraft.content);
+      let url = '';
+      const encodedSubject = encodeURIComponent(subject);
+      const encodedBody = encodeURIComponent(body);
       
-      // Validate extracted content
-      if (!body.trim()) {
-        toast({
-          title: "Warning",
-          description: "Draft appears to be empty. Opening email client anyway.",
-        });
-      }
-      
-      // Encode the subject and body for URL with proper length limits
-      const maxSubjectLength = 200; // Reasonable email subject limit
-      const maxBodyLength = 5000; // Reasonable email body limit for mailto
-      
-      const truncatedSubject = subject.slice(0, maxSubjectLength);
-      const truncatedBody = body.slice(0, maxBodyLength);
-      
-      const encodedSubject = encodeURIComponent(truncatedSubject);
-      const encodedBody = encodeURIComponent(truncatedBody);
-      
-      // Create mailto URL
-      const mailtoUrl = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
-      
-      // Validate mailto URL length (some email clients have limits)
-      if (mailtoUrl.length > 8000) {
-        toast({
-          title: "Warning", 
-          description: "Email content is very long and may be truncated by your email client.",
-        });
-      }
-      
-      // Open the email client
-      window.open(mailtoUrl, '_blank', 'noopener,noreferrer');
-      
-      toast({
-        title: "Success",
-        description: "Opening in your default email client...",
-      });
-      
-    } catch (error) {
-      console.error('Error opening email client:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open email client. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Utility function to create Gmail compose URL
-  const createGmailUrl = (subject: string, body: string): string => {
-    const encodedSubject = encodeURIComponent(subject.slice(0, 200));
-    const encodedBody = encodeURIComponent(body.slice(0, 5000));
-    return `https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=&su=${encodedSubject}&body=${encodedBody}`;
-  };
-
-  // Utility function to create Outlook compose URL
-  const createOutlookUrl = (subject: string, body: string): string => {
-    const encodedSubject = encodeURIComponent(subject.slice(0, 200));
-    const encodedBody = encodeURIComponent(body.slice(0, 5000));
-    return `https://outlook.live.com/mail/0/deeplink/compose?subject=${encodedSubject}&body=${encodedBody}`;
-  };
-
-  // Enhanced email client handler with provider selection
-  const handleEmailClientOpen = (provider: 'default' | 'gmail' | 'outlook') => {
-    if (!selectedDraft?.content) {
-      toast({
-        title: "Error",
-        description: "No draft content available to open in email client.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { subject, body } = extractEmailParts(selectedDraft.content);
-      
-      if (!body.trim()) {
-        toast({
-          title: "Warning",
-          description: "Draft appears to be empty. Opening email client anyway.",
-        });
-      }
-
-      let url: string;
-      let successMessage: string;
-
-      switch (provider) {
+      switch (client) {
         case 'gmail':
-          url = createGmailUrl(subject, body);
-          successMessage = "Opening Gmail compose window...";
+          url = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${encodedSubject}&body=${encodedBody}`;
           break;
         case 'outlook':
-          url = createOutlookUrl(subject, body);
-          successMessage = "Opening Outlook compose window...";
+          url = `https://outlook.live.com/mail/0/deeplink/compose?subject=${encodedSubject}&body=${encodedBody}`;
           break;
+        case 'default':
         default:
-          // Use existing mailto functionality
-          const encodedSubject = encodeURIComponent(subject.slice(0, 200));
-          const encodedBody = encodeURIComponent(body.slice(0, 5000));
           url = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
-          successMessage = "Opening in your default email client...";
+          break;
       }
+
+      // Validate URL length to prevent issues
+      if (url.length > 8192) { // Most browsers have ~8000 char limit for URLs
+        toast({
+          title: "Draft Too Long",
+          description: "The email draft is too long to open directly. Please copy the content manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const clientNames = {
+        'default': 'default email client',
+        'gmail': 'Gmail',
+        'outlook': 'Outlook'
+      };
+
+      const successMessage = `Opening draft in ${clientNames[client]}...`;
 
       window.open(url, '_blank', 'noopener,noreferrer');
       
@@ -317,60 +335,84 @@ export default function ComposeTab({
               )}
             </div>
 
-            {/* Current Preferences Display */}
-            <div className="bg-muted/50 p-3 rounded-lg">
-              <h4 className="text-sm font-medium mb-2">Current Settings:</h4>
-              <div className="space-y-2">
+            {/* Privacy Mode Indicator */}
+            {privacyPreferences.mode === 'privacy' && (
+              <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs capitalize">
-                    {preferences.tone} tone
-                  </Badge>
-                  <span className="text-muted-foreground">•</span>
-                  <Badge variant="secondary" className="text-xs capitalize">
-                    {preferences.length} length
+                  <ShieldCheckIcon className="h-4 w-4 text-green-600" />
+                  <Badge variant="outline" className="text-xs border-green-200 text-green-700">
+                    Privacy Mode Active
                   </Badge>
                 </div>
-                {privacyPreferences.mode === 'privacy' && (
-                  <div className="flex items-center gap-2">
-                    <ShieldCheckIcon className="h-4 w-4 text-green-600" />
-                    <Badge variant="outline" className="text-xs border-green-200 text-green-700">
-                      Privacy Mode Active
-                    </Badge>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
             
-            <div className="space-y-3">              
+            <div className="space-y-4">              
+              {/* Question 1: What is the email about? */}
               <div>
-                <label htmlFor="context" className="text-sm font-medium">Email Context *</label>
+                <label htmlFor="emailAbout" className="text-sm font-medium">1. What is the email about? *</label>
                 <Textarea 
-                  id="context" 
-                  placeholder="e.g., Follow up on our last meeting..." 
-                  className="mt-1 min-h-[120px]" 
-                  value={context} 
-                  onChange={handleContextChange}
+                  id="emailAbout" 
+                  placeholder="e.g., Following up on yesterday's meeting about the project timeline..." 
+                  className="mt-1 min-h-[100px]" 
+                  value={emailAbout} 
+                  onChange={handleEmailAboutChange}
                   maxLength={5000}
                   required
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {context.length}/5000 characters
+                  {emailAbout.length}/5000 characters
                 </p>
               </div>
 
+              {/* Question 2: What do you want to say? */}
               <div>
-                <label htmlFor="instructions" className="text-sm font-medium">Instructions</label>
+                <label htmlFor="emailContent" className="text-sm font-medium">2. What do you want to say?</label>
                 <Textarea 
-                  id="instructions" 
-                  placeholder="e.g., Be polite but firm..." 
-                  className="mt-1 min-h-[80px]" 
-                  value={instructions} 
-                  onChange={handleInstructionsChange}
+                  id="emailContent" 
+                  placeholder="e.g., I need to reschedule our next meeting and get an update on the deliverables..." 
+                  className="mt-1 min-h-[100px]" 
+                  value={emailContent} 
+                  onChange={handleEmailContentChange}
                   maxLength={5000}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {instructions.length}/5000 characters
+                  {emailContent.length}/5000 characters
                 </p>
+              </div>
+
+              {/* Question 3: How would you want to say it? */}
+              <div>
+                <label className="text-sm font-medium mb-3 block">3. How would you want to say it?</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Tone</label>
+                    <Select value={localTone} onValueChange={(value) => setLocalTone(value as EmailPreferences['tone'])}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="friendly">Friendly</SelectItem>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="formal">Formal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Length</label>
+                    <Select value={localLength} onValueChange={(value) => setLocalLength(value as EmailPreferences['length'])}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short">Short</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="long">Long</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -381,7 +423,7 @@ export default function ComposeTab({
                 size="lg" 
                 className="flex-1 gap-2" 
                 onClick={handleGenerateClick} 
-                disabled={isLoading || !context.trim()}
+                disabled={isLoading || !emailAbout.trim()}
               >
                 {isLoading ? (
                   <>
@@ -569,22 +611,15 @@ export default function ComposeTab({
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                 <SparklesIcon className="h-10 w-10 mb-4 text-muted-foreground/50" />
                 <h3 className="text-lg font-semibold mb-2">Your generated draft will appear here</h3>
-                <p className="text-sm mb-4">Generated emails will use your current preferences:</p>
+                <p className="text-sm mb-4">Answer the 3 questions above and click Generate Draft to get started.</p>
                 <div className="bg-muted/30 p-4 rounded-lg text-xs space-y-2 max-w-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>Writing Style:</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {preferences.tone} tone
-                      </Badge>
-                      <span className="text-muted-foreground">•</span>
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {preferences.length} length
+                  <div className="text-center">
+                    <span className="font-medium">Current Language:</span>
+                    <div className="mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {preferences.language === 'fr' ? '🇫🇷 Français' : '🇺🇸 English'}
                       </Badge>
                     </div>
-                  </div>
-                  <div className="pt-2 border-t text-center text-muted-foreground">
-                    <span className="text-xs">You can adjust these in Preferences</span>
                   </div>
                 </div>
               </div>

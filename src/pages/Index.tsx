@@ -6,7 +6,6 @@ import SocialProof from '@/components/SocialProof';
 import Features from '@/components/Features';
 import AgoraSpotlight from '@/components/AgoraSpotlight';
 import ComposeSpotlight from '@/components/ComposeSpotlight';
-import FAQ from '@/components/FAQ';
 import SearchResults from '@/components/SearchResults';
 import TopBriefs from '@/components/TopBriefs';
 import Footer from '@/components/Footer';
@@ -55,7 +54,6 @@ const Index = () => {
           <AgoraSpotlight />
           <ComposeSpotlight />
           <TopBriefs />
-          <FAQ />
         </>
       )}
       

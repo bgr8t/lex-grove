@@ -21,7 +21,6 @@ export interface PrivacyPreferences {
 }
 
 export interface UserEmailPreferences {
-  id?: string;
   uid: string;
   emailPreferences: EmailPreferences;
   privacyPreferences: PrivacyPreferences;
@@ -38,20 +37,19 @@ class EmailPreferencesService extends FirestoreService<UserEmailPreferences> {
   async getCurrentUserPreferences(): Promise<UserEmailPreferences | null> {
     const user = auth.currentUser;
     if (!user) return null;
-    
     return this.getUserPreferencesByUid(user.uid);
   }
 
-  // Get user preferences by Firebase Auth UID
+  // Get user email preferences by UID
   async getUserPreferencesByUid(uid: string): Promise<UserEmailPreferences | null> {
     try {
       const docRef = doc(db, 'emailPreferences', uid);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as UserEmailPreferences;
+        return { uid, ...docSnap.data() } as UserEmailPreferences;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error fetching user email preferences:', error);
@@ -84,65 +82,108 @@ class EmailPreferencesService extends FirestoreService<UserEmailPreferences> {
 
     try {
       await setDoc(doc(db, 'emailPreferences', user.uid), preferences, { merge: true });
-      return { id: user.uid, ...preferences };
+      return preferences;
     } catch (error) {
       console.error('Error saving user email preferences:', error);
       throw new Error('Failed to save preferences');
     }
   }
 
-  // Update only email preferences
+  // Update only email preferences - SIMPLIFIED to always rewrite
   async updateEmailPreferences(emailPreferences: EmailPreferences): Promise<void> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error('No authenticated user found');
     }
 
+    const now = Date.now();
+    const docRef = doc(db, 'emailPreferences', user.uid);
+    
     try {
-      await updateDoc(doc(db, 'emailPreferences', user.uid), {
-        emailPreferences,
-        updatedAt: Date.now()
-      });
+      // Always get the current document to preserve other data
+      const docSnapshot = await getDoc(docRef);
+      
+      if (!docSnapshot.exists()) {
+        // Create new document with full structure
+        const newDocument = {
+          uid: user.uid,
+          emailPreferences,
+          privacyPreferences: this.getDefaultPrivacyPreferences(),
+          createdAt: now,
+          updatedAt: now
+        };
+        await setDoc(docRef, newDocument);
+      } else {
+        // Rewrite the entire document but preserve existing structure
+        const currentData = docSnapshot.data();
+        const updatedDocument = {
+          ...currentData,
+          emailPreferences, // Completely replace emailPreferences
+          updatedAt: now
+        };
+        
+        await setDoc(docRef, updatedDocument);
+      }
     } catch (error) {
-      console.error('Error updating email preferences:', error);
-      throw new Error('Failed to update email preferences');
+      console.error('🚨 FIRESTORE ERROR: Failed to update email preferences:', error);
+      throw new Error(`Failed to update email preferences: ${error.message}`);
     }
   }
 
-  // Update only privacy preferences
+  // Update only privacy preferences - SIMPLIFIED to always rewrite
   async updatePrivacyPreferences(privacyPreferences: PrivacyPreferences): Promise<void> {
     const user = auth.currentUser;
     if (!user) {
       throw new Error('No authenticated user found');
     }
 
+    const now = Date.now();
+    const docRef = doc(db, 'emailPreferences', user.uid);
+
     try {
-      await updateDoc(doc(db, 'emailPreferences', user.uid), {
-        privacyPreferences,
-        updatedAt: Date.now()
-      });
+      // Always get the current document to preserve other data
+      const docSnapshot = await getDoc(docRef);
+      
+      if (!docSnapshot.exists()) {
+        // Create new document with full structure
+        const newDocument = {
+          uid: user.uid,
+          emailPreferences: this.getDefaultEmailPreferences(),
+          privacyPreferences,
+          createdAt: now,
+          updatedAt: now
+        };
+        await setDoc(docRef, newDocument);
+      } else {
+        // Rewrite the entire document but preserve existing structure
+        const currentData = docSnapshot.data();
+        const updatedDocument = {
+          ...currentData,
+          privacyPreferences, // Completely replace privacyPreferences
+          updatedAt: now
+        };
+        
+        await setDoc(docRef, updatedDocument);
+      }
     } catch (error) {
-      console.error('Error updating privacy preferences:', error);
-      throw new Error('Failed to update privacy preferences');
+      console.error('🚨 FIRESTORE ERROR: Failed to update privacy preferences:', error);
+      throw new Error(`Failed to update privacy preferences: ${error.message}`);
     }
   }
 
-  // Get default preferences for new users (empty values, not hardcoded names)
+  // Get default email preferences
   getDefaultEmailPreferences(): EmailPreferences {
-    // Get user's current language from localStorage or default to English
-    const currentLanguage = (localStorage.getItem('language') as 'en' | 'fr') || 'en';
-    
     return {
       tone: 'professional',
       length: 'medium',
-      language: currentLanguage,
+      language: 'en',
       role: '',
       organization: '',
       signature: ''
     };
   }
 
-  // Get default privacy preferences for new users
+  // Get default privacy preferences
   getDefaultPrivacyPreferences(): PrivacyPreferences {
     return {
       mode: 'standard',

@@ -1,7 +1,15 @@
 import { SearchBar } from './SearchBar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { SparklesIcon, BookOpenIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
+import { 
+  SparklesIcon, 
+  PencilSquareIcon, 
+  EnvelopeIcon,
+  DocumentMagnifyingGlassIcon,
+  ClipboardDocumentListIcon,
+  PencilIcon,
+  ArrowRightIcon
+} from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -59,7 +67,7 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
             <div className="relative backdrop-blur-sm bg-white/80 dark:bg-gray-900/80 border border-white/30 dark:border-gray-700/30 rounded-full px-4 py-2 shadow-lg animate-slide-down-fade">
               <SparklesIcon className="h-4 w-4 mr-2 text-primary animate-pulse-subtle inline" />
               <span className="text-sm font-medium bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                AI-Powered Legal Assistant
+                AI-Powered Writing Assistant
               </span>
             </div>
           </div>
@@ -70,14 +78,14 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
               className="inline-block opacity-0 animate-slide-up"
               style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
             >
-              Master Your Legal Work
+              Master Your Legal Writing
             </span>
             <br />
             <span 
               className="inline-block opacity-0 animate-slide-up"
               style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}
             >
-              in <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent font-medium">Minutes, Not Hours</span>
+              with <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent font-medium">AI-Powered Compose</span>
             </span>
           </h1>
           
@@ -86,7 +94,7 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
             className="text-xl md:text-2xl text-muted-foreground mb-10 md:mb-12 max-w-3xl mx-auto text-balance leading-relaxed opacity-0 animate-fade-in"
             style={{ animationDelay: '600ms', animationFillMode: 'forwards' }}
           >
-            Generate AI-powered case briefs, access a collaborative library of legal knowledge, and draft professional emails instantly. The ultimate legal assistant for students and professionals.
+            Draft professional emails, analyze documents, and perfect your writing with our intelligent AI suite. From quick correspondence to comprehensive content analysis—all in one platform.
           </p>
           
           {/* CTA Buttons with enhanced neumorphic styling */}
@@ -97,36 +105,101 @@ export const Hero = ({ className, onSearch }: HeroProps) => {
             <Button 
               size="lg" 
               className="h-14 px-8 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group relative overflow-hidden"
-              onClick={() => navigate('/library')}
+              onClick={() => navigate('/compose')}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary to-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <BookOpenIcon className="h-5 w-5 mr-2 relative z-10" />
-              <span className="relative z-10">Generate Your First Brief</span>
+              <PencilSquareIcon className="h-5 w-5 mr-2 relative z-10" />
+              <span className="relative z-10">Start Composing</span>
             </Button>
             <Button 
               size="lg" 
               variant="outline" 
               className="h-14 px-8 text-base font-medium backdrop-blur-sm bg-white/50 dark:bg-gray-900/50 border border-white/30 dark:border-gray-700/30 hover:bg-white/70 dark:hover:bg-gray-900/70 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate('/library')}
             >
-              <ChatBubbleBottomCenterTextIcon className="h-5 w-5 mr-2" />
-              Explore Features
+              <DocumentMagnifyingGlassIcon className="h-5 w-5 mr-2" />
+              Browse Library
             </Button>
           </div>
           
-          {/* Search section with enhanced styling */}
+          {/* Compose Features Showcase */}
           <div 
-            className="search-container opacity-0 animate-scale-up"
+            className="compose-showcase opacity-0 animate-scale-up"
             style={{ animationDelay: '1000ms', animationFillMode: 'forwards' }}
           >
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative backdrop-blur-sm bg-white/60 dark:bg-gray-900/60 rounded-2xl p-1 shadow-xl border border-white/30 dark:border-gray-700/30">
-                <SearchBar 
-                  onSearch={handleSearch} 
-                  placeholder="Search thousands of case briefs..." 
-                  showExamples={true}
-                />
+              <div className="relative backdrop-blur-sm bg-white/60 dark:bg-gray-900/60 rounded-2xl p-6 shadow-xl border border-white/30 dark:border-gray-700/30">
+                
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-semibold mb-2">Choose Your Writing Tool</h3>
+                  <p className="text-sm text-muted-foreground">Professional-grade AI tools for every writing need</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Email Draft Tool */}
+                  <div 
+                    className="group/card p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/80 dark:to-gray-800/60 border border-white/50 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
+                    onClick={() => navigate('/compose/email-draft')}
+                  >
+                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 mb-3 mx-auto">
+                      <EnvelopeIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h4 className="font-semibold text-center mb-2">Email Draft</h4>
+                    <p className="text-xs text-muted-foreground text-center mb-3">Professional emails in seconds</p>
+                    <Button size="sm" className="w-full group-hover/card:shadow-md transition-shadow">
+                      Try Now
+                      <ArrowRightIcon className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+
+                  {/* Quick Summary Tool */}
+                  <div 
+                    className="group/card p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/80 dark:to-gray-800/60 border border-white/50 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
+                    onClick={() => navigate('/compose/content-analyzer')}
+                  >
+                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 mb-3 mx-auto">
+                      <ClipboardDocumentListIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h4 className="font-semibold text-center mb-2">Quick Summary</h4>
+                    <p className="text-xs text-muted-foreground text-center mb-3">Generate concise summaries</p>
+                    <Button size="sm" className="w-full group-hover/card:shadow-md transition-shadow">
+                      Summarize
+                      <ArrowRightIcon className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+
+                  {/* Proofreading Tool */}
+                  <div 
+                    className="group/card p-4 rounded-xl bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-800/80 dark:to-gray-800/60 border border-white/50 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
+                    onClick={() => navigate('/compose/proofreading')}
+                  >
+                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 mb-3 mx-auto">
+                      <PencilIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <h4 className="font-semibold text-center mb-2">Proofreading</h4>
+                    <p className="text-xs text-muted-foreground text-center mb-3">Perfect grammar & style</p>
+                    <Button size="sm" className="w-full group-hover/card:shadow-md transition-shadow">
+                      Proofread
+                      <ArrowRightIcon className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quick Access to Search */}
+                <div className="mt-6 pt-4 border-t border-white/20 dark:border-gray-700/20">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-sm text-muted-foreground">Looking for case briefs?</span>
+                    <Button 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0 text-primary hover:text-primary/80"
+                      onClick={() => navigate('/library')}
+                    >
+                      Search Library →
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

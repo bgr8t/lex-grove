@@ -129,7 +129,7 @@ export default function Compose() {
   return (
     <div className="flex flex-col min-h-screen bg-muted/40">
       <Header />
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 mt-16 md:mt-32">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 sm:px-8 md:px-10 lg:px-12 xl:px-16 py-8 mt-16 md:mt-32">
         {/* Header Section */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center bg-primary/10 text-primary rounded-full px-4 py-2 text-sm font-medium mb-4">

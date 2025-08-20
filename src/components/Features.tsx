@@ -1,5 +1,5 @@
 
-import { ArrowTrendingUpIcon, MagnifyingGlassIcon, BookmarkIcon, UserGroupIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { ArrowTrendingUpIcon, MagnifyingGlassIcon, BookmarkIcon, UserGroupIcon, EnvelopeIcon, DocumentTextIcon, ScaleIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
 interface FeatureProps {
@@ -10,24 +10,24 @@ interface FeatureProps {
 
 const features: FeatureProps[] = [
   {
-    title: "Find Precedent Instantly with Semantic Search",
-    description: "Our intelligent search understands legal concepts, not just keywords. Find the exact case you need by describing the issue in plain English.",
-    icon: <MagnifyingGlassIcon className="h-6 w-6" />,
-  },
-  {
-    title: "Build Your Personal, Searchable Library",
-    description: "Never lose track of important cases again. Save briefs to your personal library, organize them into collections, and access them anytime, anywhere.",
-    icon: <BookmarkIcon className="h-6 w-6" />,
-  },
-  {
-    title: "Leverage a Collaborative Knowledge Base",
-    description: "Access thousands of case briefs created by peers and legal experts. Gain diverse perspectives and accelerate your understanding of complex cases.",
-    icon: <UserGroupIcon className="h-6 w-6" />,
-  },
-  {
-    title: "Draft Professional Emails in Seconds with AI",
-    description: "Our Compose feature helps you write clear, professional emails for any situation, from client follow-ups to internal memos, with customizable privacy settings.",
+    title: "AI-Powered Email & Communication Suite",
+    description: "Draft professional emails, client correspondence, and internal memos in seconds. Our intelligent Compose feature adapts to your tone, maintains privacy controls, and learns from your writing style.",
     icon: <EnvelopeIcon className="h-6 w-6" />,
+  },
+  {
+    title: "Smart Document Creation & Proofreading",
+    description: "Generate legal documents, contracts, and case briefs using AI. Our proofreader preserves legal terminology while fixing grammar and enhancing clarity—perfect for course notes and professional documents.",
+    icon: <DocumentTextIcon className="h-6 w-6" />,
+  },
+  {
+    title: "Intelligent Case Brief Generator",
+    description: "Upload PDFs and create comprehensive case briefs using the IRAC method. Our AI extracts key legal concepts, organizes facts, and structures analysis while building your searchable case library.",
+    icon: <ScaleIcon className="h-6 w-6" />,
+  },
+  {
+    title: "Semantic Legal Research Engine",
+    description: "Find precedent instantly with AI that understands legal concepts, not just keywords. Search thousands of cases by describing issues in plain English and access community-contributed briefs.",
+    icon: <MagnifyingGlassIcon className="h-6 w-6" />,
   },
 ];
 
@@ -96,11 +96,11 @@ export const Features = ({ className }: FeaturesProps) => {
           </div>
           
           <h2 className="text-4xl md:text-5xl font-light tracking-tight mb-6 bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
-            Your All-in-One Legal Toolkit
+            AI-Powered Legal Composition Suite
           </h2>
           
           <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed">
-            Powerful features designed to solve the biggest challenges facing law students and legal professionals.
+            Revolutionary AI tools that transform how legal professionals write, research, and analyze—from drafting emails to generating case briefs in seconds.
           </p>
         </div>
         
