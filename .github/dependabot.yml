@@ -1,35 +1,17 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "fix"
-      prefix-development: "chore"
-      include: "scope"
+      interval: weekly
     open-pull-requests-limit: 10
-    reviewers:
-      - "bgr8t"
-    assignees:
-      - "bgr8t"
     labels:
-      - "dependencies"
-      - "dependabot"
+      - dependencies
+    reviewers: []
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    open-pull-requests-limit: 10
-    reviewers:
-      - "bgr8t"
-    assignees:
-      - "bgr8t"
+      interval: weekly
     labels:
-      - "dependencies"
-      - "dependabot"
-      - "github-actions" 
+      - ci

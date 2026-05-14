@@ -1,5 +1,7 @@
 # Lex Grove
 
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 A modern platform for law students to access, search, and contribute to a collaborative library of legal case briefs.
 
 ## Project Overview
@@ -21,7 +23,7 @@ Lex Grove is a comprehensive web application designed to help law students acces
 This project is built with:
 
 - **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Firebase (Firestore, Authentication, Cloud Functions)
+- **Backend**: Express, Firebase (Firestore, Authentication, Cloud Functions)
 - **State Management**: React Context
 - **Styling**: Tailwind CSS with custom neumorphic design
 - **Payment Processing**: Stripe integration
@@ -32,19 +34,20 @@ To run this project locally:
 
 ```sh
 # Clone the repository
-git clone https://github.com/bgr8t/lex-grove.git
+git clone https://github.com/<org>/lex-briefs-ai.git
 
 # Navigate to the project directory
-cd lex-grove
+cd lex-briefs-ai
 
 # Install dependencies
 npm install
 
 # Set up environment variables (see Environment Setup below)
-# Copy .env.example to .env.local and fill in your values
+cp .env.example .env
+# Fill in values for the services you want to test
 
-# Start the development server
-npm run dev
+# Start the frontend and API server
+npm run dev:all
 ```
 
 ## Environment Setup
@@ -58,8 +61,23 @@ The application requires several environment variables to be configured:
 - **AI Services**: 
   - `GEMINI_API_KEY`: For PDF summarization with Gemini AI (recommended)
   - `OPENAI_API_KEY`: For document generation and embeddings (fallback)
+  - `GROK_API_KEY`: For email drafting and AI chat features
 - **Pinecone**: `PINECONE_*` variables for vector search functionality
 - **Session Management**: `SESSION_SECRET` and `MONGO_URL`
+
+Client-side values prefixed with `VITE_` are embedded into the browser bundle.
+Only put public client configuration there. Secret API keys must stay
+server-side without the `VITE_` prefix.
+
+### Configuring Firebase
+
+The checked-in `.firebaserc` uses a placeholder project id. To run against your
+own Firebase project:
+
+1. Create a project in the [Firebase Console](https://console.firebase.google.com).
+2. Enable Firebase Authentication and Firestore.
+3. Copy the web app config into `.env` as `VITE_FIREBASE_*` values.
+4. Replace `your-firebase-project-id` in `.firebaserc` or run `npx firebase use --add`.
 
 ### Setting up PDF Summarization
 
@@ -112,8 +130,11 @@ Briefs are structured with the following components in both English and French:
 
 ## Contributing
 
-Contributions to improve Lex Grove are welcome. Please feel free to submit pull requests or open issues to discuss potential improvements.
+Contributions to improve Lex Grove are welcome. Please read
+[CONTRIBUTING.md](CONTRIBUTING.md) and follow the
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Security issues should be reported
+privately using the process in [SECURITY.md](SECURITY.md).
 
 ## License
 
-This project is proprietary software.
+Licensed under the [Apache License 2.0](LICENSE).

@@ -16,7 +16,7 @@ const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   confirmPassword: z.string().min(6, { message: 'Confirm password must be at least 6 characters' }),
-  secretCode: z.string().refine(val => val === 'H25', {
+  secretCode: z.string().refine(val => val === import.meta.env.VITE_REGISTRATION_CODE, {
     message: 'Invalid secret code',
   }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -63,7 +63,7 @@ export function RegisterForm() {
       setLoading(true);
       
       // Verify secret code
-      if (data.secretCode !== 'H25') {
+      if (data.secretCode !== import.meta.env.VITE_REGISTRATION_CODE) {
         toast({
           title: "Invalid Secret Code",
           description: "The secret code you entered is invalid.",

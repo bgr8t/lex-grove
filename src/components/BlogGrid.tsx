@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 // export default function BlogGrid() {
 //   const { currentUser } = useAuth();
-//   const isAdmin = currentUser?.uid === '***REDACTED_ADMIN_UID***';
+//   const isAdmin = currentUser?.uid === import.meta.env.VITE_ADMIN_UID;
 //   return (
 //     <div className="min-h-screen bg-gray-100 py-8 px-4 mt-24">
 //       <div className="flex items-center justify-between mb-8">

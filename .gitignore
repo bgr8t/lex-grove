@@ -7,10 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
+# Dependencies and build output
+node_modules/
+Backend/functions/node_modules/
+dist/
 dist-ssr
+build/
+coverage/
 *.local
+.firebase/
+.vercel/
 
 # Editor directories and files
 .vscode/*
@@ -25,7 +31,45 @@ dist-ssr
 
 # Environment variables
 .env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Secrets and private credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_dsa
+credentials.json
+serviceAccountKey.json
+firebase-adminsdk*.json
+
+# Databases and local state
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# Security scanner output
+.secrets.baseline
+gitleaks-report*.json
+trufflehog-report*.json
+semgrep-report*.json
+pip-audit-report*.json
+trivy-report*.json
+secrets-inventory.csv
+rotation-log.md
+
+# Package-manager files not used by this project
+bun.lockb
+
+# History-rewrite artifacts (contain secret values)
+banned-strings.txt
+banned-files.txt

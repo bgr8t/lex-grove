@@ -1,0 +1,5 @@
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -n "$staged_files" ]; then
+  printf '%s\n' "$staged_files" | xargs node Configuration/scripts/run-secretlint.mjs --secretlintrc .secretlintrc.json --maskSecrets
+fi

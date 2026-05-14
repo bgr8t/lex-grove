@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function BlogPostCreate() {
   const { currentUser } = useAuth();
-  const isAdmin = currentUser?.uid === '***REDACTED_ADMIN_UID***';
+  const isAdmin = currentUser?.uid === import.meta.env.VITE_ADMIN_UID;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');

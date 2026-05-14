@@ -4,7 +4,14 @@ import { doc, setDoc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
 // Initialize Stripe with secret key
 // IMPORTANT: This file should only be used in a server environment, never client-side
-const stripe = new Stripe('***REDACTED_STRIPE_SECRET_KEY***', {
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error(
+    'STRIPE_SECRET_KEY environment variable is required. ' +
+    'Set it in your deployment environment (never commit it to source).'
+  );
+}
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2023-08-16',
 });
 

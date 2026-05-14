@@ -1,5 +1,5 @@
 {
   "projects": {
-    "default": "live-car-nest"
+    "default": "your-firebase-project-id"
   }
 }
