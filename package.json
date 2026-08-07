@@ -20,7 +20,7 @@
     "start:server": "ts-node src/api/server.ts"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.12.12",
+    "@clerk/nextjs": "^6.39.6",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.9.0",
@@ -92,7 +92,7 @@
     "marked": "^13.0.3",
     "micro": "^10.0.1",
     "multer": "^2.0.2",
-    "next": "^15.5.18",
+    "next": "^16.3.0",
     "openai": "^4.90.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.8.1",
@@ -133,7 +133,7 @@
     "eslint-plugin-react-refresh": "^0.4.9",
     "firebase-tools": "^14.12.0",
     "globals": "^15.9.0",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.23",
     "sharp": "^0.34.3",
     "tailwindcss": "^3.4.11",
     "terser": "^5.43.1",
